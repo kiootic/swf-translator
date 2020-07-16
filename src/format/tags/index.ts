@@ -3,6 +3,11 @@ import { Reader } from "../../binary";
 
 import { TagUnknown } from "./unknown";
 import { EndTag } from "./end";
+import { SetBackgroundColorTag } from "./set-background-color";
+import { DoABCTag } from "./do-abc";
+import { SymbolClassTag } from "./symbol-class";
+import { FrameLabelTag } from "./frame-label";
+import { DefineSceneAndFrameLabelDataTag } from "./define-scene-and-frame-label-data";
 
 interface TagClass {
   new (reader: Reader): Tag;
@@ -14,6 +19,11 @@ function registerTag(cls: TagClass) {
 }
 
 registerTag(EndTag);
+registerTag(SetBackgroundColorTag);
+registerTag(DoABCTag);
+registerTag(SymbolClassTag);
+registerTag(FrameLabelTag);
+registerTag(DefineSceneAndFrameLabelDataTag);
 
 export function parseTag(reader: Reader): Tag {
   const codeAndLength = reader.nextUInt16();

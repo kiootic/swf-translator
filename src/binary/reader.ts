@@ -66,6 +66,13 @@ export class Reader {
     return value;
   }
 
+  nextString(): string {
+    const begin = this.index;
+    const end = this.buf.indexOf(0, begin);
+    this.index = end + 1;
+    return this.buf.slice(begin, end).toString("utf-8");
+  }
+
   nextFixedString(length: number): string {
     return this.nextBuffer(length).toString("utf-8");
   }

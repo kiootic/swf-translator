@@ -4,5 +4,7 @@ import { Reader } from "../../binary";
 export class EndTag extends Tag {
   static readonly code = 0;
 
-  parse(reader: Reader) {}
+  constructor(reader: Reader) {
+    super();
+  }
 }

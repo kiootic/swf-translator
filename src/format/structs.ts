@@ -1,4 +1,4 @@
-import { Parser } from "../binary";
+import { Parser, object, uint8 } from "../binary";
 
 export interface Rect {
   xMin: number;
@@ -16,3 +16,15 @@ export const rect: Parser<Rect> = (reader) => {
     yMax: reader.nextSBits(nBits),
   };
 };
+
+export interface RGB {
+  red: number;
+  green: number;
+  blue: number;
+}
+
+export const rgb = object<RGB>(
+  ["red", uint8],
+  ["green", uint8],
+  ["blue", uint8]
+);
