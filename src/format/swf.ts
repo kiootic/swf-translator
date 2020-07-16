@@ -9,6 +9,8 @@ import {
   uint16,
 } from "../binary";
 import { Rect, rect } from "./structs";
+import { Tag } from "./tag";
+import { parseTag } from "./tags";
 
 interface SWFHeader1 {
   sig: string;
@@ -39,6 +41,7 @@ export class SWFFile {
   readonly frameSize: Rect;
   readonly frameRate: number;
   readonly frameCount: number;
+  readonly tags: Tag[];
 
   constructor(buf: Buffer) {
     const header1 = parserHeader1(new Reader(buf));
@@ -58,9 +61,18 @@ export class SWFFile {
       );
     }
 
-    const header2 = parserHeader2(new Reader(body));
+    const bodyReader = new Reader(body);
+    const header2 = parserHeader2(bodyReader);
     this.frameSize = header2.frameSize;
     this.frameRate = header2.frameRate;
     this.frameCount = header2.frameCount;
+
+    const tags: Tag[] = [];
+    let tag: Tag;
+    do {
+      tag = parseTag(bodyReader);
+      tags.push(tag);
+    } while (tag.code !== 0);
+    this.tags = tags;
   }
 }

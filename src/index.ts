@@ -9,7 +9,11 @@ export function main(args: string[]) {
 
   const buf = readFileSync(args[0]);
   const file = new SWFFile(buf);
-  console.log(file);
+  const { tags, ...header } = file;
+  console.log(header);
+  for (const tag of tags) {
+    console.log(tag);
+  }
 }
 
 main(process.argv.slice(2));
