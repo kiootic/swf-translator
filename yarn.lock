@@ -2,22 +2,10 @@
 # yarn lockfile v1
 
 
-"@types/binary-parser@1.5.0":
-  version "1.5.0"
-  resolved "https://registry.yarnpkg.com/@types/binary-parser/-/binary-parser-1.5.0.tgz#d8a9676a7763b91c7537347d1d596d8b96adb164"
-  integrity sha512-eBMqKUPRjXX+E30JQOcda8Je4lw4TyQvDSOXhWx+T019lki2TURNf0kVaR27LG4B2cLu4JXfrnNp+3aEq23leA==
-  dependencies:
-    "@types/node" "*"
-
-"@types/node@*":
-  version "14.0.23"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-14.0.23.tgz#676fa0883450ed9da0bb24156213636290892806"
-  integrity sha512-Z4U8yDAl5TFkmYsZdFPdjeMa57NOvnaf1tljHzhouaPEp7LCj2JKkejpI1ODviIAQuW4CcQmxkQ77rnLsOOoKw==
-
-binary-parser@1.6.2:
-  version "1.6.2"
-  resolved "https://registry.yarnpkg.com/binary-parser/-/binary-parser-1.6.2.tgz#8410a82ffd9403271ec182bd91e63a09cee88cbe"
-  integrity sha512-cYAhKB51A9T/uylDvMK7uAYaPLWLwlferNOpnQ0E0fuO73yPi7kWaWiOm22BvuKxCbggmkiFN0VkuLg6gc+KQQ==
+"@types/node@12.12.50":
+  version "12.12.50"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-12.12.50.tgz#e9b2e85fafc15f2a8aa8fdd41091b983da5fd6ee"
+  integrity sha512-5ImO01Fb8YsEOYpV+aeyGYztcYcjGsBvN4D7G5r1ef2cuQOpymjWNQi5V0rKHE6PC2ru3HkoUr/Br2/8GUA84w==
 
 prettier@2.0.5:
   version "2.0.5"

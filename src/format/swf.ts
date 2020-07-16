@@ -1,16 +1,47 @@
-import { Parser } from "binary-parser";
 import { inflateSync } from "zlib";
+import {
+  object,
+  fixedString,
+  uint8,
+  uint32,
+  Reader,
+  fixedPoint16,
+  uint16,
+} from "../binary";
+import { Rect, rect } from "./structs";
 
-const parserHeader1 = new Parser()
-  .string("sig", { length: 3 })
-  .uint8("version")
-  .uint32le("length");
+interface SWFHeader1 {
+  sig: string;
+  version: number;
+  length: number;
+}
+
+const parserHeader1 = object<SWFHeader1>(
+  ["sig", fixedString(3)],
+  ["version", uint8],
+  ["length", uint32]
+);
+
+interface SWFHeader2 {
+  frameSize: Rect;
+  frameRate: number;
+  frameCount: number;
+}
+
+const parserHeader2 = object<SWFHeader2>(
+  ["frameSize", rect],
+  ["frameRate", fixedPoint16],
+  ["frameCount", uint16]
+);
 
 export class SWFFile {
   readonly version: number;
+  readonly frameSize: Rect;
+  readonly frameRate: number;
+  readonly frameCount: number;
 
   constructor(buf: Buffer) {
-    const header1 = parserHeader1.parse(buf);
+    const header1 = parserHeader1(new Reader(buf));
     this.version = header1.version;
 
     let body: Buffer;
@@ -26,5 +57,10 @@ export class SWFFile {
         `Mismatched length: ${header1.length} != ${body.length + 8}`
       );
     }
+
+    const header2 = parserHeader2(new Reader(body));
+    this.frameSize = header2.frameSize;
+    this.frameRate = header2.frameRate;
+    this.frameCount = header2.frameCount;
   }
 }
