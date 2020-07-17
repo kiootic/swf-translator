@@ -1,6 +1,6 @@
 import { Tag } from "../tag";
 
-export class TagUnknown extends Tag {
+export class UnknownTag extends Tag {
   private readonly _code: number;
   readonly body: Buffer;
 

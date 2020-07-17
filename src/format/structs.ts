@@ -28,3 +28,17 @@ export const rgb = object<RGB>(
   ["green", uint8],
   ["blue", uint8]
 );
+
+export interface ARGB {
+  alpha: number;
+  red: number;
+  green: number;
+  blue: number;
+}
+
+export const argb = object<ARGB>(
+  ["alpha", uint8],
+  ["red", uint8],
+  ["green", uint8],
+  ["blue", uint8]
+);
