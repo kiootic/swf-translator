@@ -10,14 +10,17 @@
     "format": "prettier --write -l 'src/**/*.ts'"
   },
   "dependencies": {
+    "consola": "2.14.0",
     "mkdirp": "1.0.4",
     "rimraf": "3.0.2",
+    "sharp": "0.25.4",
     "typescript": "3.9.6"
   },
   "devDependencies": {
     "@types/mkdirp": "1.0.1",
     "@types/node": "12.12.50",
     "@types/rimraf": "3.0.0",
+    "@types/sharp": "0.25.0",
     "prettier": "2.0.5"
   }
 }
