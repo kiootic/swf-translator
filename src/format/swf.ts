@@ -41,7 +41,8 @@ export class SWFFile {
   readonly frameSize: Rect;
   readonly frameRate: number;
   readonly frameCount: number;
-  readonly tags: Tag[];
+  readonly tags: Tag[] = [];
+  readonly characters = new Map<number, Tag>();
 
   constructor(buf: Buffer) {
     const header1 = parserHeader1(new Reader(buf));
@@ -67,12 +68,13 @@ export class SWFFile {
     this.frameRate = header2.frameRate;
     this.frameCount = header2.frameCount;
 
-    const tags: Tag[] = [];
     let tag: Tag;
     do {
       tag = parseTag(bodyReader);
-      tags.push(tag);
+      if (tag.characterId) {
+        this.characters.set(tag.characterId, tag);
+      }
+      this.tags.push(tag);
     } while (tag.code !== 0);
-    this.tags = tags;
   }
 }
