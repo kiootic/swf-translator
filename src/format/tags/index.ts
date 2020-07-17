@@ -13,6 +13,10 @@ import { DefineBitsJPEG2Tag } from "./define-bits-jpeg-2";
 import { DefineBitsJPEG3Tag } from "./define-bits-jpeg-3";
 import { DefineBitsLossless2Tag } from "./define-bits-loseless-2";
 import { DefineSoundTag } from "./define-sound";
+import { DefineShapeTag } from "./define-shape";
+import { DefineShape2Tag } from "./define-shape-2";
+import { DefineShape3Tag } from "./define-shape-3";
+import { DefineShape4Tag } from "./define-shape-4";
 
 interface TagClass {
   new (reader: Reader): Tag;
@@ -34,6 +38,10 @@ registerTag(DefineBitsJPEG2Tag);
 registerTag(DefineBitsJPEG3Tag);
 registerTag(DefineBitsLossless2Tag);
 registerTag(DefineSoundTag);
+registerTag(DefineShapeTag);
+registerTag(DefineShape2Tag);
+registerTag(DefineShape3Tag);
+registerTag(DefineShape4Tag);
 
 export function parseTag(reader: Reader): Tag {
   const codeAndLength = reader.nextUInt16();

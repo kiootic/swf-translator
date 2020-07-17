@@ -30,11 +30,21 @@ export function fixedString(length: number): Parser<string> {
   return (reader) => reader.nextFixedString(length);
 }
 
-export function ubits(nBits: number): Parser<number> {
+export function uBits(nBits: number): Parser<number> {
   return (reader) => reader.nextBits(nBits);
 }
 
-export const fixedPoint16: Parser<number> = transform(uint16, (v) => v / 256);
+export function sBits(nBits: number): Parser<number> {
+  return (reader) => reader.nextSBits(nBits);
+}
+
+export function fixed(parser: Parser<number>): Parser<number> {
+  return transform(parser, (v) => v / 0x10000);
+}
+
+export function fixed8(parser: Parser<number>): Parser<number> {
+  return transform(parser, (v) => v / 0x100);
+}
 
 export function encodedU32(reader: Reader): number {
   let result = reader.nextUInt8();

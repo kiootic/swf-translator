@@ -38,6 +38,10 @@ export class Reader {
     return (this.nextBits(nBits) << s) >> s;
   }
 
+  nextBitBool(): boolean {
+    return this.nextBits(1) === 1;
+  }
+
   nextUInt8(): number {
     this.flushBits();
     const value = this.buf.readUInt8(this.index);

@@ -5,7 +5,7 @@ import {
   uint8,
   uint32,
   Reader,
-  fixedPoint16,
+  fixed8,
   uint16,
 } from "../binary";
 import { Rect, rect } from "./structs";
@@ -32,7 +32,7 @@ interface SWFHeader2 {
 
 const parserHeader2 = object<SWFHeader2>(
   ["frameSize", rect],
-  ["frameRate", fixedPoint16],
+  ["frameRate", fixed8(uint16)],
   ["frameCount", uint16]
 );
 
