@@ -1,24 +1,31 @@
 import rimraf from "rimraf";
+import { Project } from "ts-morph";
 import mkdirp from "mkdirp";
 import { join, dirname } from "path";
 import { promises } from "fs";
 import { promisify } from "util";
+import { File } from "./file";
 
 export class OutputContext {
-  readonly files = new Map<string, Buffer>();
+  private readonly project = new Project();
+  private readonly files = new Map<string, File>();
 
-  addFile(content: Buffer, ...segments: string[]) {
-    this.files.set(join(...segments), content);
+  file(...segments: string[]): File {
+    const path = join(...segments);
+    const file = this.files.get(path) || new File(path, this.project);
+    this.files.set(path, file);
+    return file;
   }
 
   async writeTo(directory: string) {
     await mkdirp(directory);
     await promisify(rimraf)(directory + "/*");
 
-    for (const [relPath, content] of this.files) {
+    for (const [relPath, file] of this.files) {
       const path = join(directory, relPath);
       mkdirp.sync(dirname(path));
-      await promises.writeFile(path, content);
+
+      await promises.writeFile(path, file.finalize());
     }
   }
 }

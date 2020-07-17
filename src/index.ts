@@ -2,7 +2,7 @@ import consola from "consola";
 import { readFileSync } from "fs";
 import { SWFFile } from "./format/swf";
 import { UnknownTag } from "./format/tags/unknown";
-import { OutputContext } from "./output/context";
+import { OutputContext } from "./output";
 import { translate } from "./translation";
 
 export async function main(args: string[]) {

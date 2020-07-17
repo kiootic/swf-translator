@@ -14,6 +14,7 @@
     "mkdirp": "1.0.4",
     "rimraf": "3.0.2",
     "sharp": "0.25.4",
+    "ts-morph": "7.1.2",
     "typescript": "3.9.6"
   },
   "devDependencies": {

@@ -5,18 +5,41 @@ import { DefineBitsTag } from "../../format/tags/define-bits";
 import { DefineBitsJPEG2Tag } from "../../format/tags/define-bits-jpeg-2";
 import { DefineBitsJPEG3Tag } from "../../format/tags/define-bits-jpeg-3";
 import { DefineBitsLossless2Tag } from "../../format/tags/define-bits-loseless-2";
+import { File } from "../../output";
+import { VariableDeclarationKind } from "ts-morph";
 
 export async function translateImages(ctx: OutputContext, swf: SWFFile) {
   for (const tag of swf.characters.values()) {
+    let assetFile: File;
     if (tag instanceof DefineBitsTag) {
-      await translateBits(ctx, tag);
+      assetFile = await translateBits(ctx, tag);
     } else if (tag instanceof DefineBitsJPEG2Tag) {
-      await translateBitsJPEG2(ctx, tag);
+      assetFile = await translateBitsJPEG2(ctx, tag);
     } else if (tag instanceof DefineBitsJPEG3Tag) {
-      await translateBitsJPEG3(ctx, tag);
+      assetFile = await translateBitsJPEG3(ctx, tag);
     } else if (tag instanceof DefineBitsLossless2Tag) {
-      await translateBitsLossless2(ctx, tag);
+      assetFile = await translateBitsLossless2(ctx, tag);
+    } else {
+      continue;
     }
+
+    const charFile = ctx.file("characters", `${tag.characterId}.ts`);
+    const src = charFile.tsSource;
+    src.addImportDeclaration({
+      moduleSpecifier: charFile.relPathTo(assetFile),
+      defaultImport: "image",
+    });
+    const stmt = src.addVariableStatement({
+      declarationKind: VariableDeclarationKind.Const,
+      declarations: [
+        {
+          name: `character${tag.characterId}`,
+          type: "string",
+          initializer: "image",
+        },
+      ],
+    });
+    stmt.toggleModifier("export");
   }
 }
 
@@ -24,14 +47,20 @@ async function translateBits(ctx: OutputContext, tag: DefineBitsTag) {
   const image = sharp(tag.jpegData);
   const { format } = await image.metadata();
   const data = await image.toBuffer();
-  ctx.addFile(data, "assets", `${tag.characterId}.${format}`);
+
+  const file = ctx.file("assets", `${tag.characterId}.${format}`);
+  file.content = data;
+  return file;
 }
 
 async function translateBitsJPEG2(ctx: OutputContext, tag: DefineBitsJPEG2Tag) {
   const image = sharp(tag.imageData);
   const { format } = await image.metadata();
   const data = await image.toBuffer();
-  ctx.addFile(data, "assets", `${tag.characterId}.${format}`);
+
+  const file = ctx.file("assets", `${tag.characterId}.${format}`);
+  file.content = data;
+  return file;
 }
 
 async function translateBitsJPEG3(ctx: OutputContext, tag: DefineBitsJPEG3Tag) {
@@ -46,7 +75,10 @@ async function translateBitsJPEG3(ctx: OutputContext, tag: DefineBitsJPEG3Tag) {
   });
 
   const data = await image.png().toBuffer();
-  ctx.addFile(data, "assets", `${tag.characterId}.png`);
+
+  const file = ctx.file("assets", `${tag.characterId}.png`);
+  file.content = data;
+  return file;
 }
 
 async function translateBitsLossless2(
@@ -73,5 +105,7 @@ async function translateBitsLossless2(
     },
   });
   const data = await image.png().toBuffer();
-  ctx.addFile(data, "assets", `${tag.characterId}.png`);
+  const file = ctx.file("assets", `${tag.characterId}.png`);
+  file.content = data;
+  return file;
 }
