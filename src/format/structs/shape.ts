@@ -146,7 +146,7 @@ export type ShapeRecord =
 
 export interface ShapeRecordStyleChange {
   type: 0;
-  moveTo?: { deltaX: number; deltaY: number };
+  moveTo?: { x: number; y: number };
   fillStyle0?: number;
   fillStyle1?: number;
   lineStyle?: number;
@@ -196,8 +196,8 @@ export function shapeWithStyle(version: 1 | 2 | 3 | 4): Parser<ShapeWithStyle> {
         if (hasMoveTo) {
           const nBits = reader.nextBits(5);
           record.moveTo = {
-            deltaX: reader.nextSBits(nBits),
-            deltaY: reader.nextSBits(nBits),
+            x: reader.nextSBits(nBits),
+            y: reader.nextSBits(nBits),
           };
           hasChanges = true;
         }

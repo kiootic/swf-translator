@@ -29,17 +29,18 @@ export async function translateImages(ctx: OutputContext, swf: SWFFile) {
       moduleSpecifier: charFile.relPathTo(assetFile),
       defaultImport: "image",
     });
-    const stmt = src.addVariableStatement({
-      declarationKind: VariableDeclarationKind.Const,
-      declarations: [
-        {
-          name: `character${tag.characterId}`,
-          type: "string",
-          initializer: "image",
-        },
-      ],
-    });
-    stmt.toggleModifier("export");
+    src
+      .addVariableStatement({
+        declarationKind: VariableDeclarationKind.Const,
+        declarations: [
+          {
+            name: `character${tag.characterId}`,
+            type: "string",
+            initializer: "image",
+          },
+        ],
+      })
+      .setIsExported(true);
   }
 }
 
