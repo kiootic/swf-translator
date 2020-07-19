@@ -6,9 +6,13 @@ import { OutputContext } from "../../output";
 import { DefineShape2Tag } from "../../format/tags/define-shape-2";
 import { DefineShape3Tag } from "../../format/tags/define-shape-3";
 import { DefineShape4Tag } from "../../format/tags/define-shape-4";
-import { FillStyle, LineStyle } from "../../format/structs";
-import { ShapeCommand, ShapeCommandKind, Shape } from "../../models/shape";
-import { fillStyle, lineStyle } from "../../models/styles";
+import * as format from "../../format/structs";
+import { Shape, ShapeContour } from "../../models/shape";
+import { FillStyle, FillStyleKind } from "../../models/styles";
+import { fillStyle } from "../../models/styles";
+import { FillMesh } from "../../geom/fill-mesh";
+import { LineMesh } from "../../geom/line-mesh";
+import { color } from "../../models/primitives";
 
 export async function translateShapes(ctx: OutputContext, swf: SWFFile) {
   for (const tag of swf.characters.values()) {
@@ -109,16 +113,16 @@ function translateShape(ctx: OutputContext, tag: DefineShapeTag): Shape {
     }
   }
 
-  const commands: ShapeCommand[] = [];
+  const contours: ShapeContour[] = [];
   for (const group of groups) {
-    group.finalize(commands);
+    group.finalize(contours);
   }
-  return { commands };
+  return { contours };
 }
 
 interface ShapePath {
-  readonly fillStyle: FillStyle | null;
-  readonly lineStyle: LineStyle | null;
+  readonly fillStyle: format.FillStyle | null;
+  readonly lineStyle: format.LineStyle | null;
   readonly segments: ShapeSegment[];
 }
 
@@ -136,8 +140,8 @@ class ShapeGroup {
   lineStyleId = 0;
 
   constructor(
-    readonly fillStyles: FillStyle[],
-    readonly lineStyles: LineStyle[]
+    readonly fillStyles: format.FillStyle[],
+    readonly lineStyles: format.LineStyle[]
   ) {
     this.fillPaths = new Array(fillStyles.length);
     for (let i = 0; i < fillStyles.length; i++) {
@@ -173,87 +177,99 @@ class ShapeGroup {
     }
   }
 
-  finalize(commands: ShapeCommand[]) {
+  private simplifyPath(segments: ShapeSegment[]): ShapeSegment[][] {
+    let paths: ShapeSegment[][] = [];
+    for (const segment of segments) {
+      paths.push([segment]);
+    }
+
+    let worked: boolean;
+    do {
+      worked = false;
+      for (const path of paths) {
+        const toDelete = new Set<ShapeSegment[]>();
+        while (true) {
+          const { end } = path[path.length - 1];
+          const nextPath = paths.find(
+            (p) =>
+              p !== path &&
+              !toDelete.has(p) &&
+              p[0].start[0] === end[0] &&
+              p[0].start[1] === end[1]
+          );
+          if (!nextPath) {
+            break;
+          }
+          path.push(...nextPath);
+          toDelete.add(nextPath);
+        }
+
+        if (toDelete.size === 0) {
+          continue;
+        }
+
+        paths = paths.filter((p) => !toDelete.has(p));
+        worked = true;
+        break;
+      }
+    } while (worked);
+    return paths;
+  }
+
+  finalize(contours: ShapeContour[]) {
     const finalizePath = (path: ShapePath) => {
       if (path.segments.length === 0) {
         return;
       }
 
-      commands.push({
-        kind: ShapeCommandKind.Style,
-        fill: path.fillStyle && fillStyle(path.fillStyle),
-        line: path.lineStyle && lineStyle(path.lineStyle),
-      });
+      const pathContours = this.simplifyPath(path.segments);
 
-      let paths: ShapeSegment[][] = [];
-      for (const segment of path.segments) {
-        paths.push([segment]);
+      let mesh: FillMesh | LineMesh;
+      let fill: FillStyle;
+      if (path.fillStyle) {
+        mesh = new FillMesh();
+        fill = fillStyle(path.fillStyle);
+      } else if (path.lineStyle) {
+        mesh = new LineMesh();
+        mesh.lineStyle(
+          path.lineStyle.width,
+          path.lineStyle.startCapStyle,
+          path.lineStyle.endCapStyle,
+          path.lineStyle.joinStyle,
+          path.lineStyle.miterLimitFactor ?? 20,
+          path.lineStyle.noClose
+        );
+
+        if (typeof path.lineStyle.color === "object") {
+          fill = {
+            kind: FillStyleKind.SolidColor,
+            color: color(path.lineStyle.color),
+          };
+        } else {
+          fill = fillStyle(path.lineStyle.fillType!);
+        }
+      } else {
+        throw new Error("unexpected path styles");
       }
 
-      let worked: boolean;
-      do {
-        worked = false;
-        for (const path of paths) {
-          const toDelete = new Set<ShapeSegment[]>();
-          while (true) {
-            const { end } = path[path.length - 1];
-            const nextPath = paths.find(
-              (p) =>
-                p !== path &&
-                !toDelete.has(p) &&
-                p[0].start[0] === end[0] &&
-                p[0].start[1] === end[1]
-            );
-            if (!nextPath) {
-              break;
-            }
-            path.push(...nextPath);
-            toDelete.add(nextPath);
-          }
-
-          if (toDelete.size === 0) {
-            continue;
-          }
-
-          paths = paths.filter((p) => !toDelete.has(p));
-          worked = true;
-          break;
-        }
-      } while (worked);
-
-      let x: number | undefined, y: number | undefined;
-      for (const path of paths) {
-        if (x !== path[0].start[0] || y !== path[0].start[1]) {
-          commands.push({
-            kind: ShapeCommandKind.MoveTo,
-            x: path[0].start[0],
-            y: path[0].start[1],
-          });
-          x = path[0].start[0];
-          y = path[0].start[1];
-        }
-        for (const segment of path) {
+      for (const contour of pathContours) {
+        mesh.moveTo(contour[0].start[0], contour[0].start[1]);
+        for (const segment of contour) {
           if (segment.control) {
-            commands.push({
-              kind: ShapeCommandKind.CurveTo,
-              controlX: segment.control[0],
-              controlY: segment.control[1],
-              x: segment.end[0],
-              y: segment.end[1],
-            });
+            mesh.curveTo(
+              segment.control[0],
+              segment.control[1],
+              segment.end[0],
+              segment.end[1]
+            );
           } else {
-            commands.push({
-              kind: ShapeCommandKind.LineTo,
-              x: segment.end[0],
-              y: segment.end[1],
-            });
+            mesh.lineTo(segment.end[0], segment.end[1]);
           }
-          x = segment.end[0];
-          y = segment.end[1];
         }
       }
 
-      commands.push({ kind: ShapeCommandKind.EndPath });
+      const [vertices, indices] = mesh.triangulate();
+      contours.push({ fill, vertices, indices });
     };
     for (const path of this.fillPaths) {
       finalizePath(path);

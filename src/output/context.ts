@@ -19,13 +19,20 @@ export class OutputContext {
 
   async writeTo(directory: string) {
     await mkdirp(directory);
-    await promisify(rimraf)(directory + "/*");
+    // await promisify(rimraf)(directory + "/*");
 
     for (const [relPath, file] of this.files) {
       const path = join(directory, relPath);
       mkdirp.sync(dirname(path));
 
-      await promises.writeFile(path, file.finalize());
+      const content = file.finalize();
+      if (!content) {
+        continue;
+      }
+      const original = await promises.readFile(path);
+      if (!content.equals(original)) {
+        await promises.writeFile(path, content);
+      }
     }
   }
 }
