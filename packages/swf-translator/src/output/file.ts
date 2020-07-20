@@ -20,6 +20,7 @@ export class File {
 
   finalize(): Buffer | null {
     if (this.tsSourceFile) {
+      this.tsSourceFile.formatText();
       return Buffer.from(this.tsSourceFile.getFullText());
     }
     return this.content;

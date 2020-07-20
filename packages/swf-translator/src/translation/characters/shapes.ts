@@ -28,20 +28,30 @@ export async function translateShapes(ctx: OutputContext, swf: SWFFile) {
       continue;
     }
 
-    const charFile = ctx.file("characters", `${tag.characterId}.ts`);
-    const src = charFile.tsSource;
-    src
-      .addVariableStatement({
-        declarationKind: VariableDeclarationKind.Const,
-        declarations: [
-          {
-            name: `character${tag.characterId}`,
-            type: "unknown",
-            initializer: JSON5.stringify(shape, null, 4),
-          },
-        ],
-      })
-      .setIsExported(true);
+    const char = ctx.file("characters", `${tag.characterId}.ts`);
+    char.tsSource.addVariableStatement({
+      declarationKind: VariableDeclarationKind.Const,
+      declarations: [
+        {
+          name: `character`,
+          type: "lib._internal.characters.Shape",
+          initializer: JSON5.stringify(shape, null, 4),
+        },
+      ],
+    });
+    char.tsSource.addExportAssignment({
+      expression: "character",
+      isExportEquals: false,
+    });
+
+    const index = ctx.file("characters", `index.ts`);
+    index.tsSource.addImportDeclaration({
+      defaultImport: `character${tag.characterId}`,
+      moduleSpecifier: `./${tag.characterId}`,
+    });
+    index.tsSource.addStatements(
+      `library.registerShape(${tag.characterId}, character${tag.characterId})`
+    );
   }
 }
 

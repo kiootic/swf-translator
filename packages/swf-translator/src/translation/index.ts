@@ -1,9 +1,9 @@
 import { SWFFile } from "../format/swf";
 import { OutputContext } from "../output/context";
-import { translateImages } from "./characters/images";
-import { translateShapes } from "./characters/shapes";
+import { generateTemplateFiles } from "./templates";
+import { generateCharacters } from "./characters";
 
 export async function translate(ctx: OutputContext, swf: SWFFile) {
-  await translateImages(ctx, swf);
-  await translateShapes(ctx, swf);
+  await generateCharacters(ctx, swf);
+  generateTemplateFiles(ctx);
 }

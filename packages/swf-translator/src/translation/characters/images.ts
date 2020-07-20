@@ -23,24 +23,38 @@ export async function translateImages(ctx: OutputContext, swf: SWFFile) {
       continue;
     }
 
-    const charFile = ctx.file("characters", `${tag.characterId}.ts`);
-    const src = charFile.tsSource;
-    src.addImportDeclaration({
-      moduleSpecifier: charFile.relPathTo(assetFile),
-      defaultImport: "image",
+    const char = ctx.file("characters", `${tag.characterId}.ts`);
+    char.tsSource.addImportDeclaration({
+      defaultImport: "lib",
+      moduleSpecifier: "@swf/lib",
     });
-    src
-      .addVariableStatement({
-        declarationKind: VariableDeclarationKind.Const,
-        declarations: [
-          {
-            name: `character${tag.characterId}`,
-            type: "string",
-            initializer: "image",
-          },
-        ],
-      })
-      .setIsExported(true);
+    char.tsSource.addImportDeclaration({
+      moduleSpecifier: char.relPathTo(assetFile),
+      defaultImport: "path",
+    });
+    char.tsSource.addVariableStatement({
+      declarationKind: VariableDeclarationKind.Const,
+      declarations: [
+        {
+          name: `character`,
+          type: "lib._internal.characters.Image",
+          initializer: `{path}`,
+        },
+      ],
+    });
+    char.tsSource.addExportAssignment({
+      expression: "character",
+      isExportEquals: false,
+    });
+
+    const index = ctx.file("characters", `index.ts`);
+    index.tsSource.addImportDeclaration({
+      defaultImport: `character${tag.characterId}`,
+      moduleSpecifier: `./${tag.characterId}`,
+    });
+    index.tsSource.addStatements(
+      `library.registerImage(${tag.characterId}, character${tag.characterId})`
+    );
   }
 }
 
