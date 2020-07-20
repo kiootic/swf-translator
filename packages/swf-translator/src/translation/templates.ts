@@ -27,8 +27,14 @@ export const library = new lib._internal.Library()
 
   ctx.file("index.ts").content = fileContent(`
 
+import lib from "@swf/lib";
 import "./characters";
-export { library } from "./library";
+import { library as _library } from "./library";
 
+let instantiatedLibrary: Promise<lib._internal.InstantiatedLibrary> | undefined;
+
+export function library(): Promise<lib._internal.InstantiatedLibrary> {
+  return instantiatedLibrary ?? (instantiatedLibrary = _library.instantiate());
+}
 `);
 }

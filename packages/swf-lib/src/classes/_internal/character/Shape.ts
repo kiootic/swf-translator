@@ -4,7 +4,7 @@ export interface Shape {
   contours: ShapeContour[];
 }
 
-interface ShapeContour {
+export interface ShapeContour {
   fill: FillStyle;
   vertices: number[];
   indices: number[];
