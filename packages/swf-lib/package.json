@@ -1,0 +1,17 @@
+{
+  "name": "@swf/lib",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc --build",
+    "format": "prettier --write -l 'src/**/*.ts'"
+  },
+  "devDependencies": {
+    "prettier": "2.0.5",
+    "typescript": "3.9.6"
+  },
+  "dependencies": {
+    "pixi.js": "5.3.0"
+  }
+}
