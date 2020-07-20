@@ -2,7 +2,7 @@ import rimraf from "rimraf";
 import { Project } from "ts-morph";
 import mkdirp from "mkdirp";
 import { join, dirname } from "path";
-import { promises } from "fs";
+import { promises, existsSync } from "fs";
 import { promisify } from "util";
 import { File } from "./file";
 
@@ -19,7 +19,7 @@ export class OutputContext {
 
   async writeTo(directory: string) {
     await mkdirp(directory);
-    // await promisify(rimraf)(directory + "/*");
+    await promisify(rimraf)(directory + "/*");
 
     for (const [relPath, file] of this.files) {
       const path = join(directory, relPath);
@@ -29,10 +29,15 @@ export class OutputContext {
       if (!content) {
         continue;
       }
-      const original = await promises.readFile(path);
-      if (!content.equals(original)) {
-        await promises.writeFile(path, content);
+
+      if (existsSync(path)) {
+        const original = await promises.readFile(path);
+        if (content.equals(original)) {
+          continue;
+        }
       }
+
+      await promises.writeFile(path, content);
     }
   }
 }
