@@ -37,7 +37,7 @@ export async function translateImages(ctx: OutputContext, swf: SWFFile) {
       declarations: [
         {
           name: `character`,
-          type: "lib._internal.characters.Image",
+          type: "lib._internal.character.Image",
           initializer: `{path}`,
         },
       ],

@@ -1,5 +1,5 @@
-import { Image } from "./characters/Image";
-import { Shape } from "./characters/Shape";
+import { Image } from "./character/Image";
+import { Shape } from "./character/Shape";
 
 export class Library {
   private readonly images = new Map<number, Image>();

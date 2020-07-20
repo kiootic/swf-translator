@@ -1,3 +1,3 @@
-export * as characters from "./characters";
+export * as character from "./character";
 
 export * from "./Library";

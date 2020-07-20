@@ -34,7 +34,7 @@ export async function translateShapes(ctx: OutputContext, swf: SWFFile) {
       declarations: [
         {
           name: `character`,
-          type: "lib._internal.characters.Shape",
+          type: "lib._internal.character.Shape",
           initializer: JSON5.stringify(shape, null, 4),
         },
       ],
