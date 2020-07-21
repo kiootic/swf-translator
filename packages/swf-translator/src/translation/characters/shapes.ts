@@ -50,7 +50,7 @@ export async function translateShapes(ctx: OutputContext, swf: SWFFile) {
       moduleSpecifier: `./${tag.characterId}`,
     });
     index.tsSource.addStatements(
-      `library.registerShape(${tag.characterId}, character${tag.characterId})`
+      `builder.registerShape(${tag.characterId}, character${tag.characterId})`
     );
   }
 }

@@ -21,7 +21,7 @@ declare module "*.png" {
 
 import lib from "@swf/lib";
 
-export const library = new lib._internal.Library()
+export const builder = new lib._internal.AssetLibraryBuilder()
 
 `);
 
@@ -29,12 +29,12 @@ export const library = new lib._internal.Library()
 
 import lib from "@swf/lib";
 import "./characters";
-import { library as _library } from "./library";
+import { builder } from "./library";
 
-let instantiatedLibrary: Promise<lib._internal.InstantiatedLibrary> | undefined;
+let assetLibrary: Promise<lib._internal.AssetLibrary> | undefined;
 
-export function library(): Promise<lib._internal.InstantiatedLibrary> {
-  return instantiatedLibrary ?? (instantiatedLibrary = _library.instantiate());
+export function library(): Promise<lib._internal.AssetLibrary> {
+  return assetLibrary ?? (assetLibrary = builder.instantiate());
 }
 `);
 }

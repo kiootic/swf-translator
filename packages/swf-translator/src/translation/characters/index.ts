@@ -10,7 +10,7 @@ export async function generateCharacters(ctx: OutputContext, swf: SWFFile) {
     moduleSpecifier: "@swf/lib",
   });
   index.tsSource.addImportDeclaration({
-    namedImports: ["library"],
+    namedImports: ["builder"],
     moduleSpecifier: "../library",
   });
 

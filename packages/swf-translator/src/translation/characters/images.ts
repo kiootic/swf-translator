@@ -53,7 +53,7 @@ export async function translateImages(ctx: OutputContext, swf: SWFFile) {
       moduleSpecifier: `./${tag.characterId}`,
     });
     index.tsSource.addStatements(
-      `library.registerImage(${tag.characterId}, character${tag.characterId})`
+      `builder.registerImage(${tag.characterId}, character${tag.characterId})`
     );
   }
 }
