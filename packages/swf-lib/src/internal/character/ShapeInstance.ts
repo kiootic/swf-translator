@@ -9,6 +9,7 @@ import {
   Mesh,
   Container,
 } from "pixi.js";
+import type { AssetLibrary } from "../../classes/_internal/AssetLibrary";
 import { Shape, ShapeContour } from "../../classes/_internal/character/Shape";
 import { FillStyleKind } from "../../classes/_internal/character/styles";
 import { shaderColor, shaderGradient } from "./shaders";
@@ -66,7 +67,19 @@ interface MeshDef {
   shader: MeshMaterial;
 }
 
-function makeMesh(contour: ShapeContour): MeshDef {
+// https://github.com/ruffle-rs/ruffle/blob/09ca11f788ef5c5efa45a40d96e3cbe5be9e940b/render/common_tess/src/lib.rs#L344
+function convertMatrix(
+  mat: Matrix,
+  width: number,
+  height: number,
+  offset: number
+) {
+  mat.invert();
+  mat.scale(1 / width, 1 / height);
+  mat.translate(offset, offset);
+}
+
+function makeMesh(contour: ShapeContour, lib: AssetLibrary): MeshDef {
   const vertices = new Buffer(Float32Array.from(contour.vertices), true);
   const indices = new Buffer(Uint16Array.from(contour.indices), true);
 
@@ -75,24 +88,34 @@ function makeMesh(contour: ShapeContour): MeshDef {
   let color = 0xffffffff;
   let uniforms: unknown = {};
   switch (contour.fill.kind) {
-    case FillStyleKind.SolidColor:
+    case FillStyleKind.SolidColor: {
       color = contour.fill.color;
       break;
+    }
 
     case FillStyleKind.LinearGradient:
-    case FillStyleKind.RadicalGradient:
+    case FillStyleKind.RadicalGradient: {
       texture = makeGradientTexture(contour.fill.gradient, contour.fill.matrix);
       program = shaderGradient;
 
-      // https://github.com/ruffle-rs/ruffle/blob/09ca11f788ef5c5efa45a40d96e3cbe5be9e940b/render/common_tess/src/lib.rs#L344
       const mat = new Matrix();
       mat.fromArray(contour.fill.matrix);
-      mat.invert();
-      mat.scale(1 / 32768.0, 1 / 32768.0);
-      mat.translate(0.5, 0.5);
+      convertMatrix(mat, 32768, 32768, 0.5);
 
       uniforms = { uGradientType: contour.fill.kind, uTextureMatrix: mat };
       break;
+    }
+
+    case FillStyleKind.ClippedBitmap: {
+      texture = lib.resolveImage(contour.fill.characterId);
+
+      const mat = new Matrix();
+      mat.fromArray(contour.fill.matrix);
+      convertMatrix(mat, texture.width, texture.height, 0);
+
+      uniforms = { uTextureMatrix: mat };
+      break;
+    }
   }
 
   const geometry = new ShapeGeometry(vertices, indices);
@@ -104,8 +127,8 @@ function makeMesh(contour: ShapeContour): MeshDef {
 export class ShapeInstance {
   readonly meshes: MeshDef[];
 
-  constructor(def: Shape) {
-    this.meshes = def.contours.map((c) => makeMesh(c));
+  constructor(def: Shape, lib: AssetLibrary) {
+    this.meshes = def.contours.map((c) => makeMesh(c, lib));
   }
 
   applyTo(container: Container) {

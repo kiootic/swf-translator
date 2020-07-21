@@ -1,4 +1,4 @@
-import { Loader, LoaderResource } from "pixi.js";
+import { Loader, LoaderResource, Texture } from "pixi.js";
 import { Image as ImageCharacter } from "./character/Image";
 import { Shape as ShapeCharacter } from "./character/Shape";
 import { Shape } from "../flash/display/Shape";
@@ -7,6 +7,7 @@ import { ShapeInstance } from "../../internal/character/ShapeInstance";
 
 export interface AssetLibrary {
   resolveShape(id: number, shape: Shape): Shape;
+  resolveImage(id: number): Texture;
 }
 
 export class AssetLibraryBuilder {
@@ -34,7 +35,7 @@ export class AssetLibraryBuilder {
     await new Promise((resolve) => loader.load(() => resolve()));
 
     for (const [id, shape] of this.shapes) {
-      library.shapes.set(id, new ShapeInstance(shape));
+      library.shapes.set(id, new ShapeInstance(shape, library));
     }
 
     return library;
@@ -44,6 +45,15 @@ export class AssetLibraryBuilder {
 class InstantiatedLibrary implements AssetLibrary {
   readonly images = new Map<number, ImageInstance>();
   readonly shapes = new Map<number, ShapeInstance>();
+
+  resolveImage(id: number): Texture {
+    const instance = this.images.get(id);
+    if (!instance) {
+      throw new Error(`Image character #${id} not found`);
+    }
+
+    return instance.texture;
+  }
 
   resolveShape(id: number, shape: Shape): Shape {
     const instance = this.shapes.get(id);
