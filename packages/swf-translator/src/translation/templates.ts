@@ -36,5 +36,7 @@ let assetLibrary: Promise<lib._internal.AssetLibrary> | undefined;
 export function library(): Promise<lib._internal.AssetLibrary> {
   return assetLibrary ?? (assetLibrary = builder.instantiate());
 }
+
+export { properties } from "./properties";
 `);
 }
