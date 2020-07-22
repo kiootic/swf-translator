@@ -1,9 +1,11 @@
 import { Loader, LoaderResource, Texture } from "pixi.js";
 import { Image as ImageCharacter } from "./character/Image";
 import { Shape as ShapeCharacter } from "./character/Shape";
+import { Sprite as SpriteCharacter } from "./character/Sprite";
 import { Shape } from "../flash/display/Shape";
 import { ImageInstance } from "../../internal/character/ImageInstance";
 import { ShapeInstance } from "../../internal/character/ShapeInstance";
+import { SpriteInstance } from "../../internal/character/SpriteInstance";
 
 export interface AssetLibrary {
   resolveShape(id: number, shape: Shape): Shape;
@@ -13,6 +15,7 @@ export interface AssetLibrary {
 export class AssetLibraryBuilder {
   private readonly images = new Map<number, ImageCharacter>();
   private readonly shapes = new Map<number, ShapeCharacter>();
+  private readonly sprites = new Map<number, SpriteCharacter>();
 
   registerImage(id: number, char: ImageCharacter) {
     this.images.set(id, char);
@@ -20,6 +23,10 @@ export class AssetLibraryBuilder {
 
   registerShape(id: number, char: ShapeCharacter) {
     this.shapes.set(id, char);
+  }
+
+  registerSprite(id: number, char: SpriteCharacter) {
+    this.sprites.set(id, char);
   }
 
   async instantiate(): Promise<AssetLibrary> {
@@ -38,6 +45,10 @@ export class AssetLibraryBuilder {
       library.shapes.set(id, new ShapeInstance(shape, library));
     }
 
+    for (const [id, sprite] of this.sprites) {
+      library.sprites.set(id, new SpriteInstance(sprite, library));
+    }
+
     return library;
   }
 }
@@ -45,6 +56,7 @@ export class AssetLibraryBuilder {
 class InstantiatedLibrary implements AssetLibrary {
   readonly images = new Map<number, ImageInstance>();
   readonly shapes = new Map<number, ShapeInstance>();
+  readonly sprites = new Map<number, SpriteInstance>();
 
   resolveImage(id: number): Texture {
     const instance = this.images.get(id);

@@ -2,6 +2,7 @@ import { OutputContext } from "../../output";
 import { SWFFile } from "../../format/swf";
 import { translateImages } from "./images";
 import { translateShapes } from "./shapes";
+import { translateSprites } from "./sprite";
 
 export async function generateCharacters(ctx: OutputContext, swf: SWFFile) {
   const index = ctx.file("characters", "index.ts");
@@ -16,4 +17,5 @@ export async function generateCharacters(ctx: OutputContext, swf: SWFFile) {
 
   await translateImages(ctx, swf);
   await translateShapes(ctx, swf);
+  await translateSprites(ctx, swf);
 }

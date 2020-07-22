@@ -21,7 +21,7 @@ declare module "*.png" {
 
 import lib from "@swf/lib";
 
-export const builder = new lib._internal.AssetLibraryBuilder()
+export const builder = new lib._internal.AssetLibraryBuilder();
 
 `);
 

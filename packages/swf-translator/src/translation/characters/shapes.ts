@@ -29,6 +29,10 @@ export async function translateShapes(ctx: OutputContext, swf: SWFFile) {
     }
 
     const char = ctx.file("characters", `${tag.characterId}.ts`);
+    char.tsSource.addImportDeclaration({
+      defaultImport: "lib",
+      moduleSpecifier: "@swf/lib",
+    });
     char.tsSource.addVariableStatement({
       declarationKind: VariableDeclarationKind.Const,
       declarations: [

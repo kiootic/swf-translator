@@ -4,6 +4,7 @@ import {
   ARGB,
   Matrix as SWFMatrix,
   Rect as SWFRect,
+  ColorTransformWithAlpha,
 } from "../format/structs";
 
 export function color(color: RGB | RGBA | ARGB): number {
@@ -12,6 +13,30 @@ export function color(color: RGB | RGBA | ARGB): number {
     c = color.alpha * 0x1000000 + c;
   }
   return c;
+}
+
+export type ColorTransform = [
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number
+];
+
+export function colorTransform(m: ColorTransformWithAlpha): ColorTransform {
+  return [
+    m.redMul,
+    m.greenMul,
+    m.blueMul,
+    m.alphaMul,
+    m.redAdd,
+    m.greenAdd,
+    m.blueAdd,
+    m.alphaAdd,
+  ];
 }
 
 export type Matrix = [number, number, number, number, number, number];
