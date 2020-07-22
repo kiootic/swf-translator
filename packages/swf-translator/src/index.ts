@@ -4,6 +4,8 @@ import { SWFFile } from "./format/swf";
 import { UnknownTag } from "./format/tags/unknown";
 import { OutputContext } from "./output";
 import { translate } from "./translation";
+import { Tag } from "./format/tag";
+import { DefineSpriteTag } from "./format/tags/define-sprite";
 
 export async function main(args: string[]) {
   if (args.length !== 2) {
@@ -18,11 +20,17 @@ export async function main(args: string[]) {
   const buf = readFileSync(inFile);
   const file = new SWFFile(buf);
 
-  const unknownTags = new Set(
-    file.tags
-      .map((tag) => (tag instanceof UnknownTag ? tag.code : 0))
-      .filter((code) => code !== 0)
-  );
+  const unknownTags = new Set<number>();
+  const populateUnknownTags = (tags: Tag[]) => {
+    for (const tag of tags) {
+      if (tag instanceof UnknownTag) {
+        unknownTags.add(tag.code);
+      } else if (tag instanceof DefineSpriteTag) {
+        populateUnknownTags(tag.controlTags);
+      }
+    }
+  };
+  populateUnknownTags(file.tags);
   if (unknownTags.size > 0) {
     consola.warn(
       "unknown tags:",

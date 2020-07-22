@@ -10,7 +10,7 @@ import {
 } from "../binary";
 import { Rect, rect } from "./structs";
 import { Tag } from "./tag";
-import { parseTag } from "./tags";
+import { parseTags } from "./tags";
 
 interface SWFHeader1 {
   sig: string;
@@ -41,7 +41,7 @@ export class SWFFile {
   readonly frameSize: Rect;
   readonly frameRate: number;
   readonly frameCount: number;
-  readonly tags: Tag[] = [];
+  readonly tags: Tag[];
   readonly characters = new Map<number, Tag>();
 
   constructor(buf: Buffer) {
@@ -68,13 +68,11 @@ export class SWFFile {
     this.frameRate = header2.frameRate;
     this.frameCount = header2.frameCount;
 
-    let tag: Tag;
-    do {
-      tag = parseTag(bodyReader);
+    this.tags = parseTags(bodyReader);
+    for (const tag of this.tags) {
       if (tag.characterId) {
         this.characters.set(tag.characterId, tag);
       }
-      this.tags.push(tag);
-    } while (tag.code !== 0);
+    }
   }
 }

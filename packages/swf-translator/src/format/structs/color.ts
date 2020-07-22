@@ -1,4 +1,4 @@
-import { Parser, object, uint8, transform } from "../../binary";
+import { Parser, object, uint8, transform, Reader, sBits } from "../../binary";
 
 export interface RGB {
   red: number;
@@ -44,3 +44,48 @@ export const rgb2rgba: Parser<RGBA> = transform(rgb, (rgb) => ({
   ...rgb,
   alpha: 255,
 }));
+
+export interface ColorTransformWithAlpha {
+  redMul: number;
+  greenMul: number;
+  blueMul: number;
+  alphaMul: number;
+  redAdd: number;
+  greenAdd: number;
+  blueAdd: number;
+  alphaAdd: number;
+}
+
+export function colorTransformWithAlpha(
+  reader: Reader
+): ColorTransformWithAlpha {
+  const cxform: ColorTransformWithAlpha = {
+    redMul: 1,
+    greenMul: 1,
+    blueMul: 1,
+    alphaMul: 1,
+    redAdd: 0,
+    greenAdd: 0,
+    blueAdd: 0,
+    alphaAdd: 0,
+  };
+
+  const hasAdd = reader.nextBitBool();
+  const hasMul = reader.nextBitBool();
+  const nBits = reader.nextBits(4);
+  if (hasMul) {
+    cxform.redMul = sBits(nBits)(reader);
+    cxform.greenMul = sBits(nBits)(reader);
+    cxform.blueMul = sBits(nBits)(reader);
+    cxform.alphaMul = sBits(nBits)(reader);
+  }
+  if (hasAdd) {
+    cxform.redAdd = sBits(nBits)(reader);
+    cxform.greenAdd = sBits(nBits)(reader);
+    cxform.blueAdd = sBits(nBits)(reader);
+    cxform.alphaAdd = sBits(nBits)(reader);
+  }
+
+  reader.flushBits();
+  return cxform;
+}

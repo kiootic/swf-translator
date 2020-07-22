@@ -17,6 +17,11 @@ import { DefineShapeTag } from "./define-shape";
 import { DefineShape2Tag } from "./define-shape-2";
 import { DefineShape3Tag } from "./define-shape-3";
 import { DefineShape4Tag } from "./define-shape-4";
+import { DefineSpriteTag } from "./define-sprite";
+import { ShowFrameTag } from "./show-frame";
+import { PlaceObject2Tag } from "./place-object-2";
+import { PlaceObject3Tag } from "./place-object-3";
+import { RemoveObject2Tag } from "./remove-object-2";
 
 interface TagClass {
   new (reader: Reader): Tag;
@@ -42,8 +47,13 @@ registerTag(DefineShapeTag);
 registerTag(DefineShape2Tag);
 registerTag(DefineShape3Tag);
 registerTag(DefineShape4Tag);
+registerTag(DefineSpriteTag);
+registerTag(ShowFrameTag);
+registerTag(PlaceObject2Tag);
+registerTag(PlaceObject3Tag);
+registerTag(RemoveObject2Tag);
 
-export function parseTag(reader: Reader): Tag {
+function parseTag(reader: Reader): Tag {
   const codeAndLength = reader.nextUInt16();
   const code = codeAndLength >>> 6;
   let length = codeAndLength & 0x3f;
@@ -58,4 +68,14 @@ export function parseTag(reader: Reader): Tag {
   }
 
   return new TagClass(new Reader(body));
+}
+
+export function parseTags(reader: Reader): Tag[] {
+  const tags: Tag[] = [];
+  let tag: Tag;
+  do {
+    tag = parseTag(reader);
+    tags.push(tag);
+  } while (tag.code !== 0);
+  return tags;
 }
