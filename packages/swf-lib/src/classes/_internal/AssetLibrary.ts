@@ -2,7 +2,9 @@ import { Loader, LoaderResource, Texture } from "pixi.js";
 import { Image as ImageCharacter } from "./character/Image";
 import { Shape as ShapeCharacter } from "./character/Shape";
 import { Sprite as SpriteCharacter } from "./character/Sprite";
+import type { DisplayObject } from "../flash/display/DisplayObject";
 import { Shape } from "../flash/display/Shape";
+import { Sprite } from "../flash/display/Sprite";
 import { ImageInstance } from "../../internal/character/ImageInstance";
 import { ShapeInstance } from "../../internal/character/ShapeInstance";
 import { SpriteInstance } from "../../internal/character/SpriteInstance";
@@ -10,6 +12,8 @@ import { SpriteInstance } from "../../internal/character/SpriteInstance";
 export interface AssetLibrary {
   resolveShape(id: number, shape: Shape): Shape;
   resolveImage(id: number): Texture;
+
+  instantiateCharacter(id: number): DisplayObject;
 }
 
 export class AssetLibraryBuilder {
@@ -75,5 +79,23 @@ class InstantiatedLibrary implements AssetLibrary {
 
     instance.applyTo(shape.__pixi);
     return shape;
+  }
+
+  instantiateCharacter(id: number): DisplayObject {
+    const shapeInstance = this.shapes.get(id);
+    if (shapeInstance) {
+      const shape = new Shape();
+      shapeInstance.applyTo(shape.__pixi);
+      return shape;
+    }
+
+    const spriteInstance = this.sprites.get(id);
+    if (spriteInstance) {
+      const sprite = new Sprite();
+      spriteInstance.applyTo(sprite.__pixi, 1);
+      return sprite;
+    }
+
+    throw new Error(`Character ${id} not found`);
   }
 }

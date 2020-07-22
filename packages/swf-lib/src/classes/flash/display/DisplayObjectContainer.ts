@@ -1,7 +1,8 @@
 import { Container } from "pixi.js";
 import { DisplayObject } from "./DisplayObject";
+import { InteractiveObject } from "./InteractiveObject";
 
-export class DisplayObjectContainer extends DisplayObject {
+export class DisplayObjectContainer extends InteractiveObject {
   static readonly __pixiClass = Container;
 
   declare readonly __pixi: Container;

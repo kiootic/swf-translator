@@ -1,16 +1,23 @@
 import { DisplayObject as PIXIDisplayObject } from "pixi.js";
+import { Transform } from "../geom/Transform";
 
 export class DisplayObject {
   static readonly __pixiClass: new () => PIXIDisplayObject = PIXIDisplayObject;
 
   readonly __pixi: PIXIDisplayObject;
+  __depth: number = -1;
 
   constructor() {
     this.__pixi = new (this.constructor as typeof DisplayObject).__pixiClass();
     this.__pixi.__flash = this;
 
+    this.__pixi.interactive = false;
     this.__pixi.name = "";
+
+    this.transform = new Transform(this);
   }
+
+  readonly transform: Transform;
 
   get name(): string {
     return this.__pixi.name;
