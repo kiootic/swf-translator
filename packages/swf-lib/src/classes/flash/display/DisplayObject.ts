@@ -11,6 +11,7 @@ export class DisplayObject extends EventDispatcher {
   __character: CharacterInstance | null = null;
   __depth: number = -1;
   #stage: Stage | null = null;
+  #visible = true;
 
   constructor() {
     super();
@@ -46,10 +47,10 @@ export class DisplayObject extends EventDispatcher {
   }
 
   get visible(): boolean {
-    return this.__pixi.visible;
+    return this.#visible;
   }
   set visible(value: boolean) {
-    this.__pixi.visible = value;
+    this.#visible = value;
   }
 
   get x(): number {
