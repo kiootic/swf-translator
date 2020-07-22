@@ -14,6 +14,7 @@ import { Shape, ShapeContour } from "../../classes/_internal/character/Shape";
 import { FillStyleKind } from "../../classes/_internal/character/styles";
 import { shaderColor, shaderGradient } from "./shaders";
 import { makeGradientTexture } from "./gradient";
+import { CharacterInstance } from "./CharacterInstance";
 
 class ShapeGeometry extends Geometry {
   constructor(vertices: Buffer, indices: Buffer) {
@@ -124,10 +125,10 @@ function makeMesh(contour: ShapeContour, lib: AssetLibrary): MeshDef {
   return { geometry, shader };
 }
 
-export class ShapeInstance {
+export class ShapeInstance implements CharacterInstance {
   readonly meshes: MeshDef[];
 
-  constructor(def: Shape, lib: AssetLibrary) {
+  constructor(readonly id: number, def: Shape, lib: AssetLibrary) {
     this.meshes = def.contours.map((c) => makeMesh(c, lib));
   }
 

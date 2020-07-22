@@ -67,7 +67,10 @@ function translateSprite(sprite: DefineSpriteTag): Sprite {
     }
   }
 
-  return { frames: frames.filter((f) => f.actions.length > 0) };
+  return {
+    numFrames: sprite.frameCount,
+    frames: frames.filter((f) => f.actions.length > 0),
+  };
 }
 
 function handlePlaceObject(

@@ -3,12 +3,11 @@ import { Matrix } from "./Matrix";
 
 export class Transform {
   private __displayObject: DisplayObject;
-  private __matrix: Matrix;
+  private __matrix!: Matrix;
 
   constructor(displayObject: DisplayObject) {
     this.__displayObject = displayObject;
-    this.__matrix = new Matrix();
-    this.__displayObject.__pixi.transform.localTransform = this.__matrix.__pixi;
+    this.matrix = new Matrix();
   }
 
   get matrix(): Matrix {
@@ -17,6 +16,7 @@ export class Transform {
 
   set matrix(value: Matrix) {
     this.__matrix = value;
+    this.__displayObject.__pixi.transform.setFromMatrix(value.__pixi);
     this.__displayObject.__pixi.transform.localTransform = value.__pixi;
   }
 }

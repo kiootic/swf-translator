@@ -5,6 +5,7 @@ import { Sprite as SpriteCharacter } from "./character/Sprite";
 import type { DisplayObject } from "../flash/display/DisplayObject";
 import { Shape } from "../flash/display/Shape";
 import { Sprite } from "../flash/display/Sprite";
+import { MovieClip } from "../flash/display/MovieClip";
 import { ImageInstance } from "../../internal/character/ImageInstance";
 import { ShapeInstance } from "../../internal/character/ShapeInstance";
 import { SpriteInstance } from "../../internal/character/SpriteInstance";
@@ -39,18 +40,18 @@ export class AssetLibraryBuilder {
 
     for (const [id, image] of this.images) {
       loader.add(`image${id}`, image.path, {}, (res: LoaderResource) => {
-        library.images.set(id, new ImageInstance(res.texture));
+        library.images.set(id, new ImageInstance(id, res.texture));
       });
     }
 
     await new Promise((resolve) => loader.load(() => resolve()));
 
     for (const [id, shape] of this.shapes) {
-      library.shapes.set(id, new ShapeInstance(shape, library));
+      library.shapes.set(id, new ShapeInstance(id, shape, library));
     }
 
     for (const [id, sprite] of this.sprites) {
-      library.sprites.set(id, new SpriteInstance(sprite, library));
+      library.sprites.set(id, new SpriteInstance(id, sprite, library));
     }
 
     return library;
@@ -86,13 +87,16 @@ class InstantiatedLibrary implements AssetLibrary {
     if (shapeInstance) {
       const shape = new Shape();
       shapeInstance.applyTo(shape.__pixi);
+      shape.__character = shapeInstance;
       return shape;
     }
 
     const spriteInstance = this.sprites.get(id);
     if (spriteInstance) {
-      const sprite = new Sprite();
+      const sprite =
+        spriteInstance.numFrames > 1 ? new MovieClip() : new Sprite();
       spriteInstance.applyTo(sprite.__pixi, 1);
+      sprite.__character = spriteInstance;
       return sprite;
     }
 

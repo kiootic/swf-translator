@@ -1,15 +1,22 @@
-import { Container } from "pixi.js";
+import { Container, Matrix } from "pixi.js";
 import {
   Sprite as SpriteCharacter,
   SpriteFrame,
   FrameActionKind,
 } from "../../classes/_internal/character";
 import type { AssetLibrary } from "../../classes/_internal";
+import { CharacterInstance } from "./CharacterInstance";
 
-export class SpriteInstance {
+export class SpriteInstance implements CharacterInstance {
+  readonly numFrames: number;
   readonly frames: SpriteFrame[];
 
-  constructor(sprite: SpriteCharacter, readonly library: AssetLibrary) {
+  constructor(
+    readonly id: number,
+    sprite: SpriteCharacter,
+    readonly library: AssetLibrary
+  ) {
+    this.numFrames = sprite.numFrames;
     this.frames = sprite.frames;
   }
 
@@ -24,10 +31,17 @@ export class SpriteInstance {
       switch (action.kind) {
         case FrameActionKind.PlaceObject: {
           let insertIndex = sprite.children.findIndex(
-            (c) => c.__flash && c.__flash.__depth > action.depth
+            (c) => c.__flash && c.__flash.__depth >= action.depth
           );
           if (insertIndex === -1) {
             insertIndex = sprite.children.length;
+          }
+
+          if (sprite.children[insertIndex]?.__flash?.__depth === action.depth) {
+            const char = sprite.children[insertIndex].__flash?.__character;
+            if (char?.id === action.characterId) {
+              break;
+            }
           }
 
           const character = this.library.instantiateCharacter(
@@ -59,7 +73,9 @@ export class SpriteInstance {
           }
 
           if (action.matrix != null) {
-            dispObj.transform.matrix.__pixi.fromArray(action.matrix);
+            const mat = new Matrix();
+            mat.fromArray(action.matrix);
+            dispObj.__pixi.transform.setFromMatrix(mat);
           }
 
           // TODO: colorTransform

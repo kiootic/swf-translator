@@ -1,12 +1,16 @@
 import { DisplayObject as PIXIDisplayObject } from "pixi.js";
+import { CharacterInstance } from "../../../internal/character/CharacterInstance";
 import { EventDispatcher } from "../events/EventDispatcher";
 import { Transform } from "../geom/Transform";
+import type { Stage } from "./Stage";
 
 export class DisplayObject extends EventDispatcher {
   static readonly __pixiClass: new () => PIXIDisplayObject = PIXIDisplayObject;
 
   readonly __pixi: PIXIDisplayObject;
+  __character: CharacterInstance | null = null;
   __depth: number = -1;
+  #stage: Stage | null = null;
 
   constructor() {
     super();
@@ -20,6 +24,15 @@ export class DisplayObject extends EventDispatcher {
   }
 
   readonly transform: Transform;
+
+  get stage(): Stage | null {
+    return this.#stage;
+  }
+  set stage(value: Stage | null) {
+    this.#stage?.__displayList.delete(this);
+    this.#stage = value;
+    this.#stage?.__displayList.add(this);
+  }
 
   get name(): string {
     return this.__pixi.name;
@@ -76,4 +89,6 @@ export class DisplayObject extends EventDispatcher {
     return 0;
   }
   set height(value: number) {}
+
+  __onNewFrame() {}
 }
