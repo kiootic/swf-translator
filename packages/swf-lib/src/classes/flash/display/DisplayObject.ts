@@ -1,13 +1,15 @@
 import { DisplayObject as PIXIDisplayObject } from "pixi.js";
+import { EventDispatcher } from "../events/EventDispatcher";
 import { Transform } from "../geom/Transform";
 
-export class DisplayObject {
+export class DisplayObject extends EventDispatcher {
   static readonly __pixiClass: new () => PIXIDisplayObject = PIXIDisplayObject;
 
   readonly __pixi: PIXIDisplayObject;
   __depth: number = -1;
 
   constructor() {
+    super();
     this.__pixi = new (this.constructor as typeof DisplayObject).__pixiClass();
     this.__pixi.__flash = this;
 
