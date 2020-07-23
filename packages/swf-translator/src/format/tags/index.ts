@@ -22,6 +22,9 @@ import { ShowFrameTag } from "./show-frame";
 import { PlaceObject2Tag } from "./place-object-2";
 import { PlaceObject3Tag } from "./place-object-3";
 import { RemoveObject2Tag } from "./remove-object-2";
+import { DefineFont3Tag } from "./define-font-3";
+import { DefineTextTag } from "./define-text";
+import { DefineText2Tag } from "./define-text-2";
 
 interface TagClass {
   new (reader: Reader): Tag;
@@ -52,6 +55,9 @@ registerTag(ShowFrameTag);
 registerTag(PlaceObject2Tag);
 registerTag(PlaceObject3Tag);
 registerTag(RemoveObject2Tag);
+registerTag(DefineFont3Tag);
+registerTag(DefineTextTag);
+registerTag(DefineText2Tag);
 
 function parseTag(reader: Reader): Tag {
   const codeAndLength = reader.nextUInt16();

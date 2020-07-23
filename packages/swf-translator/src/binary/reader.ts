@@ -56,6 +56,13 @@ export class Reader {
     return value;
   }
 
+  nextInt16(): number {
+    this.flushBits();
+    const value = this.buf.readInt16LE(this.index);
+    this.index += 2;
+    return value;
+  }
+
   nextUInt32(): number {
     this.flushBits();
     const value = this.buf.readUInt32LE(this.index);

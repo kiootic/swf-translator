@@ -176,10 +176,12 @@ export interface ShapeWithStyle {
   shapeRecords: ShapeRecord[];
 }
 
-export function shapeWithStyle(version: 1 | 2 | 3 | 4): Parser<ShapeWithStyle> {
+export interface Shape {
+  shapeRecords: ShapeRecord[];
+}
+
+export function shape(version: 1 | 2 | 3 | 4): Parser<Shape> {
   return (reader) => {
-    const fillStyles = fillStyleArray(version)(reader);
-    const lineStyles = lineStyleArray(version)(reader);
     let numFillBits = reader.nextBits(4);
     let numLineBits = reader.nextBits(4);
     const shapeRecords: ShapeRecord[] = [];
@@ -260,6 +262,19 @@ export function shapeWithStyle(version: 1 | 2 | 3 | 4): Parser<ShapeWithStyle> {
         shapeRecords.push(record);
       }
     }
+
+    reader.flushBits();
+    return {
+      shapeRecords,
+    };
+  };
+}
+
+export function shapeWithStyle(version: 1 | 2 | 3 | 4): Parser<ShapeWithStyle> {
+  return (reader) => {
+    const fillStyles = fillStyleArray(version)(reader);
+    const lineStyles = lineStyleArray(version)(reader);
+    const { shapeRecords } = shape(version)(reader);
 
     return {
       fillStyles,
