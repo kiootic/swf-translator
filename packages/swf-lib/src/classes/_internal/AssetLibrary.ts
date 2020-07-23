@@ -2,6 +2,8 @@ import { Loader, LoaderResource, Texture } from "pixi.js";
 import { Image as ImageCharacter } from "./character/Image";
 import { Shape as ShapeCharacter } from "./character/Shape";
 import { Sprite as SpriteCharacter } from "./character/Sprite";
+import { Font as FontCharacter } from "./character/Font";
+import { StaticText as StaticTextCharacter } from "./character/StaticText";
 import type { DisplayObject } from "../flash/display/DisplayObject";
 import { Shape } from "../flash/display/Shape";
 import { Sprite } from "../flash/display/Sprite";
@@ -21,6 +23,8 @@ export class AssetLibraryBuilder {
   private readonly images = new Map<number, ImageCharacter>();
   private readonly shapes = new Map<number, ShapeCharacter>();
   private readonly sprites = new Map<number, SpriteCharacter>();
+  private readonly fonts = new Map<number, FontCharacter>();
+  private readonly staticTexts = new Map<number, StaticTextCharacter>();
 
   registerImage(id: number, char: ImageCharacter) {
     this.images.set(id, char);
@@ -32,6 +36,14 @@ export class AssetLibraryBuilder {
 
   registerSprite(id: number, char: SpriteCharacter) {
     this.sprites.set(id, char);
+  }
+
+  registerFont(id: number, char: FontCharacter) {
+    this.fonts.set(id, char);
+  }
+
+  registerStaticText(id: number, char: StaticTextCharacter) {
+    this.staticTexts.set(id, char);
   }
 
   async instantiate(): Promise<AssetLibrary> {
