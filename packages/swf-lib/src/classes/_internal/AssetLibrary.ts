@@ -8,13 +8,17 @@ import type { DisplayObject } from "../flash/display/DisplayObject";
 import { Shape } from "../flash/display/Shape";
 import { Sprite } from "../flash/display/Sprite";
 import { MovieClip } from "../flash/display/MovieClip";
+import { StaticText } from "../flash/text/StaticText";
 import { ImageInstance } from "../../internal/character/ImageInstance";
 import { ShapeInstance } from "../../internal/character/ShapeInstance";
 import { SpriteInstance } from "../../internal/character/SpriteInstance";
+import { FontInstance } from "../../internal/character/FontInstance";
+import { StaticTextInstance } from "../../internal/character/StaticTextInstance";
 
 export interface AssetLibrary {
   resolveShape(id: number, shape: Shape): Shape;
   resolveImage(id: number): Texture;
+  resolveFont(id: number): FontInstance;
 
   instantiateCharacter(id: number): DisplayObject;
 }
@@ -66,6 +70,17 @@ export class AssetLibraryBuilder {
       library.sprites.set(id, new SpriteInstance(id, sprite, library));
     }
 
+    for (const [id, font] of this.fonts) {
+      library.fonts.set(id, new FontInstance(id, font, library));
+    }
+
+    for (const [id, staticText] of this.staticTexts) {
+      library.staticTexts.set(
+        id,
+        new StaticTextInstance(id, staticText, library)
+      );
+    }
+
     return library;
   }
 }
@@ -74,6 +89,8 @@ class InstantiatedLibrary implements AssetLibrary {
   readonly images = new Map<number, ImageInstance>();
   readonly shapes = new Map<number, ShapeInstance>();
   readonly sprites = new Map<number, SpriteInstance>();
+  readonly fonts = new Map<number, FontInstance>();
+  readonly staticTexts = new Map<number, StaticTextInstance>();
 
   resolveImage(id: number): Texture {
     const instance = this.images.get(id);
@@ -94,6 +111,15 @@ class InstantiatedLibrary implements AssetLibrary {
     return shape;
   }
 
+  resolveFont(id: number): FontInstance {
+    const instance = this.fonts.get(id);
+    if (!instance) {
+      throw new Error(`Font character #${id} not found`);
+    }
+
+    return instance;
+  }
+
   instantiateCharacter(id: number): DisplayObject {
     const shapeInstance = this.shapes.get(id);
     if (shapeInstance) {
@@ -101,6 +127,14 @@ class InstantiatedLibrary implements AssetLibrary {
       shapeInstance.applyTo(shape.__pixi);
       shape.__character = shapeInstance;
       return shape;
+    }
+
+    const staticTextInstance = this.staticTexts.get(id);
+    if (staticTextInstance) {
+      const staticText = new StaticText();
+      staticTextInstance.applyTo(staticText.__pixi);
+      staticText.__character = staticTextInstance;
+      return staticText;
     }
 
     const spriteInstance = this.sprites.get(id);

@@ -64,15 +64,11 @@ function translateStaticText(tag: DefineTextTag | DefineText2Tag): StaticText {
     if (record.textColor != null) {
       textColor = color(record.textColor);
     }
-    if (record.xOffset != null) {
-      xOffset = record.xOffset;
-    }
-    if (record.yOffset != null) {
-      yOffset = record.yOffset;
-    }
     if (record.textHeight != null) {
       textHeight = record.textHeight;
     }
+    xOffset = record.xOffset ?? 0;
+    yOffset = record.yOffset ?? 0;
 
     for (const { index, advance } of record.glyphs) {
       glyphs.push({

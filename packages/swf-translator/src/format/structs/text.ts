@@ -53,6 +53,7 @@ export function textRecords(version: 1 | 2): Parser<TextRecord[]> {
       }
 
       records.push(record);
+      reader.flushBits();
     }
 
     reader.flushBits();
