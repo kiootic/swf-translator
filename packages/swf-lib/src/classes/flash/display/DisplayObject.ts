@@ -1,95 +1,126 @@
-import { DisplayObject as PIXIDisplayObject } from "pixi.js";
+import { autorun, observable, runInAction, createAtom } from "mobx";
 import { CharacterInstance } from "../../../internal/character/CharacterInstance";
+import { RenderObject } from "../../../internal/render/RenderObject";
+import { RenderContext } from "../../../internal/render/RenderContext";
+import type { DisplayObjectContainer } from "./DisplayObjectContainer";
 import { EventDispatcher } from "../events/EventDispatcher";
 import { Transform } from "../geom/Transform";
-import type { Stage } from "./Stage";
+import { Rectangle } from "../geom/Rectangle";
+import { mat2d } from "gl-matrix";
 
 export class DisplayObject extends EventDispatcher {
-  static readonly __pixiClass: new () => PIXIDisplayObject = PIXIDisplayObject;
-
-  readonly __pixi: PIXIDisplayObject;
   __character: CharacterInstance | null = null;
   __depth: number = -1;
-  #stage: Stage | null = null;
-  #visible = true;
+  readonly __renderObjects: RenderObject[] = [];
+
+  #bounds = new Rectangle();
+  #boundsAtom = createAtom("bounds");
 
   constructor() {
     super();
-    this.__pixi = new (this.constructor as typeof DisplayObject).__pixiClass();
-    this.__pixi.__flash = this;
-
-    this.__pixi.interactive = false;
-    this.__pixi.name = "";
-
-    this.transform = new Transform(this);
+    this.transform = new Transform();
   }
 
   readonly transform: Transform;
 
-  get stage(): Stage | null {
-    return this.#stage;
+  get __bounds() {
+    this.#boundsAtom.reportObserved();
+    return this.#bounds;
   }
-  set stage(value: Stage | null) {
-    this.#stage?.__displayList.delete(this);
-    this.#stage = value;
-    this.#stage?.__displayList.add(this);
-  }
-
-  get name(): string {
-    return this.__pixi.name;
-  }
-  set name(value: string) {
-    this.__pixi.name = value;
+  set __bounds(value) {
+    this.#bounds = value;
+    this.#boundsAtom.reportChanged();
   }
 
-  get parent(): DisplayObject | null {
-    return this.__pixi.parent?.__flash ?? null;
-  }
+  name: string = "";
 
-  get visible(): boolean {
-    return this.#visible;
-  }
-  set visible(value: boolean) {
-    this.#visible = value;
-  }
+  @observable
+  visible = true;
+
+  @observable
+  parent: DisplayObjectContainer | null = null;
 
   get x(): number {
-    return this.__pixi.x;
+    return this.transform.matrix.tx;
   }
   set x(value: number) {
-    this.__pixi.x = value;
+    runInAction(() => {
+      this.transform.matrix.tx = value;
+      this.transform.__reportMatrixUpdated();
+    });
   }
 
   get y(): number {
-    return this.__pixi.y;
+    return this.transform.matrix.ty;
   }
   set y(value: number) {
-    this.__pixi.y = value;
-  }
-
-  get scaleX(): number {
-    return this.__pixi.scale.x;
-  }
-  set scaleX(value: number) {
-    this.__pixi.scale.x = value;
-  }
-
-  get scaleY(): number {
-    return this.__pixi.scale.y;
-  }
-  set scaleY(value: number) {
-    this.__pixi.scale.y = value;
+    runInAction(() => {
+      this.transform.matrix.ty = value;
+      this.transform.__reportMatrixUpdated();
+    });
   }
 
   get width(): number {
-    return 0;
+    return this.__bounds.__rect[2] * this.transform.matrix.a;
   }
-  set width(value: number) {}
+  set width(value: number) {
+    runInAction(() => {
+      this.transform.matrix.a =
+        this.__bounds.__rect[2] === 0 ? 1 : value / this.__bounds.__rect[2];
+      this.transform.__reportMatrixUpdated();
+    });
+  }
 
   get height(): number {
-    return 0;
+    return this.__bounds.__rect[3] * this.transform.matrix.d;
   }
-  set height(value: number) {}
+  set height(value: number) {
+    runInAction(() => {
+      this.transform.matrix.d =
+        this.__bounds.__rect[3] === 0 ? 1 : value / this.__bounds.__rect[3];
+      this.transform.__reportMatrixUpdated();
+    });
+  }
 
   __onNewFrame() {}
+
+  __render(ctx: RenderContext) {
+    if (!this.visible) {
+      return;
+    }
+    this.__doRender(ctx);
+  }
+
+  __doRender(ctx: RenderContext) {
+    for (const o of this.__renderObjects) {
+      ctx.render(o);
+    }
+  }
+
+  __reportBoundsChanged() {
+    this.#boundsAtom.reportChanged();
+  }
+
+  #computeTransform = autorun(() => {
+    if (!this.parent) {
+      return;
+    }
+
+    const original = mat2d.copy(
+      mat2d.create(),
+      this.transform.__worldMatrix.__value
+    );
+    mat2d.copy(
+      this.transform.__worldMatrix.__value,
+      this.parent.transform.__worldMatrix.__value
+    );
+    mat2d.mul(
+      this.transform.__worldMatrix.__value,
+      this.transform.__worldMatrix.__value,
+      this.transform.matrix.__value
+    );
+    if (!mat2d.equals(original, this.transform.__worldMatrix.__value)) {
+      this.transform.__reportWorldMatrixUpdated();
+    }
+  });
 }

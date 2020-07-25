@@ -1,24 +1,17 @@
-import { Container } from "pixi.js";
+import { mat2d } from "gl-matrix";
+import { autorun } from "mobx";
 import { DisplayObject } from "./DisplayObject";
 import { ShapeInstance } from "../../../internal/character/ShapeInstance";
+import { RenderObjectSprite } from "../../../internal/render/objects/RenderObjectSprite";
 
 export class Shape extends DisplayObject {
-  static readonly __pixiClass = Container;
-
-  declare readonly __pixi: Container;
   declare __character: ShapeInstance | null;
+  declare __renderObjects: RenderObjectSprite[];
 
-  get width(): number {
-    return this.__pixi.width;
-  }
-  set width(value: number) {
-    this.__pixi.width = value;
-  }
-
-  get height(): number {
-    return this.__pixi.height;
-  }
-  set height(value: number) {
-    this.__pixi.height = value;
-  }
+  #updateRenderMatrix = autorun(() => {
+    const matrix = this.transform.__worldMatrix.__value;
+    for (const obj of this.__renderObjects) {
+      mat2d.copy(obj.renderMatrix, matrix);
+    }
+  });
 }

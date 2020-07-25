@@ -44,9 +44,14 @@ export function matrix(m: SWFMatrix): Matrix {
   return [
     m.scaleX,
     m.rotateSkew0,
-    m.translateX,
     m.rotateSkew1,
     m.scaleY,
+    m.translateX,
     m.translateY,
   ];
+}
+
+export type Rect = [number, number, number, number];
+export function rect(r: SWFRect): Rect {
+  return [r.xMin, r.yMin, r.xMax - r.xMin, r.yMax - r.yMin];
 }

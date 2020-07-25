@@ -1,4 +1,4 @@
-import { Container, Matrix } from "pixi.js";
+import { Sprite } from "../../classes/flash/display/Sprite";
 import {
   Sprite as SpriteCharacter,
   SpriteFrame,
@@ -6,6 +6,7 @@ import {
 } from "../../classes/_internal/character";
 import type { AssetLibrary } from "../../classes/_internal";
 import { CharacterInstance } from "./CharacterInstance";
+import { mat2d } from "gl-matrix";
 
 export class SpriteInstance implements CharacterInstance {
   readonly numFrames: number;
@@ -20,7 +21,7 @@ export class SpriteInstance implements CharacterInstance {
     this.frames = sprite.frames;
   }
 
-  applyTo(sprite: Container, frameNum: number) {
+  applyTo(sprite: Sprite, frameNum: number) {
     const frame = this.frames.find((f) => f.frame === frameNum);
     if (!frame) {
       return;
@@ -30,70 +31,64 @@ export class SpriteInstance implements CharacterInstance {
     for (const action of frame.actions) {
       switch (action.kind) {
         case FrameActionKind.PlaceObject: {
-          let insertIndex = sprite.children.findIndex(
-            (c) => c.__flash && c.__flash.__depth >= action.depth
+          let insertIndex = sprite.__children.findIndex(
+            (o) => o.__depth >= action.depth
           );
           if (insertIndex === -1) {
-            insertIndex = sprite.children.length;
-          }
-
-          if (sprite.children[insertIndex]?.__flash?.__depth === action.depth) {
-            const char = sprite.children[insertIndex].__flash?.__character;
+            insertIndex = sprite.__children.length;
+          } else if (sprite.__children[insertIndex].__depth === action.depth) {
+            const char = sprite.__children[insertIndex].__character;
             if (char?.id === action.characterId) {
               break;
             }
+            sprite.removeChildAt(insertIndex);
           }
 
           const character = this.library.instantiateCharacter(
             action.characterId
           );
           character.__depth = action.depth;
-          sprite.addChildAt(character.__pixi, insertIndex);
+          sprite.addChildAt(character, insertIndex);
           break;
         }
 
         case FrameActionKind.RemoveObject: {
-          const object = sprite.children.find(
-            (o) => o.__flash?.__depth === action.depth
+          const index = sprite.__children.findIndex(
+            (o) => o.__depth === action.depth
           );
-          if (!object) {
+          if (index < 0) {
             break;
           }
 
-          sprite.removeChild(object);
+          sprite.removeChildAt(index);
           break;
         }
 
         case FrameActionKind.UpdateObject: {
-          const dispObj = sprite.children.find(
-            (o) => o.__flash?.__depth === action.depth
-          )?.__flash;
-          if (!dispObj) {
+          const obj = sprite.__children.find((o) => o.__depth === action.depth);
+          if (!obj) {
             break;
           }
 
           if (action.matrix != null) {
-            const mat = new Matrix();
-            mat.fromArray(action.matrix);
-            dispObj.__pixi.transform.setFromMatrix(mat);
+            mat2d.copy(obj.transform.matrix.__value, action.matrix);
+            obj.transform.__reportMatrixUpdated();
           }
 
           // TODO: colorTransform
           // TODO: ratio
 
           if (action.name != null) {
-            dispObj.__pixi.name = action.name;
+            obj.name = action.name;
           }
 
           // TODO: filters
           // TODO: blendMode
 
-          if (action.cacheAsBitmap != null) {
-            dispObj.__pixi.cacheAsBitmap = action.cacheAsBitmap;
-          }
+          // TODO: cacheAsBitmap
 
           if (action.visible != null) {
-            dispObj.__pixi.visible = action.visible;
+            obj.visible = action.visible;
           }
 
           break;

@@ -1,46 +1,105 @@
-import { Matrix as PIXIMatrix, Mesh, Container } from "pixi.js";
+import { mat2d, vec2 } from "gl-matrix";
+import { StaticText as FlashStaticText } from "../../classes/flash/text/StaticText";
 import { CharacterInstance } from "./CharacterInstance";
 import { StaticText } from "../../classes/_internal/character";
-import { MeshDef } from "./shapes";
 import { AssetLibrary } from "../../classes/_internal";
-
-interface GlyphMesh {
-  matrix: PIXIMatrix;
-  mesh: MeshDef;
-}
+import { FillStyleKind } from "../../classes/_internal/character/styles";
+import {
+  SpriteDef,
+  RenderObjectSprite,
+} from "../render/objects/RenderObjectSprite";
+import { Texture } from "../render/Texture";
+import { rect } from "../math/rect";
 
 export class StaticTextInstance implements CharacterInstance {
-  readonly meshes: GlyphMesh[] = [];
+  readonly sprites: SpriteDef[] = [];
+  readonly bounds: rect;
 
   constructor(readonly id: number, text: StaticText, lib: AssetLibrary) {
-    const matrix = new PIXIMatrix();
-    matrix.fromArray(text.matrix);
+    this.bounds = text.bounds;
+
+    const matrix = mat2d.fromValues(...text.matrix);
+    interface GlyphInstance {
+      matrix: mat2d;
+      bounds: rect;
+      vertices: Float32Array;
+    }
+
+    let color = 0xfffffff;
+    let numVertices = 0;
+    const instances: GlyphInstance[] = [];
+    const flushInstances = () => {
+      if (instances.length === 0) {
+        return;
+      }
+
+      const vertices = new Float32Array(numVertices);
+      const bounds = rect.create();
+      let i = 0;
+      const v = vec2.create();
+      for (const inst of instances) {
+        const { vertices: glyphVertices, matrix, bounds: glyphBounds } = inst;
+        for (let j = 0; j < glyphVertices.length / 2; j++) {
+          vec2.set(v, glyphVertices[j * 2 + 0], glyphVertices[j * 2 + 1]);
+          vec2.transformMat2d(v, v, matrix);
+          vertices[i * 2 + 0] = v[0];
+          vertices[i * 2 + 1] = v[1];
+          i++;
+        }
+        rect.union(bounds, bounds, glyphBounds);
+      }
+
+      const def: SpriteDef = {
+        vertices,
+        uvMatrix: mat2d.identity(mat2d.create()),
+        texture: Texture.WHITE,
+        tint: color,
+        fillMode: FillStyleKind.SolidColor,
+        bounds,
+      };
+      this.sprites.push(def);
+      instances.length = 0;
+      numVertices = 0;
+    };
 
     for (const glyph of text.glyphs) {
       const font = lib.resolveFont(glyph.fontId);
-      const meshes = font.glyphMeshes[glyph.index];
+      const sprite = font.glyphSprites[glyph.index];
 
-      const glyphMatrix = new PIXIMatrix();
-      glyphMatrix.scale(glyph.size / 1024 / 20, glyph.size / 1024 / 20);
-      glyphMatrix.translate(glyph.x, glyph.y);
-      glyphMatrix.prepend(matrix);
-
-      for (const mesh of meshes) {
-        const m: MeshDef = {
-          geometry: mesh.geometry,
-          shader: mesh.shader.clone(glyph.color),
-        };
-        this.meshes.push({ matrix: glyphMatrix, mesh: m });
+      if (
+        glyph.color !== color ||
+        numVertices + sprite.vertices.length > 0x10000
+      ) {
+        flushInstances();
+        color = glyph.color;
       }
+
+      const glyphMatrix = mat2d.create();
+      mat2d.translate(glyphMatrix, matrix, [glyph.x, glyph.y]);
+      mat2d.scale(glyphMatrix, glyphMatrix, [
+        glyph.size / 1024 / 20,
+        glyph.size / 1024 / 20,
+      ]);
+
+      const bounds = rect.copy(rect.create(), sprite.bounds);
+      rect.apply(bounds, bounds, glyphMatrix);
+
+      instances.push({
+        vertices: sprite.vertices,
+        bounds,
+        matrix: glyphMatrix,
+      });
+      numVertices += sprite.vertices.length;
     }
+
+    flushInstances();
   }
 
-  applyTo(container: Container) {
-    container.removeChildren();
-    for (const m of this.meshes) {
-      const mesh = new Mesh(m.mesh.geometry, m.mesh.shader);
-      mesh.transform.setFromMatrix(m.matrix);
-      container.addChild(mesh);
+  applyTo(staticText: FlashStaticText) {
+    for (const s of this.sprites) {
+      staticText.__renderObjects.push(new RenderObjectSprite(s));
     }
+    rect.copy(staticText.__bounds.__rect, this.bounds);
+    staticText.__reportBoundsChanged();
   }
 }

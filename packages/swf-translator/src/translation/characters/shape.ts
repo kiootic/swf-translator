@@ -7,7 +7,7 @@ import { Shape, ShapeContour } from "../../models/shape";
 import { FillMesh } from "../../geom/fill-mesh";
 import { LineMesh } from "../../geom/line-mesh";
 import { FillStyle, fillStyle, FillStyleKind } from "../../models/styles";
-import { color } from "../../models/primitives";
+import { color, Rect } from "../../models/primitives";
 
 // ref: https://github.com/open-flash/swf-renderer/blob/master/ts/src/lib/shape/decode-swf-shape.ts
 //      https://github.com/mozilla/shumway/blob/16451d8836fa85f4b16eeda8b4bda2fa9e2b22b0/src/swf/parser/shape.ts
@@ -79,7 +79,24 @@ export function translateShape(shapes: SWFShapeWithStyle): Shape {
   for (const group of groups) {
     group.finalize(contours);
   }
-  return { contours };
+
+  let minX = 0,
+    minY = 0,
+    maxX = 0,
+    maxY = 0;
+  for (const c of contours) {
+    for (let i = 0; i < c.vertices.length / 2; i++) {
+      const x = c.vertices[i * 2 + 0];
+      const y = c.vertices[i * 2 + 1];
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+    }
+  }
+  const bounds: Rect = [minX, minY, maxX - minX, maxY - minY];
+
+  return { contours, bounds };
 }
 
 interface ShapePath {

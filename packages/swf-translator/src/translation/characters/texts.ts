@@ -5,7 +5,7 @@ import { OutputContext } from "../../output";
 import { StaticText, TextGlyph } from "../../models/text";
 import { DefineTextTag } from "../../format/tags/define-text";
 import { DefineText2Tag } from "../../format/tags/define-text-2";
-import { color, matrix } from "../../models/primitives";
+import { color, matrix, rect } from "../../models/primitives";
 
 export async function translateTexts(ctx: OutputContext, swf: SWFFile) {
   for (const tag of swf.characters.values()) {
@@ -83,5 +83,9 @@ function translateStaticText(tag: DefineTextTag | DefineText2Tag): StaticText {
     }
   }
 
-  return { matrix: matrix(tag.textMatrix), glyphs };
+  return {
+    matrix: matrix(tag.textMatrix),
+    glyphs,
+    bounds: rect(tag.textBounds),
+  };
 }

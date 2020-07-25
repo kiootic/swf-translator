@@ -1,7 +1,9 @@
+import { Rect } from "./primitives";
 import { FillStyle } from "./styles";
 
 export interface Shape {
-  readonly contours: ShapeContour[];
+  contours: ShapeContour[];
+  bounds: Rect;
 }
 
 export interface ShapeContour {

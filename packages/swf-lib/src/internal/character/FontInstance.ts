@@ -1,14 +1,18 @@
 import { CharacterInstance } from "./CharacterInstance";
 import { Font } from "../../classes/_internal/character";
 import type { AssetLibrary } from "../../classes/_internal";
-import { makeMesh, MeshDef } from "./shapes";
+import { makeShapeRenderObject, joinSpriteShapes } from "./shapes";
+import { SpriteDef } from "../render/objects/RenderObjectSprite";
 
 export class FontInstance implements CharacterInstance {
-  readonly glyphMeshes: MeshDef[][];
+  readonly glyphSprites: SpriteDef[];
 
   constructor(readonly id: number, readonly font: Font, lib: AssetLibrary) {
-    this.glyphMeshes = font.glyphs.map((glyph) =>
-      glyph.shape.contours.map((c) => makeMesh(c, lib))
-    );
+    this.glyphSprites = font.glyphs.map((glyph) => {
+      const sprites = glyph.shape.contours.map((c) =>
+        makeShapeRenderObject(c, lib)
+      );
+      return joinSpriteShapes(sprites);
+    });
   }
 }

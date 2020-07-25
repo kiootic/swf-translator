@@ -1,4 +1,3 @@
-import { Loader, LoaderResource, Texture } from "pixi.js";
 import { Image as ImageCharacter } from "./character/Image";
 import { Shape as ShapeCharacter } from "./character/Shape";
 import { Sprite as SpriteCharacter } from "./character/Sprite";
@@ -14,9 +13,9 @@ import { ShapeInstance } from "../../internal/character/ShapeInstance";
 import { SpriteInstance } from "../../internal/character/SpriteInstance";
 import { FontInstance } from "../../internal/character/FontInstance";
 import { StaticTextInstance } from "../../internal/character/StaticTextInstance";
+import { Texture } from "../../internal/render/Texture";
 
 export interface AssetLibrary {
-  resolveShape(id: number, shape: Shape): Shape;
   resolveImage(id: number): Texture;
   resolveFont(id: number): FontInstance;
 
@@ -52,15 +51,13 @@ export class AssetLibraryBuilder {
 
   async instantiate(): Promise<AssetLibrary> {
     const library = new InstantiatedLibrary();
-    const loader = new Loader();
 
-    for (const [id, image] of this.images) {
-      loader.add(`image${id}`, image.path, {}, (res: LoaderResource) => {
-        library.images.set(id, new ImageInstance(id, res.texture));
-      });
-    }
-
-    await new Promise((resolve) => loader.load(() => resolve()));
+    await Promise.all(
+      [...this.images.entries()].map(async ([id, image]) => {
+        const tex = await Texture.load(image.path);
+        library.images.set(id, new ImageInstance(id, tex));
+      })
+    );
 
     for (const [id, shape] of this.shapes) {
       library.shapes.set(id, new ShapeInstance(id, shape, library));
@@ -101,16 +98,6 @@ class InstantiatedLibrary implements AssetLibrary {
     return instance.texture;
   }
 
-  resolveShape(id: number, shape: Shape): Shape {
-    const instance = this.shapes.get(id);
-    if (!instance) {
-      throw new Error(`Shape character #${id} not found`);
-    }
-
-    instance.applyTo(shape.__pixi);
-    return shape;
-  }
-
   resolveFont(id: number): FontInstance {
     const instance = this.fonts.get(id);
     if (!instance) {
@@ -124,7 +111,7 @@ class InstantiatedLibrary implements AssetLibrary {
     const shapeInstance = this.shapes.get(id);
     if (shapeInstance) {
       const shape = new Shape();
-      shapeInstance.applyTo(shape.__pixi);
+      shapeInstance.applyTo(shape);
       shape.__character = shapeInstance;
       return shape;
     }
@@ -132,7 +119,7 @@ class InstantiatedLibrary implements AssetLibrary {
     const staticTextInstance = this.staticTexts.get(id);
     if (staticTextInstance) {
       const staticText = new StaticText();
-      staticTextInstance.applyTo(staticText.__pixi);
+      staticTextInstance.applyTo(staticText);
       staticText.__character = staticTextInstance;
       return staticText;
     }
@@ -141,7 +128,7 @@ class InstantiatedLibrary implements AssetLibrary {
     if (spriteInstance) {
       const sprite =
         spriteInstance.numFrames > 1 ? new MovieClip() : new Sprite();
-      spriteInstance.applyTo(sprite.__pixi, 1);
+      spriteInstance.applyTo(sprite, 1);
       sprite.__character = spriteInstance;
       return sprite;
     }

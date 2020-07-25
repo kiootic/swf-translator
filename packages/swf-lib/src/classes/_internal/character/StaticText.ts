@@ -1,7 +1,8 @@
-import { Matrix } from "./primitives";
+import { Matrix, Rect } from "./primitives";
 
 export interface StaticText {
   matrix: Matrix;
+  bounds: Rect;
   glyphs: TextGlyph[];
 }
 

@@ -1,5 +1,5 @@
 import { Shape } from "./shape";
-import { Matrix } from "./primitives";
+import { Matrix, Rect } from "./primitives";
 
 export interface Font {
   name: string;
@@ -21,6 +21,7 @@ export interface FontLayout {
 
 export interface StaticText {
   matrix: Matrix;
+  bounds: Rect;
   glyphs: TextGlyph[];
 }
 

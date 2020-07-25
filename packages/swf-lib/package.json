@@ -12,6 +12,7 @@
     "typescript": "3.9.6"
   },
   "dependencies": {
-    "pixi.js": "5.3.0"
+    "gl-matrix": "3.3.0",
+    "mobx": "5.15.4"
   }
 }

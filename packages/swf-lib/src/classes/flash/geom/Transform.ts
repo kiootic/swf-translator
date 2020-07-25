@@ -1,22 +1,35 @@
-import type { DisplayObject } from "../display/DisplayObject";
+import { createAtom } from "mobx";
 import { Matrix } from "./Matrix";
 
 export class Transform {
-  private __displayObject: DisplayObject;
-  private __matrix!: Matrix;
+  #matrix = new Matrix();
+  #matrixAtom = createAtom("matrix");
+  #worldMatrix = new Matrix();
+  #worldMatrixAtom = createAtom("worldMatrix");
 
-  constructor(displayObject: DisplayObject) {
-    this.__displayObject = displayObject;
-    this.matrix = new Matrix();
+  get matrix() {
+    this.#matrixAtom.reportObserved();
+    return this.#matrix;
+  }
+  set matrix(value) {
+    this.#matrix = value;
+    this.#matrixAtom.reportChanged();
   }
 
-  get matrix(): Matrix {
-    return this.__matrix;
+  get __worldMatrix() {
+    this.#worldMatrixAtom.reportObserved();
+    return this.#worldMatrix;
+  }
+  set __worldMatrix(value) {
+    this.#worldMatrix = value;
+    this.#worldMatrixAtom.reportChanged();
   }
 
-  set matrix(value: Matrix) {
-    this.__matrix = value;
-    this.__displayObject.__pixi.transform.setFromMatrix(value.__pixi);
-    this.__displayObject.__pixi.transform.localTransform = value.__pixi;
+  __reportMatrixUpdated() {
+    this.#matrixAtom.reportChanged();
+  }
+
+  __reportWorldMatrixUpdated() {
+    this.#worldMatrixAtom.reportChanged();
   }
 }

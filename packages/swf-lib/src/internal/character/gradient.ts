@@ -1,8 +1,6 @@
-import { Texture, TextureMatrix, Matrix as PIXIMatrix } from "pixi.js";
-import { Matrix } from "../../classes/_internal/character/primitives";
 import { Gradient } from "../../classes/_internal/character/styles";
 
-export function makeGradientTexture(gradient: Gradient, matrix: Matrix) {
+export function makeGradientTexture(gradient: Gradient): HTMLCanvasElement {
   const canvas = document.createElement("canvas");
   canvas.width = 256;
   canvas.height = 256;
@@ -21,5 +19,5 @@ export function makeGradientTexture(gradient: Gradient, matrix: Matrix) {
   ctx.fillStyle = lg;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  return Texture.from(canvas);
+  return canvas;
 }
