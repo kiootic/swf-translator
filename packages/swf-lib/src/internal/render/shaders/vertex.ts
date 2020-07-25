@@ -3,12 +3,14 @@ import { Shader } from "../Shader";
 export const vertBasic = Shader.vertex(
   `
 attribute vec4 aVertex;
-attribute vec4 aColor;
+attribute vec4 aColorMul;
+attribute vec4 aColorAdd;
 attribute float aMode;
 uniform mat3 uProjectionMatrix;
 
 varying vec2 vTextureCoords;
-varying vec4 vColor;
+varying vec4 vColorMul;
+varying vec4 vColorAdd;
 varying float vMode;
 
 void main(void) {
@@ -17,13 +19,15 @@ void main(void) {
     gl_Position = vec4((uProjectionMatrix * vec3(pos, 1.0)).xy, 0.0, 1.0);
 
     vTextureCoords = uv;
-    vColor = aColor.bgra;
+    vColorMul = aColorMul;
+    vColorAdd = aColorAdd;
     vMode = aMode;
 }
 `,
   {
     aVertex: { type: "float", components: 4 },
-    aColor: { type: "byte", components: 4, normalized: true },
+    aColorMul: { type: "float", components: 4 },
+    aColorAdd: { type: "float", components: 4 },
     aMode: { type: "byte", components: 1 },
   },
   {

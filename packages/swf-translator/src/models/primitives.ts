@@ -28,10 +28,10 @@ export type ColorTransform = [
 
 export function colorTransform(m: ColorTransformWithAlpha): ColorTransform {
   return [
-    m.redMul,
-    m.greenMul,
-    m.blueMul,
-    m.alphaMul,
+    m.redMul / 256,
+    m.greenMul / 256,
+    m.blueMul / 256,
+    m.alphaMul / 256,
     m.redAdd,
     m.greenAdd,
     m.blueAdd,

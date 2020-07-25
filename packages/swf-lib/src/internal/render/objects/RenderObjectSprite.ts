@@ -1,4 +1,4 @@
-import { mat2d, mat3, vec2 } from "gl-matrix";
+import { mat2d, mat3, vec2, vec4 } from "gl-matrix";
 import { rect } from "../../math/rect";
 import { programSprite } from "../shaders";
 import { RenderObjectProgram, RenderObject } from "../RenderObject";
@@ -10,7 +10,7 @@ export interface SpriteDef {
   readonly vertices: Float32Array;
   readonly uvMatrix: mat2d;
   readonly texture: Texture;
-  readonly tint: number;
+  readonly color: vec4 | null;
   readonly fillMode: number;
   readonly bounds: rect;
 }
@@ -19,6 +19,8 @@ export class RenderObjectSprite implements RenderObject {
   readonly program = RenderObjectSpriteProgram.instance;
 
   readonly renderMatrix = mat2d.identity(mat2d.create());
+  readonly colorMul = vec4.fromValues(1, 1, 1, 1);
+  readonly colorAdd = vec4.fromValues(0, 0, 0, 0);
 
   constructor(readonly def: SpriteDef) {}
 }
@@ -33,7 +35,8 @@ class RenderObjectSpriteProgram
   private readonly textures: Texture[] = [];
   private readonly texIDs = new Uint8Array(8);
   private readonly vertices = new Buffer(new Float32Array(batchVertexSize * 4));
-  private readonly colors = new Buffer(new Uint32Array(batchVertexSize));
+  private readonly colorMul = new Buffer(new Float32Array(batchVertexSize * 4));
+  private readonly colorAdd = new Buffer(new Float32Array(batchVertexSize * 4));
   private readonly modes = new Buffer(new Uint8Array(batchVertexSize));
 
   private constructor() {}
@@ -50,7 +53,12 @@ class RenderObjectSpriteProgram
   ): void {
     this.reset();
 
-    const v = vec2.create();
+    const vertices = this.vertices.data;
+    const colorAdd = this.colorAdd.data;
+    const colorMul = this.colorMul.data;
+
+    const cMul = vec4.create();
+    const cAdd = vec4.create();
     const bounds = rect.create();
     for (const o of objects) {
       rect.apply(bounds, o.def.bounds, o.renderMatrix);
@@ -76,24 +84,45 @@ class RenderObjectSpriteProgram
       const renderMatrix = o.renderMatrix;
       const uvMatrix = o.def.uvMatrix;
 
-      let i = this.numVertex;
-      for (let j = 0; j < numVertex; j++) {
-        const x = o.def.vertices[j * 2 + 0];
-        const y = o.def.vertices[j * 2 + 1];
-
-        this.vertices.data[i * 4 + 0] =
-          renderMatrix[0] * x + renderMatrix[2] * y + renderMatrix[4];
-        this.vertices.data[i * 4 + 1] =
-          renderMatrix[1] * x + renderMatrix[3] * y + renderMatrix[5];
-        this.vertices.data[i * 4 + 2] =
-          uvMatrix[0] * x + uvMatrix[2] * y + uvMatrix[4];
-        this.vertices.data[i * 4 + 3] =
-          uvMatrix[1] * x + uvMatrix[3] * y + uvMatrix[5];
-        i++;
+      if (o.def.color) {
+        vec4.zero(cMul);
+        vec4.mul(cAdd, o.def.color, o.colorMul);
+        vec4.add(cAdd, cAdd, o.colorAdd);
+      } else {
+        vec4.copy(cMul, o.colorMul);
+        vec4.copy(cAdd, o.colorAdd);
       }
-      this.colors.data.fill(o.def.tint, this.numVertex, i);
-      this.modes.data.fill(mode, this.numVertex, i);
-      this.numVertex = i;
+
+      const base = this.numVertex;
+      const oVertices = o.def.vertices;
+      let j = base * 4;
+      for (let i = 0; i < numVertex; i++) {
+        const x = oVertices[i * 2 + 0];
+        const y = oVertices[i * 2 + 1];
+
+        vertices[j + 0] =
+          renderMatrix[0] * x + renderMatrix[2] * y + renderMatrix[4];
+        vertices[j + 1] =
+          renderMatrix[1] * x + renderMatrix[3] * y + renderMatrix[5];
+        vertices[j + 2] = uvMatrix[0] * x + uvMatrix[2] * y + uvMatrix[4];
+        vertices[j + 3] = uvMatrix[1] * x + uvMatrix[3] * y + uvMatrix[5];
+
+        colorMul[j + 0] = cMul[0];
+        colorMul[j + 1] = cMul[1];
+        colorMul[j + 2] = cMul[2];
+        colorMul[j + 3] = cMul[3];
+
+        colorAdd[j + 0] = cAdd[0];
+        colorAdd[j + 1] = cAdd[1];
+        colorAdd[j + 2] = cAdd[2];
+        colorAdd[j + 3] = cAdd[3];
+
+        j += 4;
+      }
+
+      this.modes.data.fill(mode, base, base + numVertex);
+
+      this.numVertex += numVertex;
     }
 
     this.flushBatch(gl, screen.matrix);
@@ -105,7 +134,8 @@ class RenderObjectSpriteProgram
     }
 
     this.vertices.markDirty(this.numVertex * 4);
-    this.colors.markDirty(this.numVertex);
+    this.colorMul.markDirty(this.numVertex * 4);
+    this.colorAdd.markDirty(this.numVertex * 4);
     this.modes.markDirty(this.numVertex);
 
     gl.blendEquation(gl.FUNC_ADD);
@@ -124,7 +154,8 @@ class RenderObjectSpriteProgram
     programSprite.setUniform(gl, "uProjectionMatrix", projectionMat);
     programSprite.setUniform(gl, "uTex", this.texIDs);
     programSprite.setAttr(gl, "aVertex", this.vertices);
-    programSprite.setAttr(gl, "aColor", this.colors);
+    programSprite.setAttr(gl, "aColorMul", this.colorMul);
+    programSprite.setAttr(gl, "aColorAdd", this.colorAdd);
     programSprite.setAttr(gl, "aMode", this.modes);
     gl.drawArrays(gl.TRIANGLES, 0, this.numVertex);
 

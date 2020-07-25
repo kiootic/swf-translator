@@ -1,4 +1,4 @@
-import { mat2d } from "gl-matrix";
+import { mat2d, vec4 } from "gl-matrix";
 import { SpriteDef } from "../render/objects/RenderObjectSprite";
 import { Texture } from "../render/Texture";
 import type { AssetLibrary } from "../../classes/_internal/AssetLibrary";
@@ -32,11 +32,16 @@ export function makeShapeRenderObject(
   const bounds = rect.fromValues(minX, minY, maxX - minX, maxY - minY);
 
   let texture = Texture.WHITE;
-  let tint = 0xffffffff;
+  let color: vec4 | null = null;
   const uvMatrix = mat2d.identity(mat2d.create());
   switch (contour.fill.kind) {
     case FillStyleKind.SolidColor:
-      tint = contour.fill.color;
+      color = vec4.fromValues(
+        (contour.fill.color >>> 16) & 0xff,
+        (contour.fill.color >>> 8) & 0xff,
+        (contour.fill.color >>> 0) & 0xff,
+        (contour.fill.color >>> 24) & 0xff
+      );
       break;
 
     case FillStyleKind.LinearGradient:
@@ -60,7 +65,7 @@ export function makeShapeRenderObject(
     bounds,
     uvMatrix,
     texture,
-    tint,
+    color,
     fillMode: contour.fill.kind,
   };
 }
@@ -91,7 +96,7 @@ export function joinSpriteShapes(defs: SpriteDef[]): SpriteDef {
     bounds,
     uvMatrix: mat2d.identity(mat2d.create()),
     texture: Texture.WHITE,
-    tint: 0xffffffff,
+    color: null,
     fillMode: FillStyleKind.SolidColor,
   };
 

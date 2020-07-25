@@ -6,7 +6,7 @@ import {
 } from "../../classes/_internal/character";
 import type { AssetLibrary } from "../../classes/_internal";
 import { CharacterInstance } from "./CharacterInstance";
-import { mat2d } from "gl-matrix";
+import { mat2d, vec4 } from "gl-matrix";
 
 export class SpriteInstance implements CharacterInstance {
   readonly numFrames: number;
@@ -75,7 +75,17 @@ export class SpriteInstance implements CharacterInstance {
             obj.transform.__reportMatrixUpdated();
           }
 
-          // TODO: colorTransform
+          if (action.colorTransform != null) {
+            vec4.copy(
+              obj.transform.colorTransform.__mul,
+              action.colorTransform.slice(0, 4) as vec4
+            );
+            vec4.copy(
+              obj.transform.colorTransform.__add,
+              action.colorTransform.slice(4, 8) as vec4
+            );
+            obj.transform.__reportColorTransformUpdated();
+          }
           // TODO: ratio
 
           if (action.name != null) {

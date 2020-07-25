@@ -60,10 +60,10 @@ export function colorTransformWithAlpha(
   reader: Reader
 ): ColorTransformWithAlpha {
   const cxform: ColorTransformWithAlpha = {
-    redMul: 1,
-    greenMul: 1,
-    blueMul: 1,
-    alphaMul: 1,
+    redMul: 256,
+    greenMul: 256,
+    blueMul: 256,
+    alphaMul: 256,
     redAdd: 0,
     greenAdd: 0,
     blueAdd: 0,

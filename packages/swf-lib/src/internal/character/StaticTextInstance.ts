@@ -1,4 +1,4 @@
-import { mat2d, vec2 } from "gl-matrix";
+import { mat2d, vec2, vec4 } from "gl-matrix";
 import { StaticText } from "../../classes/flash/text/StaticText";
 import { CharacterInstance } from "./CharacterInstance";
 import { StaticTextCharacter } from "../../classes/_internal/character";
@@ -53,11 +53,17 @@ export class StaticTextInstance implements CharacterInstance {
         rect.union(bounds, bounds, glyphBounds);
       }
 
+      const vColor = vec4.fromValues(
+        (color >>> 16) & 0xff,
+        (color >>> 8) & 0xff,
+        (color >>> 0) & 0xff,
+        (color >>> 24) & 0xff
+      );
       const def: SpriteDef = {
         vertices,
         uvMatrix: mat2d.identity(mat2d.create()),
         texture: Texture.WHITE,
-        tint: color,
+        color: vColor,
         fillMode: FillStyleKind.SolidColor,
         bounds,
       };

@@ -5,7 +5,8 @@ export const fragSprite = Shader.fragment(
 precision highp float;
 
 varying vec2 vTextureCoords;
-varying vec4 vColor;
+varying vec4 vColorMul;
+varying vec4 vColorAdd;
 varying float vMode;
 
 uniform sampler2D uTex[8];
@@ -31,7 +32,7 @@ void main(void) {
         }
     }
 
-    gl_FragColor = tex * vColor;
+    gl_FragColor = (255.0 * tex * vColorMul + vColorAdd) / 255.0;
 }
 `,
   {

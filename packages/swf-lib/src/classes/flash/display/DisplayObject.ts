@@ -6,7 +6,6 @@ import type { DisplayObjectContainer } from "./DisplayObjectContainer";
 import { EventDispatcher } from "../events/EventDispatcher";
 import { Transform } from "../geom/Transform";
 import { Rectangle } from "../geom/Rectangle";
-import { mat2d } from "gl-matrix";
 
 export class DisplayObject extends EventDispatcher {
   __character: CharacterInstance | null = null;
@@ -106,21 +105,6 @@ export class DisplayObject extends EventDispatcher {
       return;
     }
 
-    const original = mat2d.copy(
-      mat2d.create(),
-      this.transform.__worldMatrix.__value
-    );
-    mat2d.copy(
-      this.transform.__worldMatrix.__value,
-      this.parent.transform.__worldMatrix.__value
-    );
-    mat2d.mul(
-      this.transform.__worldMatrix.__value,
-      this.transform.__worldMatrix.__value,
-      this.transform.matrix.__value
-    );
-    if (!mat2d.equals(original, this.transform.__worldMatrix.__value)) {
-      this.transform.__reportWorldMatrixUpdated();
-    }
+    this.transform.__update(this.parent.transform);
   });
 }
