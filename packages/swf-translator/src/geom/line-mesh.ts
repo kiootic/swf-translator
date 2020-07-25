@@ -34,6 +34,7 @@ export class LineMesh {
   constructor() {
     this.contour = [];
     this.vertices = [];
+    this.contour.push([0, 0]);
   }
 
   lineStyle(
@@ -45,6 +46,7 @@ export class LineMesh {
     noClose: boolean
   ) {
     this.buildContour();
+    this.contour.push([this.x, this.y]);
     this.width = width;
     this.startCap = startCap;
     this.endCap = endCap;
@@ -55,12 +57,9 @@ export class LineMesh {
 
   moveTo(x: number, y: number) {
     this.buildContour();
-    if (this.x === x && this.y === y) {
-      return;
-    }
     this.x = x;
     this.y = y;
-    this.contour.push([x, y]);
+    this.contour.push([this.x, this.y]);
   }
 
   lineTo(x: number, y: number) {
