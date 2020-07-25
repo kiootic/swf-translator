@@ -1,6 +1,6 @@
 import { Matrix, Rect } from "./primitives";
 
-export interface StaticText {
+export interface StaticTextCharacter {
   matrix: Matrix;
   bounds: Rect;
   glyphs: TextGlyph[];

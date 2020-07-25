@@ -7,6 +7,7 @@ import { Font, FontGlyph } from "../../models/text";
 import { translateShape } from "./shape";
 
 export async function translateFonts(ctx: OutputContext, swf: SWFFile) {
+  const fonts: Record<number, unknown> = {};
   for (const tag of swf.characters.values()) {
     let font: Font;
     if (tag instanceof DefineFont3Tag) {
@@ -25,7 +26,7 @@ export async function translateFonts(ctx: OutputContext, swf: SWFFile) {
       declarations: [
         {
           name: `character`,
-          type: "lib._internal.character.Font",
+          type: "lib._internal.character.FontCharacter",
           initializer: JSON5.stringify(font, null, 4),
         },
       ],
@@ -41,9 +42,12 @@ export async function translateFonts(ctx: OutputContext, swf: SWFFile) {
       moduleSpecifier: `./${tag.characterId}`,
     });
     index.tsSource.addStatements(
-      `builder.registerFont(${tag.characterId}, character${tag.characterId})`
+      `bundle.fonts[${tag.characterId}] = character${tag.characterId};`
     );
+
+    fonts[tag.characterId] = font;
   }
+  return fonts;
 }
 
 function translateFont(tag: DefineFont3Tag): Font {

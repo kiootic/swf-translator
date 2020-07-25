@@ -10,6 +10,7 @@ import { Shape } from "../../models/shape";
 import { translateShape } from "./shape";
 
 export async function translateShapes(ctx: OutputContext, swf: SWFFile) {
+  const shapes: Record<number, unknown> = {};
   for (const tag of swf.characters.values()) {
     let shape: Shape;
     if (
@@ -33,7 +34,7 @@ export async function translateShapes(ctx: OutputContext, swf: SWFFile) {
       declarations: [
         {
           name: `character`,
-          type: "lib._internal.character.Shape",
+          type: "lib._internal.character.ShapeCharacter",
           initializer: JSON5.stringify(shape, null, 4),
         },
       ],
@@ -49,7 +50,10 @@ export async function translateShapes(ctx: OutputContext, swf: SWFFile) {
       moduleSpecifier: `./${tag.characterId}`,
     });
     index.tsSource.addStatements(
-      `builder.registerShape(${tag.characterId}, character${tag.characterId})`
+      `bundle.shapes[${tag.characterId}] = character${tag.characterId};`
     );
+
+    shapes[tag.characterId] = shape;
   }
+  return shapes;
 }

@@ -1,7 +1,7 @@
 import { mat2d, vec2 } from "gl-matrix";
-import { StaticText as FlashStaticText } from "../../classes/flash/text/StaticText";
+import { StaticText } from "../../classes/flash/text/StaticText";
 import { CharacterInstance } from "./CharacterInstance";
-import { StaticText } from "../../classes/_internal/character";
+import { StaticTextCharacter } from "../../classes/_internal/character";
 import { AssetLibrary } from "../../classes/_internal";
 import { FillStyleKind } from "../../classes/_internal/character/styles";
 import {
@@ -15,7 +15,11 @@ export class StaticTextInstance implements CharacterInstance {
   readonly sprites: SpriteDef[] = [];
   readonly bounds: rect;
 
-  constructor(readonly id: number, text: StaticText, lib: AssetLibrary) {
+  constructor(
+    readonly id: number,
+    text: StaticTextCharacter,
+    lib: AssetLibrary
+  ) {
     this.bounds = text.bounds;
 
     const matrix = mat2d.fromValues(...text.matrix);
@@ -95,7 +99,7 @@ export class StaticTextInstance implements CharacterInstance {
     flushInstances();
   }
 
-  applyTo(staticText: FlashStaticText) {
+  applyTo(staticText: StaticText) {
     for (const s of this.sprites) {
       staticText.__renderObjects.push(new RenderObjectSprite(s));
     }

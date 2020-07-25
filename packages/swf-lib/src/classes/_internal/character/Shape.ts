@@ -1,7 +1,7 @@
 import { Rect } from "./primitives";
 import { FillStyle } from "./styles";
 
-export interface Shape {
+export interface ShapeCharacter {
   bounds: Rect;
   contours: ShapeContour[];
 }

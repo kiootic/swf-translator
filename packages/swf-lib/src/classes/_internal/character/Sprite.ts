@@ -1,7 +1,7 @@
 import { Matrix, ColorTransform } from "./primitives";
 import { Filter } from "./filter";
 
-export interface Sprite {
+export interface SpriteCharacter {
   numFrames: number;
   frames: SpriteFrame[];
 }

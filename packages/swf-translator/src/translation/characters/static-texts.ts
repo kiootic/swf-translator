@@ -7,12 +7,11 @@ import { DefineTextTag } from "../../format/tags/define-text";
 import { DefineText2Tag } from "../../format/tags/define-text-2";
 import { color, matrix, rect } from "../../models/primitives";
 
-export async function translateTexts(ctx: OutputContext, swf: SWFFile) {
+export async function translateStaticTexts(ctx: OutputContext, swf: SWFFile) {
+  const staticTexts: Record<number, unknown> = {};
   for (const tag of swf.characters.values()) {
-    let type: string;
     let text: unknown;
     if (tag instanceof DefineTextTag || tag instanceof DefineText2Tag) {
-      type = "StaticText";
       text = translateStaticText(tag);
     } else {
       continue;
@@ -28,7 +27,7 @@ export async function translateTexts(ctx: OutputContext, swf: SWFFile) {
       declarations: [
         {
           name: `character`,
-          type: `lib._internal.character.${type}`,
+          type: `lib._internal.character.StaticTextCharacter`,
           initializer: JSON5.stringify(text, null, 4),
         },
       ],
@@ -44,9 +43,12 @@ export async function translateTexts(ctx: OutputContext, swf: SWFFile) {
       moduleSpecifier: `./${tag.characterId}`,
     });
     index.tsSource.addStatements(
-      `builder.register${type}(${tag.characterId}, character${tag.characterId})`
+      `bundle.staticTexts[${tag.characterId}] = character${tag.characterId};`
     );
+    staticTexts[tag.characterId] = text;
   }
+
+  return staticTexts;
 }
 
 function translateStaticText(tag: DefineTextTag | DefineText2Tag): StaticText {

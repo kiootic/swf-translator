@@ -1,6 +1,6 @@
 import { Sprite } from "../../classes/flash/display/Sprite";
 import {
-  Sprite as SpriteCharacter,
+  SpriteCharacter,
   SpriteFrame,
   FrameActionKind,
 } from "../../classes/_internal/character";

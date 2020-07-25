@@ -37,7 +37,7 @@ export async function translateImages(ctx: OutputContext, swf: SWFFile) {
       declarations: [
         {
           name: `character`,
-          type: "lib._internal.character.Image",
+          type: "lib._internal.character.ImageCharacter",
           initializer: `{path}`,
         },
       ],
@@ -47,13 +47,22 @@ export async function translateImages(ctx: OutputContext, swf: SWFFile) {
       isExportEquals: false,
     });
 
-    const index = ctx.file("characters", `index.ts`);
+    const index = ctx.file("characters", "index.ts");
     index.tsSource.addImportDeclaration({
       defaultImport: `character${tag.characterId}`,
       moduleSpecifier: `./${tag.characterId}`,
     });
     index.tsSource.addStatements(
-      `builder.registerImage(${tag.characterId}, character${tag.characterId})`
+      `bundle.images[${tag.characterId}] = character${tag.characterId};`
+    );
+
+    const bundle = ctx.file("bundle.ts");
+    bundle.tsSource.addImportDeclaration({
+      defaultImport: `character${tag.characterId}`,
+      moduleSpecifier: `./characters/${tag.characterId}`,
+    });
+    bundle.tsSource.addStatements(
+      `bundle.images[${tag.characterId}] = character${tag.characterId};`
     );
   }
 }

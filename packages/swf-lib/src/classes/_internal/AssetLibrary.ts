@@ -1,8 +1,8 @@
-import { Image as ImageCharacter } from "./character/Image";
-import { Shape as ShapeCharacter } from "./character/Shape";
-import { Sprite as SpriteCharacter } from "./character/Sprite";
-import { Font as FontCharacter } from "./character/Font";
-import { StaticText as StaticTextCharacter } from "./character/StaticText";
+import { ImageCharacter } from "./character/Image";
+import { ShapeCharacter } from "./character/Shape";
+import { FontCharacter } from "./character/Font";
+import { StaticTextCharacter } from "./character/StaticText";
+import { SpriteCharacter } from "./character/Sprite";
 import type { DisplayObject } from "../flash/display/DisplayObject";
 import { Shape } from "../flash/display/Shape";
 import { Sprite } from "../flash/display/Sprite";
@@ -14,6 +14,7 @@ import { SpriteInstance } from "../../internal/character/SpriteInstance";
 import { FontInstance } from "../../internal/character/FontInstance";
 import { StaticTextInstance } from "../../internal/character/StaticTextInstance";
 import { Texture } from "../../internal/render/Texture";
+import { AssetBundle } from "./AssetBundle";
 
 export interface AssetLibrary {
   resolveImage(id: number): Texture;
@@ -47,6 +48,24 @@ export class AssetLibraryBuilder {
 
   registerStaticText(id: number, char: StaticTextCharacter) {
     this.staticTexts.set(id, char);
+  }
+
+  registerBundle(bundle: AssetBundle) {
+    for (const [id, char] of Object.entries(bundle.images)) {
+      this.registerImage(Number(id), char);
+    }
+    for (const [id, char] of Object.entries(bundle.shapes)) {
+      this.registerShape(Number(id), char);
+    }
+    for (const [id, char] of Object.entries(bundle.fonts)) {
+      this.registerFont(Number(id), char);
+    }
+    for (const [id, char] of Object.entries(bundle.staticTexts)) {
+      this.registerStaticText(Number(id), char);
+    }
+    for (const [id, char] of Object.entries(bundle.sprites)) {
+      this.registerSprite(Number(id), char);
+    }
   }
 
   async instantiate(): Promise<AssetLibrary> {

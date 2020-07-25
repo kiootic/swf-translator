@@ -17,22 +17,15 @@ declare module "*.png" {
 
 `);
 
-  ctx.file("library.ts").content = fileContent(`
-
-import lib from "@swf/lib";
-
-export const builder = new lib._internal.AssetLibraryBuilder();
-
-`);
-
   ctx.file("index.ts").content = fileContent(`
 
 import lib from "@swf/lib";
-import "./characters";
-import { builder } from "./library";
+import bundle from "./bundle";
+
+const builder = new lib._internal.AssetLibraryBuilder();
+builder.registerBundle(bundle);
 
 let assetLibrary: Promise<lib._internal.AssetLibrary> | undefined;
-
 export function library(): Promise<lib._internal.AssetLibrary> {
   return assetLibrary ?? (assetLibrary = builder.instantiate());
 }

@@ -1,6 +1,6 @@
-import { Shape as FlashShape } from "../../classes/flash/display/Shape";
+import { Shape } from "../../classes/flash/display/Shape";
 import type { AssetLibrary } from "../../classes/_internal/AssetLibrary";
-import { Shape } from "../../classes/_internal/character/Shape";
+import { ShapeCharacter } from "../../classes/_internal/character/Shape";
 import { CharacterInstance } from "./CharacterInstance";
 import { makeShapeRenderObject } from "./shapes";
 import {
@@ -13,12 +13,12 @@ export class ShapeInstance implements CharacterInstance {
   readonly sprites: SpriteDef[];
   readonly bounds: rect;
 
-  constructor(readonly id: number, def: Shape, lib: AssetLibrary) {
+  constructor(readonly id: number, def: ShapeCharacter, lib: AssetLibrary) {
     this.sprites = def.contours.map((c) => makeShapeRenderObject(c, lib));
     this.bounds = def.bounds;
   }
 
-  applyTo(container: FlashShape) {
+  applyTo(container: Shape) {
     for (const s of this.sprites) {
       container.__renderObjects.push(new RenderObjectSprite(s));
     }

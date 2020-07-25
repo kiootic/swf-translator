@@ -1,6 +1,6 @@
-import { Shape } from "./Shape";
+import { ShapeCharacter } from "./Shape";
 
-export interface Font {
+export interface FontCharacter {
   name: string;
   glyphs: FontGlyph[];
   layout?: FontLayout;
@@ -8,7 +8,7 @@ export interface Font {
 
 export interface FontGlyph {
   char?: string;
-  shape: Shape;
+  shape: ShapeCharacter;
 }
 
 export interface FontLayout {

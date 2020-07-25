@@ -13,6 +13,7 @@ import { RemoveObject2Tag } from "../../format/tags/remove-object-2";
 import { ShowFrameTag } from "../../format/tags/show-frame";
 
 export async function translateSprites(ctx: OutputContext, swf: SWFFile) {
+  const sprites: Record<number, unknown> = {};
   for (const tag of swf.characters.values()) {
     let sprite: Sprite;
     if (tag instanceof DefineSpriteTag) {
@@ -31,7 +32,7 @@ export async function translateSprites(ctx: OutputContext, swf: SWFFile) {
       declarations: [
         {
           name: `character`,
-          type: "lib._internal.character.Sprite",
+          type: "lib._internal.character.SpriteCharacter",
           initializer: JSON5.stringify(sprite, null, 4),
         },
       ],
@@ -47,9 +48,12 @@ export async function translateSprites(ctx: OutputContext, swf: SWFFile) {
       moduleSpecifier: `./${tag.characterId}`,
     });
     index.tsSource.addStatements(
-      `builder.registerSprite(${tag.characterId}, character${tag.characterId})`
+      `bundle.sprites[${tag.characterId}] = character${tag.characterId};`
     );
+
+    sprites[tag.characterId] = sprite;
   }
+  return sprites;
 }
 
 function translateSprite(sprite: DefineSpriteTag): Sprite {

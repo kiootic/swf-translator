@@ -1,10 +1,12 @@
+import JSON5 from "json5";
 import { OutputContext } from "../../output";
 import { SWFFile } from "../../format/swf";
 import { translateImages } from "./images";
 import { translateShapes } from "./shapes";
 import { translateSprites } from "./sprites";
 import { translateFonts } from "./fonts";
-import { translateTexts } from "./texts";
+import { translateStaticTexts } from "./static-texts";
+import { VariableDeclarationKind } from "ts-morph";
 
 export async function generateCharacters(ctx: OutputContext, swf: SWFFile) {
   const index = ctx.file("characters", "index.ts");
@@ -12,14 +14,69 @@ export async function generateCharacters(ctx: OutputContext, swf: SWFFile) {
     defaultImport: "lib",
     moduleSpecifier: "@swf/lib",
   });
-  index.tsSource.addImportDeclaration({
-    namedImports: ["builder"],
-    moduleSpecifier: "../library",
+  index.tsSource.addVariableStatement({
+    declarationKind: VariableDeclarationKind.Const,
+    declarations: [
+      {
+        name: "bundle",
+        type: "lib._internal.AssetBundle",
+        initializer: JSON5.stringify(
+          {
+            images: {},
+            shapes: {},
+            fonts: {},
+            staticTexts: {},
+            sprites: {},
+          },
+          null,
+          4
+        ),
+      },
+    ],
+  });
+
+  const bundle = ctx.file("bundle.ts");
+  bundle.tsSource.addImportDeclaration({
+    defaultImport: "lib",
+    moduleSpecifier: "@swf/lib",
+  });
+  bundle.tsSource.addImportDeclaration({
+    defaultImport: "charactersBundle",
+    moduleSpecifier: "./characters.bundle.json",
+  });
+  bundle.tsSource.addVariableStatement({
+    declarationKind: VariableDeclarationKind.Const,
+    declarations: [
+      {
+        name: "bundle",
+        type: "lib._internal.AssetBundle",
+        initializer: "charactersBundle as any",
+      },
+    ],
   });
 
   await translateImages(ctx, swf);
-  await translateShapes(ctx, swf);
-  await translateSprites(ctx, swf);
-  await translateFonts(ctx, swf);
-  await translateTexts(ctx, swf);
+  const shapes = await translateShapes(ctx, swf);
+  const sprites = await translateSprites(ctx, swf);
+  const fonts = await translateFonts(ctx, swf);
+  const staticTexts = await translateStaticTexts(ctx, swf);
+
+  index.tsSource.addExportAssignment({
+    expression: "bundle",
+    isExportEquals: false,
+  });
+  bundle.tsSource.addExportAssignment({
+    expression: "bundle",
+    isExportEquals: false,
+  });
+
+  const bundleData = {
+    images: {},
+    shapes,
+    fonts,
+    staticTexts,
+    sprites,
+  };
+  const bundleDataJSON = ctx.file("characters.bundle.json");
+  bundleDataJSON.content = Buffer.from(JSON.stringify(bundleData));
 }
