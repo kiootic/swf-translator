@@ -1,7 +1,9 @@
-import { autorun, observable, runInAction, createAtom } from "mobx";
+import { observable, runInAction, createAtom } from "mobx";
+import { mat2d, vec4, mat3 } from "gl-matrix";
 import { CharacterInstance } from "../../../internal/character/CharacterInstance";
 import { RenderObject } from "../../../internal/render/RenderObject";
 import { RenderContext } from "../../../internal/render/RenderContext";
+import { RenderTarget } from "../../../internal/render/RenderTarget";
 import type { DisplayObjectContainer } from "./DisplayObjectContainer";
 import { EventDispatcher } from "../events/EventDispatcher";
 import { Transform } from "../geom/Transform";
@@ -14,6 +16,9 @@ export class DisplayObject extends EventDispatcher {
 
   #bounds = new Rectangle();
   #boundsAtom = createAtom("bounds");
+
+  #needReRender = false;
+  #renderTarget: RenderTarget | null = null;
 
   constructor() {
     super();
@@ -38,6 +43,9 @@ export class DisplayObject extends EventDispatcher {
 
   @observable
   parent: DisplayObjectContainer | null = null;
+
+  @observable
+  cacheAsBitmap: boolean = false;
 
   get x(): number {
     return this.transform.matrix.tx;
@@ -87,6 +95,41 @@ export class DisplayObject extends EventDispatcher {
     if (!this.visible) {
       return;
     }
+
+    const [x, y, width, height] = this.#bounds.__rect;
+    if (this.cacheAsBitmap && width > 0 && height > 0) {
+      let target = this.#renderTarget;
+      if (!target) {
+        target = new RenderTarget();
+        this.#renderTarget = target;
+        this.#needReRender = true;
+      }
+      if (target.resize(ctx.gl, width, height)) {
+        this.#needReRender = true;
+      }
+
+      if (this.#needReRender) {
+        ctx.renderer.renderToTarget(target, this.#bounds.__rect, (ctx) => {
+          this.__doRender(ctx);
+        });
+        this.#needReRender = false;
+      }
+
+      mat2d.translate(
+        target.renderMatrix,
+        this.transform.__worldMatrix.__value,
+        [x, y]
+      );
+      vec4.copy(target.colorMul, this.transform.__worldColorTransform.__mul);
+      vec4.copy(target.colorAdd, this.transform.__worldColorTransform.__add);
+      target.renderTo(ctx);
+
+      return;
+    } else if (this.#renderTarget) {
+      this.#renderTarget.delete(ctx.gl);
+      this.#renderTarget = null;
+    }
+
     this.__doRender(ctx);
   }
 
@@ -100,11 +143,16 @@ export class DisplayObject extends EventDispatcher {
     this.#boundsAtom.reportChanged();
   }
 
-  #computeTransform = autorun(() => {
-    if (!this.parent) {
-      return;
-    }
-
-    this.transform.__update(this.parent.transform);
-  });
+  __reportDirty() {
+    runInAction(() => {
+      let obj: DisplayObject | null = this.parent;
+      while (obj) {
+        if (obj.cacheAsBitmap) {
+          obj.#needReRender = true;
+          break;
+        }
+        obj = obj.parent;
+      }
+    });
+  }
 }

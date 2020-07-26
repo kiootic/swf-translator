@@ -1,4 +1,12 @@
-export class Texture {
+export interface GLTexture {
+  readonly width: number;
+  readonly height: number;
+
+  ensure(gl: WebGLRenderingContext): WebGLTexture;
+  delete(gl: WebGLRenderingContext): void;
+}
+
+export class Texture implements GLTexture {
   gl?: WebGLTexture;
   dirty = true;
   data: TexImageSource;
@@ -55,6 +63,62 @@ export class Texture {
         gl.RGBA,
         gl.UNSIGNED_BYTE,
         this.data
+      );
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+
+      this.dirty = false;
+    }
+
+    return this.gl;
+  }
+
+  markDirty() {
+    this.dirty = true;
+  }
+
+  delete(gl: WebGLRenderingContext) {
+    if (this.gl) {
+      gl.deleteTexture(this.gl);
+    }
+    this.gl = undefined;
+    this.dirty = true;
+  }
+}
+
+export class RenderTexture implements GLTexture {
+  gl?: WebGLTexture;
+  dirty = true;
+  width: number;
+  height: number;
+
+  constructor(width: number, height: number) {
+    this.width = width;
+    this.height = height;
+  }
+
+  ensure(gl: WebGLRenderingContext): WebGLTexture {
+    if (!this.gl) {
+      const tex = gl.createTexture();
+      if (!tex) {
+        throw new Error("Cannot create texture");
+      }
+      this.gl = tex;
+    }
+
+    if (this.dirty) {
+      gl.bindTexture(gl.TEXTURE_2D, this.gl);
+      gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        gl.RGBA,
+        this.width,
+        this.height,
+        0,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        null
       );
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);

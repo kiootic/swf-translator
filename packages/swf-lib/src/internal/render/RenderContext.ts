@@ -6,6 +6,10 @@ export class RenderContext {
 
   constructor(readonly renderer: Renderer) {}
 
+  get gl() {
+    return this.renderer.gl;
+  }
+
   render(obj: RenderObject) {
     this.objects.push(obj);
   }

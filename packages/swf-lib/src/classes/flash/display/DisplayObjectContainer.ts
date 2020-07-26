@@ -1,7 +1,7 @@
 import { action, autorun, observable } from "mobx";
 import { DisplayObject } from "./DisplayObject";
 import { InteractiveObject } from "./InteractiveObject";
-import { Rectangle } from "../geom";
+import { Transform } from "../geom";
 import { RenderContext } from "../../../internal/render/RenderContext";
 import { rect } from "../../../internal/math/rect";
 
@@ -84,6 +84,22 @@ export class DisplayObjectContainer extends InteractiveObject {
 
   #copyChildren = autorun(() => {
     this.#children = this.__children.slice();
+  });
+
+  #computeChildrenTransform = autorun(() => {
+    if (this.__children.length === 0) {
+      return;
+    }
+
+    const cacheAsBitmap = this.cacheAsBitmap;
+    for (const child of this.__children) {
+      const isChildDirty = child.transform.__update(
+        cacheAsBitmap ? Transform.__empty : this.transform
+      );
+      if (isChildDirty) {
+        child.__reportDirty();
+      }
+    }
   });
 
   #computeBounds = autorun(() => {

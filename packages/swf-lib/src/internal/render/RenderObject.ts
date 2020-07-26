@@ -1,7 +1,12 @@
-import { Screen } from "./Screen";
+import { Viewport } from "./Viewport";
 
 export interface RenderObjectProgram<T extends RenderObject> {
-  render(gl: WebGL2RenderingContext, screen: Screen, objects: T[]): void;
+  render(
+    gl: WebGL2RenderingContext,
+    toTexture: boolean,
+    viewport: Viewport,
+    objects: T[]
+  ): void;
 }
 
 export interface RenderObject {

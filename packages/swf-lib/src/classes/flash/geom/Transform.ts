@@ -4,6 +4,8 @@ import { Matrix } from "./Matrix";
 import { ColorTransform } from "./ColorTransform";
 
 export class Transform {
+  static readonly __empty = new Transform();
+
   #matrix = new Matrix();
   #matrixAtom = createAtom("matrix");
   #worldMatrix = new Matrix();
@@ -66,7 +68,9 @@ export class Transform {
     this.#worldColorTransformAtom.reportChanged();
   }
 
-  __update(parent: Transform) {
+  __update(parent: Transform): boolean {
+    let isDirty = false;
+
     parent.#worldMatrixAtom.reportObserved();
     parent.#worldColorTransformAtom.reportObserved();
     this.#matrixAtom.reportObserved();
@@ -80,6 +84,7 @@ export class Transform {
     );
     if (!mat2d.equals(oldMatrix, this.#worldMatrix.__value)) {
       this.#worldMatrixAtom.reportChanged();
+      isDirty = true;
     }
 
     const oldColorMul = vec4.copy(
@@ -99,6 +104,9 @@ export class Transform {
       !vec4.equals(oldColorAdd, this.#worldColorTransform.__add)
     ) {
       this.#worldColorTransformAtom.reportChanged();
+      isDirty = true;
     }
+
+    return isDirty;
   }
 }

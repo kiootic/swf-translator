@@ -3,16 +3,22 @@ import { rect } from "../../math/rect";
 import { programSprite } from "../shaders";
 import { RenderObjectProgram, RenderObject } from "../RenderObject";
 import { Buffer } from "../Buffer";
-import { Screen } from "../Screen";
-import { Texture } from "../Texture";
+import { Viewport } from "../Viewport";
+import { GLTexture, RenderTexture } from "../Texture";
+import { FillStyleKind } from "../../../classes/_internal/character/styles";
 
 export interface SpriteDef {
-  readonly vertices: Float32Array;
-  readonly uvMatrix: mat2d;
-  readonly texture: Texture;
-  readonly color: vec4 | null;
-  readonly fillMode: number;
-  readonly bounds: rect;
+  vertices: Float32Array;
+  uvMatrix: mat2d;
+  texture: GLTexture;
+  color: vec4 | null;
+  fillMode: number;
+  bounds: rect;
+}
+
+export enum BlendMode {
+  Normal,
+  NormalPM,
 }
 
 export class RenderObjectSprite implements RenderObject {
@@ -21,6 +27,7 @@ export class RenderObjectSprite implements RenderObject {
   readonly renderMatrix = mat2d.identity(mat2d.create());
   readonly colorMul = vec4.fromValues(1, 1, 1, 1);
   readonly colorAdd = vec4.fromValues(0, 0, 0, 0);
+  blendMode: BlendMode = BlendMode.Normal;
 
   constructor(readonly def: SpriteDef) {}
 }
@@ -32,7 +39,8 @@ class RenderObjectSpriteProgram
   static readonly instance = new RenderObjectSpriteProgram();
 
   private numVertex = 0;
-  private readonly textures: Texture[] = [];
+  private blendMode: BlendMode = BlendMode.Normal;
+  private readonly textures: GLTexture[] = [];
   private readonly texIDs = new Uint8Array(8);
   private readonly vertices = new Buffer(new Float32Array(batchVertexSize * 4));
   private readonly colorMul = new Buffer(new Float32Array(batchVertexSize * 4));
@@ -48,7 +56,8 @@ class RenderObjectSpriteProgram
 
   render(
     gl: WebGL2RenderingContext,
-    screen: Screen,
+    toTexture: boolean,
+    viewport: Viewport,
     objects: RenderObjectSprite[]
   ): void {
     this.reset();
@@ -62,18 +71,23 @@ class RenderObjectSpriteProgram
     const bounds = rect.create();
     for (const o of objects) {
       rect.apply(bounds, o.def.bounds, o.renderMatrix);
-      if (!rect.intersects(bounds, screen.bounds)) {
+      if (!rect.intersects(bounds, viewport.bounds)) {
         continue;
+      }
+
+      if (this.blendMode != o.blendMode) {
+        this.flushBatch(gl, toTexture, viewport.matrix);
+        this.blendMode = o.blendMode;
       }
 
       const numVertex = o.def.vertices.length / 2;
       if (this.numVertex + numVertex > batchVertexSize) {
-        this.flushBatch(gl, screen.matrix);
+        this.flushBatch(gl, toTexture, viewport.matrix);
       }
 
       if (!this.textures.includes(o.def.texture)) {
         if (this.textures.length >= 8) {
-          this.flushBatch(gl, screen.matrix);
+          this.flushBatch(gl, toTexture, viewport.matrix);
         }
         this.textures.push(o.def.texture);
       }
@@ -125,10 +139,14 @@ class RenderObjectSpriteProgram
       this.numVertex += numVertex;
     }
 
-    this.flushBatch(gl, screen.matrix);
+    this.flushBatch(gl, toTexture, viewport.matrix);
   }
 
-  private flushBatch(gl: WebGL2RenderingContext, projectionMat: mat3) {
+  private flushBatch(
+    gl: WebGL2RenderingContext,
+    toTexture: boolean,
+    projectionMat: mat3
+  ) {
     if (this.numVertex === 0) {
       return;
     }
@@ -139,12 +157,39 @@ class RenderObjectSpriteProgram
     this.modes.markDirty(this.numVertex);
 
     gl.blendEquation(gl.FUNC_ADD);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    switch (this.blendMode) {
+      case BlendMode.Normal:
+        if (toTexture) {
+          gl.blendFuncSeparate(
+            gl.SRC_ALPHA,
+            gl.ONE_MINUS_SRC_ALPHA,
+            gl.ONE,
+            gl.ONE_MINUS_SRC_ALPHA
+          );
+        } else {
+          gl.blendFuncSeparate(
+            gl.SRC_ALPHA,
+            gl.ONE_MINUS_SRC_ALPHA,
+            gl.SRC_ALPHA,
+            gl.ONE_MINUS_SRC_ALPHA
+          );
+        }
+        break;
+      case BlendMode.NormalPM:
+        gl.blendFuncSeparate(
+          gl.ONE,
+          gl.ONE_MINUS_SRC_ALPHA,
+          gl.ONE,
+          gl.ONE_MINUS_SRC_ALPHA
+        );
+        break;
+    }
 
     const textures = this.textures.map((tex) => tex.ensure(gl));
 
     gl.useProgram(programSprite.ensure(gl));
 
+    this.texIDs.fill(0);
     for (let i = 0; i < textures.length; i++) {
       gl.activeTexture(gl.TEXTURE0 + i);
       gl.bindTexture(gl.TEXTURE_2D, textures[i]);
