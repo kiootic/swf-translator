@@ -81,21 +81,6 @@ function handlePlaceObject(
   frame: SpriteFrame,
   tag: PlaceObject2Tag | PlaceObject3Tag
 ) {
-  if (tag.placeCharacterId != null) {
-    if (tag.moveCharacter) {
-      frame.actions.push({
-        kind: FrameActionKind.RemoveObject,
-        depth: tag.depth,
-      });
-    }
-
-    frame.actions.push({
-      kind: FrameActionKind.PlaceObject,
-      characterId: tag.placeCharacterId,
-      depth: tag.depth,
-    });
-  }
-
   const filters = tag instanceof PlaceObject3Tag ? tag.filters : undefined;
   const blendMode = tag instanceof PlaceObject3Tag ? tag.blendMode : undefined;
   const cacheAsBitmap =
@@ -149,8 +134,9 @@ function handlePlaceObject(
   }
 
   frame.actions.push({
-    kind: FrameActionKind.UpdateObject,
+    kind: FrameActionKind.PlaceObject,
     depth: tag.depth,
+    characterId: tag.placeCharacterId,
 
     matrix: tag.matrix && matrix(tag.matrix),
     colorTransform: tag.colorTransform && colorTransform(tag.colorTransform),

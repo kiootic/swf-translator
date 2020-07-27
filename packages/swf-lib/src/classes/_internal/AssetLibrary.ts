@@ -147,7 +147,7 @@ class InstantiatedLibrary implements AssetLibrary {
     if (spriteInstance) {
       const sprite =
         spriteInstance.numFrames > 1 ? new MovieClip() : new Sprite();
-      spriteInstance.applyTo(sprite, 1);
+      spriteInstance.applyTo(sprite, 1, 1);
       sprite.__character = spriteInstance;
       return sprite;
     }

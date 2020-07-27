@@ -3,10 +3,12 @@ import {
   SpriteCharacter,
   SpriteFrame,
   FrameActionKind,
+  FrameAction,
 } from "../../classes/_internal/character";
 import type { AssetLibrary } from "../../classes/_internal";
 import { CharacterInstance } from "./CharacterInstance";
 import { mat2d, vec4 } from "gl-matrix";
+import { DisplayObject } from "../../classes/flash/display";
 
 export class SpriteInstance implements CharacterInstance {
   readonly numFrames: number;
@@ -21,75 +23,91 @@ export class SpriteInstance implements CharacterInstance {
     this.frames = sprite.frames;
   }
 
-  applyTo(sprite: Sprite, frameNum: number) {
-    const frame = this.frames.find((f) => f.frame === frameNum);
-    if (!frame) {
-      return;
-    }
-
+  applyTo(sprite: Sprite, prevFrameNum: number, thisFrameNum: number) {
     // ref: https://github.com/mozilla/shumway/blob/16451d8836fa85f4b16eeda8b4bda2fa9e2b22b0/src/flash/display/Sprite.ts#L147
-    for (const action of frame.actions) {
+    const effectiveActions = new Map<number, FrameAction>();
+    const setActions = (frameNum: number) => {
+      if (frameNum === 1) {
+        // Reset timeline on frame 1
+        for (const child of sprite.__children) {
+          if (child.__depth >= 0) {
+            effectiveActions.set(child.__depth, {
+              kind: FrameActionKind.RemoveObject,
+              depth: child.__depth,
+            });
+          }
+        }
+      }
+
+      const frame = this.frames.find((f) => f.frame === frameNum);
+      if (!frame) {
+        return;
+      }
+      for (const action of frame.actions) {
+        const ea = effectiveActions.get(action.depth) || {};
+        effectiveActions.set(action.depth, { ...ea, ...action });
+      }
+    };
+    for (
+      let i = prevFrameNum - 1;
+      i !== thisFrameNum - 1;
+      i = (i + 1) % this.numFrames
+    ) {
+      setActions(i + 1);
+    }
+    setActions(thisFrameNum);
+
+    const children = sprite.__children;
+    for (const action of effectiveActions.values()) {
       switch (action.kind) {
         case FrameActionKind.PlaceObject: {
-          let insertIndex = sprite.__children.findIndex(
-            (o) => o.__depth >= action.depth
-          );
-          if (insertIndex === -1) {
-            insertIndex = sprite.__children.length;
-          } else if (sprite.__children[insertIndex].__depth === action.depth) {
-            const char = sprite.__children[insertIndex].__character;
-            if (char?.id === action.characterId) {
-              break;
+          let character: DisplayObject | undefined;
+          if (action.characterId) {
+            let index = children.findIndex((o) => o.__depth >= action.depth);
+            if (index === -1) {
+              index = children.length;
+            } else if (children[index].__depth === action.depth) {
+              const char = children[index].__character;
+              if (char?.id === action.characterId) {
+                character = children[index];
+              } else {
+                sprite.removeChildAt(index);
+              }
             }
-            sprite.removeChildAt(insertIndex);
+
+            if (!character) {
+              character = this.library.instantiateCharacter(action.characterId);
+              character.__depth = action.depth;
+              sprite.addChildAt(character, index);
+            }
+          } else {
+            character = children.find((o) => o.__depth === action.depth);
           }
 
-          const character = this.library.instantiateCharacter(
-            action.characterId
-          );
-          character.__depth = action.depth;
-          sprite.addChildAt(character, insertIndex);
-          break;
-        }
-
-        case FrameActionKind.RemoveObject: {
-          const index = sprite.__children.findIndex(
-            (o) => o.__depth === action.depth
-          );
-          if (index < 0) {
-            break;
-          }
-
-          sprite.removeChildAt(index);
-          break;
-        }
-
-        case FrameActionKind.UpdateObject: {
-          const obj = sprite.__children.find((o) => o.__depth === action.depth);
-          if (!obj) {
+          if (!character) {
             break;
           }
 
           if (action.matrix != null) {
-            mat2d.copy(obj.transform.matrix.__value, action.matrix);
-            obj.transform.__reportMatrixUpdated();
+            mat2d.copy(character.transform.matrix.__value, action.matrix);
+            character.transform.__reportMatrixUpdated();
           }
 
           if (action.colorTransform != null) {
             vec4.copy(
-              obj.transform.colorTransform.__mul,
+              character.transform.colorTransform.__mul,
               action.colorTransform.slice(0, 4) as vec4
             );
             vec4.copy(
-              obj.transform.colorTransform.__add,
+              character.transform.colorTransform.__add,
               action.colorTransform.slice(4, 8) as vec4
             );
-            obj.transform.__reportColorTransformUpdated();
+            character.transform.__reportColorTransformUpdated();
           }
           // TODO: ratio
 
           if (action.name != null) {
-            obj.name = action.name;
+            character.name = action.name;
           }
 
           // TODO: filters
@@ -98,9 +116,19 @@ export class SpriteInstance implements CharacterInstance {
           // TODO: cacheAsBitmap
 
           if (action.visible != null) {
-            obj.visible = action.visible;
+            character.visible = action.visible;
           }
 
+          break;
+        }
+
+        case FrameActionKind.RemoveObject: {
+          const index = children.findIndex((o) => o.__depth === action.depth);
+          if (index < 0) {
+            break;
+          }
+
+          sprite.removeChildAt(index);
           break;
         }
       }

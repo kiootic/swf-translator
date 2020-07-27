@@ -2,6 +2,8 @@ import { observable } from "mobx";
 import { Sprite } from "./Sprite";
 
 export class MovieClip extends Sprite {
+  #lastFrame = 1;
+
   @observable
   currentFrame = 1;
 
@@ -17,16 +19,16 @@ export class MovieClip extends Sprite {
   }
 
   __onNewFrame() {
-    const lastFrame = this.currentFrame;
     if (this.isPlaying) {
       this.currentFrame++;
-      if (this.currentFrame > this.totalFrames) {
+      if (this.currentFrame > this.totalFrames || this.currentFrame < 1) {
         this.currentFrame = 1;
       }
     }
 
-    if (this.currentFrame !== lastFrame) {
-      this.__character?.applyTo(this, this.currentFrame);
+    if (this.currentFrame !== this.#lastFrame) {
+      this.__character?.applyTo(this, this.#lastFrame, this.currentFrame);
+      this.#lastFrame = this.currentFrame;
     }
 
     super.__onNewFrame();

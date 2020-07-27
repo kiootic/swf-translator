@@ -11,26 +11,17 @@ export interface SpriteFrame {
   actions: FrameAction[];
 }
 
-export type FrameAction =
-  | FrameActionPlaceObject
-  | FrameActionUpdateObject
-  | FrameActionRemoveObject;
+export type FrameAction = FrameActionPlaceObject | FrameActionRemoveObject;
 
 export enum FrameActionKind {
   PlaceObject = 0,
-  UpdateObject = 1,
-  RemoveObject = 2,
+  RemoveObject = 1,
 }
 
 export interface FrameActionPlaceObject {
   kind: FrameActionKind.PlaceObject;
-  characterId: number;
   depth: number;
-}
-
-export interface FrameActionUpdateObject {
-  kind: FrameActionKind.UpdateObject;
-  depth: number;
+  characterId?: number;
 
   matrix?: Matrix;
   colorTransform?: ColorTransform;
