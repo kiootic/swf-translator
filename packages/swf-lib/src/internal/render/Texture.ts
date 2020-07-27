@@ -56,6 +56,7 @@ export class Texture implements GLTexture {
 
     if (this.dirty) {
       gl.bindTexture(gl.TEXTURE_2D, this.gl);
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
       gl.texImage2D(
         gl.TEXTURE_2D,
         0,

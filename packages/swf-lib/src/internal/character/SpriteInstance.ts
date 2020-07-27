@@ -44,8 +44,12 @@ export class SpriteInstance implements CharacterInstance {
         return;
       }
       for (const action of frame.actions) {
-        const ea = effectiveActions.get(action.depth) || {};
-        effectiveActions.set(action.depth, { ...ea, ...action });
+        const ea = effectiveActions.get(action.depth);
+        if (!ea || ea.kind !== action.kind) {
+          effectiveActions.set(action.depth, action);
+        } else {
+          effectiveActions.set(action.depth, { ...(ea || {}), ...action });
+        }
       }
     };
     for (

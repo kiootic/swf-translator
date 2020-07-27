@@ -1,4 +1,4 @@
-import sharp from "sharp";
+import sharp, { Sharp } from "sharp";
 import { SWFFile } from "../../format/swf";
 import { OutputContext } from "../../output/context";
 import { DefineBitsTag } from "../../format/tags/define-bits";
@@ -88,7 +88,7 @@ async function translateBitsJPEG2(ctx: OutputContext, tag: DefineBitsJPEG2Tag) {
 }
 
 async function translateBitsJPEG3(ctx: OutputContext, tag: DefineBitsJPEG3Tag) {
-  const image = sharp(tag.imageData);
+  let image = sharp(tag.imageData);
   const { width, height } = await image.metadata();
   image.joinChannel(tag.alphaBitmapData, {
     raw: {
@@ -98,6 +98,7 @@ async function translateBitsJPEG3(ctx: OutputContext, tag: DefineBitsJPEG3Tag) {
     },
   });
 
+  image = await unMultiplyAlpha(image);
   const data = await image.png().toBuffer();
 
   const file = ctx.file("assets", `${tag.characterId}.png`);
@@ -121,15 +122,35 @@ async function translateBitsLossless2(
     }
   }
 
-  const image = sharp(buf, {
+  let image = sharp(buf, {
     raw: {
       width: tag.bitmapWidth,
       height: tag.bitmapHeight,
       channels: 4,
     },
   });
+  image = await unMultiplyAlpha(image);
   const data = await image.png().toBuffer();
   const file = ctx.file("assets", `${tag.characterId}.png`);
   file.content = data;
   return file;
+}
+
+async function unMultiplyAlpha(img: Sharp): Promise<Sharp> {
+  const { width = 0, height = 0 } = await img.metadata();
+  const data = await img.raw().toBuffer();
+
+  let i = 0;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const a = data[i * 4 + 3] / 255;
+      if (a) {
+        data[i * 4 + 0] = Math.min(255, Math.max(0, data[i * 4 + 0] / a));
+        data[i * 4 + 1] = Math.min(255, Math.max(0, data[i * 4 + 1] / a));
+        data[i * 4 + 2] = Math.min(255, Math.max(0, data[i * 4 + 2] / a));
+      }
+      i++;
+    }
+  }
+  return sharp(data, { raw: { width, height, channels: 4 } });
 }

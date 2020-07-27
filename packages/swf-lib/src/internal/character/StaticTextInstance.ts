@@ -10,6 +10,7 @@ import {
 } from "../render/objects/RenderObjectSprite";
 import { Texture } from "../render/Texture";
 import { rect } from "../math/rect";
+import { preMultiplyAlpha } from "../math/color";
 
 export class StaticTextInstance implements CharacterInstance {
   readonly sprites: SpriteDef[] = [];
@@ -53,17 +54,11 @@ export class StaticTextInstance implements CharacterInstance {
         rect.union(bounds, bounds, glyphBounds);
       }
 
-      const vColor = vec4.fromValues(
-        (color >>> 16) & 0xff,
-        (color >>> 8) & 0xff,
-        (color >>> 0) & 0xff,
-        (color >>> 24) & 0xff
-      );
       const def: SpriteDef = {
         vertices,
         uvMatrix: mat2d.identity(mat2d.create()),
         texture: Texture.WHITE,
-        color: vColor,
+        color: preMultiplyAlpha(vec4.create(), color),
         fillMode: FillStyleKind.SolidColor,
         bounds,
       };

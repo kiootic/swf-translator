@@ -38,10 +38,6 @@ export class RenderTarget {
     return this.#renderObject.colorAdd;
   }
 
-  constructor() {
-    this.#renderObject.blendMode = BlendMode.NormalPM;
-  }
-
   resize(gl: WebGLRenderingContext, width: number, height: number) {
     let resized = false;
 

@@ -6,6 +6,7 @@ import { ShapeContour } from "../../classes/_internal/character/Shape";
 import { FillStyleKind } from "../../classes/_internal/character/styles";
 import { makeGradientTexture } from "./gradient";
 import { rect } from "../math/rect";
+import { preMultiplyAlpha } from "../math/color";
 
 export function makeShapeRenderObject(
   contour: ShapeContour,
@@ -36,12 +37,7 @@ export function makeShapeRenderObject(
   const uvMatrix = mat2d.identity(mat2d.create());
   switch (contour.fill.kind) {
     case FillStyleKind.SolidColor:
-      color = vec4.fromValues(
-        (contour.fill.color >>> 16) & 0xff,
-        (contour.fill.color >>> 8) & 0xff,
-        (contour.fill.color >>> 0) & 0xff,
-        (contour.fill.color >>> 24) & 0xff
-      );
+      color = preMultiplyAlpha(vec4.create(), contour.fill.color);
       break;
 
     case FillStyleKind.LinearGradient:

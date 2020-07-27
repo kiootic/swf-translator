@@ -5,7 +5,6 @@ import { RenderObjectProgram, RenderObject } from "../RenderObject";
 import { Buffer } from "../Buffer";
 import { Viewport } from "../Viewport";
 import { GLTexture, RenderTexture } from "../Texture";
-import { FillStyleKind } from "../../../classes/_internal/character/styles";
 
 export interface SpriteDef {
   vertices: Float32Array;
@@ -18,7 +17,6 @@ export interface SpriteDef {
 
 export enum BlendMode {
   Normal,
-  NormalPM,
 }
 
 export class RenderObjectSprite implements RenderObject {
@@ -43,6 +41,7 @@ class RenderObjectSpriteProgram
   private readonly textures: GLTexture[] = [];
   private readonly texIDs = new Uint8Array(8);
   private readonly vertices = new Buffer(new Float32Array(batchVertexSize * 4));
+  private readonly colorTint = new Buffer(new Uint32Array(batchVertexSize));
   private readonly colorMul = new Buffer(new Float32Array(batchVertexSize * 4));
   private readonly colorAdd = new Buffer(new Float32Array(batchVertexSize * 4));
   private readonly modes = new Buffer(new Uint8Array(batchVertexSize));
@@ -63,6 +62,7 @@ class RenderObjectSpriteProgram
     this.reset();
 
     const vertices = this.vertices.data;
+    const colorTint = this.colorTint.data;
     const colorAdd = this.colorAdd.data;
     const colorMul = this.colorMul.data;
 
@@ -98,14 +98,15 @@ class RenderObjectSpriteProgram
       const renderMatrix = o.renderMatrix;
       const uvMatrix = o.def.uvMatrix;
 
-      if (o.def.color) {
-        vec4.zero(cMul);
-        vec4.mul(cAdd, o.def.color, o.colorMul);
-        vec4.add(cAdd, cAdd, o.colorAdd);
-      } else {
-        vec4.copy(cMul, o.colorMul);
-        vec4.copy(cAdd, o.colorAdd);
-      }
+      const tint = o.def.color
+        ? Math.round(o.def.color[3] * 255) * 0x1000000 +
+          Math.round(o.def.color[2] * 255) * 0x10000 +
+          Math.round(o.def.color[1] * 255) * 0x100 +
+          Math.round(o.def.color[0] * 255) * 0x1
+        : 0xffffffff;
+      vec4.copy(cMul, o.colorMul);
+      vec4.copy(cAdd, o.colorAdd);
+      vec4.scale(cAdd, cAdd, 1 / 255);
 
       const base = this.numVertex;
       const oVertices = o.def.vertices;
@@ -120,6 +121,8 @@ class RenderObjectSpriteProgram
           renderMatrix[1] * x + renderMatrix[3] * y + renderMatrix[5];
         vertices[j + 2] = uvMatrix[0] * x + uvMatrix[2] * y + uvMatrix[4];
         vertices[j + 3] = uvMatrix[1] * x + uvMatrix[3] * y + uvMatrix[5];
+
+        colorTint[base + i] = tint;
 
         colorMul[j + 0] = cMul[0];
         colorMul[j + 1] = cMul[1];
@@ -152,6 +155,7 @@ class RenderObjectSpriteProgram
     }
 
     this.vertices.markDirty(this.numVertex * 4);
+    this.colorTint.markDirty(this.numVertex);
     this.colorMul.markDirty(this.numVertex * 4);
     this.colorAdd.markDirty(this.numVertex * 4);
     this.modes.markDirty(this.numVertex);
@@ -159,29 +163,7 @@ class RenderObjectSpriteProgram
     gl.blendEquation(gl.FUNC_ADD);
     switch (this.blendMode) {
       case BlendMode.Normal:
-        if (toTexture) {
-          gl.blendFuncSeparate(
-            gl.SRC_ALPHA,
-            gl.ONE_MINUS_SRC_ALPHA,
-            gl.ONE,
-            gl.ONE_MINUS_SRC_ALPHA
-          );
-        } else {
-          gl.blendFuncSeparate(
-            gl.SRC_ALPHA,
-            gl.ONE_MINUS_SRC_ALPHA,
-            gl.SRC_ALPHA,
-            gl.ONE_MINUS_SRC_ALPHA
-          );
-        }
-        break;
-      case BlendMode.NormalPM:
-        gl.blendFuncSeparate(
-          gl.ONE,
-          gl.ONE_MINUS_SRC_ALPHA,
-          gl.ONE,
-          gl.ONE_MINUS_SRC_ALPHA
-        );
+        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
         break;
     }
 
@@ -199,6 +181,7 @@ class RenderObjectSpriteProgram
     programSprite.setUniform(gl, "uProjectionMatrix", projectionMat);
     programSprite.setUniform(gl, "uTex", this.texIDs);
     programSprite.setAttr(gl, "aVertex", this.vertices);
+    programSprite.setAttr(gl, "aColorTint", this.colorTint);
     programSprite.setAttr(gl, "aColorMul", this.colorMul);
     programSprite.setAttr(gl, "aColorAdd", this.colorAdd);
     programSprite.setAttr(gl, "aMode", this.modes);
