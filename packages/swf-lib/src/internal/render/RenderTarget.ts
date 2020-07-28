@@ -41,8 +41,8 @@ export class RenderTarget {
   resize(gl: WebGLRenderingContext, width: number, height: number) {
     let resized = false;
 
-    const w = nextPow2(width / 20);
-    const h = nextPow2(height / 20);
+    const w = nextPow2(width);
+    const h = nextPow2(height);
     if (this.#texWidth !== w || this.#texHeight !== h) {
       this.delete(gl);
       this.tex1.width = w;
@@ -56,10 +56,8 @@ export class RenderTarget {
       resized = true;
     }
 
-    const texWidth = w * 20;
-    const texHeight = h * 20;
-    mat2d.fromScaling(this.#uvMat, [1 / texWidth, -1 / texHeight]);
-    mat2d.translate(this.#uvMat, this.#uvMat, [0, -texHeight]);
+    mat2d.fromScaling(this.#uvMat, [1 / w, -1 / h]);
+    mat2d.translate(this.#uvMat, this.#uvMat, [0, -h]);
 
     this.#renderObject.def.vertices.set([
       width,

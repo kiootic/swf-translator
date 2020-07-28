@@ -34,6 +34,13 @@ export const rect = {
     out[3] = 0;
     return out;
   },
+  scale(out: rect, rect: rect, factor: number) {
+    out[0] = rect[0] * factor;
+    out[1] = rect[1] * factor;
+    out[2] = rect[2] * factor;
+    out[3] = rect[3] * factor;
+    return out;
+  },
   union(out: rect, a: rect, b: rect) {
     if (a[2] === 0 || a[3] === 0) {
       rect.copy(out, b);

@@ -94,6 +94,8 @@ export class SpriteInstance implements CharacterInstance {
 
           if (action.matrix != null) {
             mat2d.copy(character.transform.matrix.__value, action.matrix);
+            character.transform.matrix.__value[4] /= 20;
+            character.transform.matrix.__value[5] /= 20;
             character.transform.__reportMatrixUpdated();
           }
 

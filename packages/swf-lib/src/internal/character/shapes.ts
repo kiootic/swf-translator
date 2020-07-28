@@ -20,8 +20,8 @@ export function makeShapeRenderObject(
   for (let i = 0; i < contour.indices.length; i++) {
     const index = contour.indices[i];
 
-    const x = contour.vertices[index * 2 + 0];
-    const y = contour.vertices[index * 2 + 1];
+    const x = contour.vertices[index * 2 + 0] / 20;
+    const y = contour.vertices[index * 2 + 1] / 20;
     vertices[i * 2 + 0] = x;
     vertices[i * 2 + 1] = y;
 
@@ -74,7 +74,7 @@ function convertMatrix(
   offset: number
 ) {
   mat2d.invert(mat, mat);
-  mat2d.scale(mat, mat, [1 / width, 1 / height]);
+  mat2d.scale(mat, mat, [20 / width, 20 / height]);
   mat[4] = mat[4] / width + offset;
   mat[5] = mat[5] / height + offset;
 }

@@ -15,7 +15,7 @@ export class ShapeInstance implements CharacterInstance {
 
   constructor(readonly id: number, def: ShapeCharacter, lib: AssetLibrary) {
     this.sprites = def.contours.map((c) => makeShapeRenderObject(c, lib));
-    this.bounds = def.bounds;
+    this.bounds = rect.scale(rect.create(), def.bounds, 1 / 20);
   }
 
   applyTo(container: Shape) {

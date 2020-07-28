@@ -42,10 +42,9 @@ export class Renderer {
     gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
 
     const projectionMat = mat3.projection(mat3.create(), width, height);
-    mat3.scale(projectionMat, projectionMat, [1 / 20, 1 / 20]);
     const viewport: Viewport = {
       matrix: projectionMat,
-      bounds: rect.fromValues(0, 0, width * 20, height * 20),
+      bounds: rect.fromValues(0, 0, width, height),
     };
 
     this.renderBatch(gl, false, ctx.objects, viewport);
@@ -76,7 +75,6 @@ export class Renderer {
     gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
 
     const projectionMat = mat3.projection(mat3.create(), width, height);
-    mat3.scale(projectionMat, projectionMat, [1 / 20, 1 / 20]);
     mat3.translate(projectionMat, projectionMat, [
       -viewportRect[0],
       -viewportRect[1],

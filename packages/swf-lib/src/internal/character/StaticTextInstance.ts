@@ -21,9 +21,12 @@ export class StaticTextInstance implements CharacterInstance {
     text: StaticTextCharacter,
     lib: AssetLibrary
   ) {
-    this.bounds = text.bounds;
+    this.bounds = rect.scale(rect.create(), text.bounds, 1 / 20);
 
     const matrix = mat2d.fromValues(...text.matrix);
+    matrix[4] /= 20;
+    matrix[5] /= 20;
+
     interface GlyphInstance {
       matrix: mat2d;
       bounds: rect;
@@ -80,7 +83,7 @@ export class StaticTextInstance implements CharacterInstance {
       }
 
       const glyphMatrix = mat2d.create();
-      mat2d.translate(glyphMatrix, matrix, [glyph.x, glyph.y]);
+      mat2d.translate(glyphMatrix, matrix, [glyph.x / 20, glyph.y / 20]);
       mat2d.scale(glyphMatrix, glyphMatrix, [
         glyph.size / 1024 / 20,
         glyph.size / 1024 / 20,
