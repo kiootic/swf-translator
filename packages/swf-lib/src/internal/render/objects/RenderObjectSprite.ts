@@ -37,6 +37,8 @@ class RenderObjectSpriteProgram
   static readonly instance = new RenderObjectSpriteProgram();
 
   private numVertex = 0;
+  private depth = 0;
+  private projectionMatrix = mat3.create();
   private blendMode: BlendMode = BlendMode.Normal;
   private readonly textures: GLTexture[] = [];
   private readonly texIDs = new Uint8Array(8);
@@ -55,11 +57,13 @@ class RenderObjectSpriteProgram
 
   render(
     gl: WebGL2RenderingContext,
-    toTexture: boolean,
     viewport: Viewport,
+    depth: number,
     objects: RenderObjectSprite[]
   ): void {
     this.reset();
+    this.depth = depth;
+    mat3.copy(this.projectionMatrix, viewport.matrix);
 
     const vertices = this.vertices.data;
     const colorTint = this.colorTint.data;
@@ -76,18 +80,18 @@ class RenderObjectSpriteProgram
       }
 
       if (this.blendMode != o.blendMode) {
-        this.flushBatch(gl, toTexture, viewport.matrix);
+        this.flushBatch(gl);
         this.blendMode = o.blendMode;
       }
 
       const numVertex = o.def.vertices.length / 2;
       if (this.numVertex + numVertex > batchVertexSize) {
-        this.flushBatch(gl, toTexture, viewport.matrix);
+        this.flushBatch(gl);
       }
 
       if (!this.textures.includes(o.def.texture)) {
         if (this.textures.length >= 8) {
-          this.flushBatch(gl, toTexture, viewport.matrix);
+          this.flushBatch(gl);
         }
         this.textures.push(o.def.texture);
       }
@@ -142,14 +146,10 @@ class RenderObjectSpriteProgram
       this.numVertex += numVertex;
     }
 
-    this.flushBatch(gl, toTexture, viewport.matrix);
+    this.flushBatch(gl);
   }
 
-  private flushBatch(
-    gl: WebGL2RenderingContext,
-    toTexture: boolean,
-    projectionMat: mat3
-  ) {
+  private flushBatch(gl: WebGL2RenderingContext) {
     if (this.numVertex === 0) {
       return;
     }
@@ -178,8 +178,9 @@ class RenderObjectSpriteProgram
       this.texIDs[i] = i;
     }
 
-    programSprite.setUniform(gl, "uProjectionMatrix", projectionMat);
+    programSprite.setUniform(gl, "uProjectionMatrix", this.projectionMatrix);
     programSprite.setUniform(gl, "uTex", this.texIDs);
+    programSprite.setUniform(gl, "uDepth", this.depth);
     programSprite.setAttr(gl, "aVertex", this.vertices);
     programSprite.setAttr(gl, "aColorTint", this.colorTint);
     programSprite.setAttr(gl, "aColorMul", this.colorMul);

@@ -59,10 +59,11 @@ export class FilterContext {
     const { width, height } = to;
     gl.viewport(0, 0, width, height);
     gl.disable(gl.BLEND);
+    gl.disable(gl.STENCIL_TEST);
 
     if (clearBuffer) {
       gl.clearColor(0, 0, 0, 0);
-      gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
+      gl.clear(gl.STENCIL_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
     }
 
     gl.useProgram(program.ensure(gl));

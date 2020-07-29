@@ -95,6 +95,10 @@ export class SpriteInstance implements CharacterInstance {
             break;
           }
 
+          if (action.clipDepth != null) {
+            character.__clipDepth = action.clipDepth;
+          }
+
           if (action.matrix != null) {
             mat2d.copy(character.transform.matrix.__value, action.matrix);
             character.transform.matrix.__value[4] /= 20;

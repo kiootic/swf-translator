@@ -20,6 +20,7 @@ export class Canvas {
       antialias: true,
       alpha: false,
       premultipliedAlpha: false,
+      stencil: true,
     });
     if (!ctx) {
       throw new Error("Cannot create context");

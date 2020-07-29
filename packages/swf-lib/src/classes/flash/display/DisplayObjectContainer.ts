@@ -77,8 +77,32 @@ export class DisplayObjectContainer extends InteractiveObject {
 
   __doRender(ctx: RenderContext) {
     super.__doRender(ctx);
+
+    interface Stencil {
+      endDepth: number;
+      end: () => void;
+    }
+    const stencils: Stencil[] = [];
     for (const child of this.#children) {
-      child.__render(ctx);
+      while (
+        stencils.length > 0 &&
+        child.__depth > stencils[stencils.length - 1].endDepth
+      ) {
+        stencils.pop()!.end();
+      }
+
+      if (child.__clipDepth !== -1) {
+        const endStencil = ctx.stencil(() => {
+          child.__render(ctx);
+        });
+        stencils.push({ endDepth: child.__clipDepth, end: endStencil });
+      } else {
+        child.__render(ctx);
+      }
+    }
+
+    while (stencils.length > 0) {
+      stencils.pop()!.end();
     }
   }
 

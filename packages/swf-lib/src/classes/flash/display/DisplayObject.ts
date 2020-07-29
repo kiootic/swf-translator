@@ -14,6 +14,7 @@ import { BitmapFilter } from "../filters/BitmapFilter";
 export class DisplayObject extends EventDispatcher {
   __character: CharacterInstance | null = null;
   __depth: number = -1;
+  __clipDepth: number = -1;
   readonly __renderObjects: RenderObject[] = [];
 
   #bounds = new Rectangle();
