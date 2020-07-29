@@ -104,8 +104,20 @@ export class Program {
         gl.uniform2fv(location, value as Float32List);
         break;
 
+      case "vec4":
+        gl.uniform4fv(location, value as Float32List);
+        break;
+
       case "mat3":
         gl.uniformMatrix3fv(location, false, value as Float32List);
+        break;
+
+      case "float":
+        gl.uniform1f(location, value as number);
+        break;
+
+      case "int":
+        gl.uniform1i(location, value as number);
         break;
 
       case "intlist":

@@ -1,6 +1,6 @@
-import { mat2d } from "gl-matrix";
+import { mat2d, vec2 } from "gl-matrix";
 import { rect } from "../math/rect";
-import { RenderObjectSprite, BlendMode } from "./objects/RenderObjectSprite";
+import { RenderObjectSprite } from "./objects/RenderObjectSprite";
 import { FillStyleKind } from "../../classes/_internal/character/styles";
 import { RenderTexture } from "./Texture";
 import type { RenderContext } from "./RenderContext";
@@ -11,9 +11,13 @@ function nextPow2(n: number) {
 }
 
 export class RenderTarget {
+  #gl?: WebGLRenderingContext;
+
   renderBuffer = new Renderbuffer(0, 0);
-  tex1 = new RenderTexture(0, 0);
-  tex2 = new RenderTexture(0, 0);
+  texture = new RenderTexture(0, 0);
+  textureAux1 = new RenderTexture(0, 0);
+  textureAux2 = new RenderTexture(0, 0);
+  viewport = rect.create();
 
   #texWidth = 0;
   #texHeight = 0;
@@ -22,7 +26,7 @@ export class RenderTarget {
   #renderObject = new RenderObjectSprite({
     vertices: new Float32Array(12),
     uvMatrix: this.#uvMat,
-    texture: this.tex1,
+    texture: this.texture,
     color: null,
     fillMode: FillStyleKind.ClippedBitmap,
     bounds: rect.create(),
@@ -38,26 +42,45 @@ export class RenderTarget {
     return this.#renderObject.colorAdd;
   }
 
-  resize(gl: WebGLRenderingContext, width: number, height: number) {
+  resize(
+    gl: WebGLRenderingContext,
+    viewport: rect,
+    padX: number,
+    padY: number
+  ) {
+    this.#gl = gl;
     let resized = false;
 
-    const w = nextPow2(width);
-    const h = nextPow2(height);
-    if (this.#texWidth !== w || this.#texHeight !== h) {
-      this.delete(gl);
-      this.tex1.width = w;
-      this.tex1.height = h;
-      this.tex2.width = w;
-      this.tex2.height = h;
-      this.renderBuffer.width = w;
-      this.renderBuffer.height = h;
-      this.#texWidth = w;
-      this.#texHeight = h;
+    let [x, y, width, height] = viewport;
+    x -= padX;
+    y -= padY;
+    width += padX * 2;
+    height += padY * 2;
+
+    const texWidth = nextPow2(width);
+    const texHeight = nextPow2(height);
+    if (this.#texWidth !== texWidth || this.#texHeight !== texHeight) {
+      this.delete();
+      this.renderBuffer.width = texWidth;
+      this.renderBuffer.height = texHeight;
+      this.texture.width = texWidth;
+      this.texture.height = texHeight;
+      this.textureAux1.width = texWidth;
+      this.textureAux1.height = texHeight;
+      this.textureAux2.width = texWidth;
+      this.textureAux2.height = texHeight;
+      this.#texWidth = texWidth;
+      this.#texHeight = texHeight;
       resized = true;
     }
 
-    mat2d.fromScaling(this.#uvMat, [1 / w, -1 / h]);
-    mat2d.translate(this.#uvMat, this.#uvMat, [0, -h]);
+    this.viewport[0] = Math.floor(x);
+    this.viewport[1] = Math.floor(y);
+    this.viewport[2] = texWidth;
+    this.viewport[3] = texHeight;
+
+    mat2d.fromScaling(this.#uvMat, [1 / texWidth, -1 / texHeight]);
+    mat2d.translate(this.#uvMat, this.#uvMat, [0, -texHeight]);
 
     this.#renderObject.def.vertices.set([
       width,
@@ -73,22 +96,22 @@ export class RenderTarget {
       width,
       height,
     ]);
+    this.#renderObject.def.bounds[0] = -padX;
+    this.#renderObject.def.bounds[1] = -padY;
     this.#renderObject.def.bounds[2] = width;
     this.#renderObject.def.bounds[3] = height;
 
     return resized;
   }
 
-  delete(gl: WebGLRenderingContext) {
-    this.renderBuffer.delete(gl);
-    this.tex1.delete(gl);
-    this.tex2.delete(gl);
-  }
-
-  swap() {
-    const tex2 = this.tex2;
-    this.tex2 = this.tex1;
-    this.tex1 = tex2;
+  delete() {
+    if (!this.#gl) {
+      return;
+    }
+    this.renderBuffer.delete(this.#gl);
+    this.texture.delete(this.#gl);
+    this.textureAux1.delete(this.#gl);
+    this.textureAux2.delete(this.#gl);
   }
 
   renderTo(ctx: RenderContext) {

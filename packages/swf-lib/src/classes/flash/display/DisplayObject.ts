@@ -1,13 +1,15 @@
-import { observable, runInAction, createAtom } from "mobx";
+import { observable, runInAction, createAtom, autorun, reaction } from "mobx";
 import { mat2d, vec4, mat3 } from "gl-matrix";
 import { CharacterInstance } from "../../../internal/character/CharacterInstance";
 import { RenderObject } from "../../../internal/render/RenderObject";
 import { RenderContext } from "../../../internal/render/RenderContext";
 import { RenderTarget } from "../../../internal/render/RenderTarget";
+import { rect } from "../../../internal/math/rect";
 import type { DisplayObjectContainer } from "./DisplayObjectContainer";
 import { EventDispatcher } from "../events/EventDispatcher";
 import { Transform } from "../geom/Transform";
 import { Rectangle } from "../geom/Rectangle";
+import { BitmapFilter } from "../filters/BitmapFilter";
 
 export class DisplayObject extends EventDispatcher {
   __character: CharacterInstance | null = null;
@@ -45,7 +47,17 @@ export class DisplayObject extends EventDispatcher {
   parent: DisplayObjectContainer | null = null;
 
   @observable
-  cacheAsBitmap: boolean = false;
+  __cacheAsBitmap: boolean = false;
+
+  @observable
+  filters: BitmapFilter[] = [];
+
+  get cacheAsBitmap() {
+    return this.__cacheAsBitmap || this.filters.length > 0;
+  }
+  set cacheAsBitmap(value) {
+    this.__cacheAsBitmap = value;
+  }
 
   get x(): number {
     return this.transform.matrix.tx;
@@ -96,7 +108,7 @@ export class DisplayObject extends EventDispatcher {
       return;
     }
 
-    const [x, y, width, height] = this.#bounds.__rect;
+    const [, , width, height] = this.#bounds.__rect;
     if (this.cacheAsBitmap && width > 0 && height > 0) {
       let target = this.#renderTarget;
       if (!target) {
@@ -104,29 +116,39 @@ export class DisplayObject extends EventDispatcher {
         this.#renderTarget = target;
         this.#needReRender = true;
       }
-      if (target.resize(ctx.gl, width, height)) {
+
+      let padX = 4,
+        padY = 4;
+      for (const filter of this.filters) {
+        padX = Math.max(padX, filter.__padX);
+        padY = Math.max(padY, filter.__padY);
+      }
+      if (target.resize(ctx.gl, this.#bounds.__rect, padX, padY)) {
         this.#needReRender = true;
       }
 
       if (this.#needReRender) {
-        ctx.renderer.renderToTarget(target, this.#bounds.__rect, (ctx) => {
+        ctx.renderer.renderToTarget(target, (ctx) => {
           this.__doRender(ctx);
         });
+        for (const filter of this.filters) {
+          filter.__apply(target, ctx);
+        }
         this.#needReRender = false;
       }
 
-      mat2d.translate(
-        target.renderMatrix,
-        this.transform.__worldMatrix.__value,
-        [x, y]
-      );
+      mat2d.copy(target.renderMatrix, this.transform.__worldMatrix.__value);
+      target.renderMatrix[4] =
+        Math.floor(target.renderMatrix[4]) + target.viewport[0];
+      target.renderMatrix[5] =
+        Math.floor(target.renderMatrix[5]) + target.viewport[1];
       vec4.copy(target.colorMul, this.transform.__worldColorTransform.__mul);
       vec4.copy(target.colorAdd, this.transform.__worldColorTransform.__add);
       target.renderTo(ctx);
 
       return;
     } else if (this.#renderTarget) {
-      this.#renderTarget.delete(ctx.gl);
+      this.#renderTarget.delete();
       this.#renderTarget = null;
     }
 
@@ -155,4 +177,22 @@ export class DisplayObject extends EventDispatcher {
       }
     });
   }
+
+  __filterMarkReRender = reaction(
+    () => this.filters,
+    () => {
+      if (this.cacheAsBitmap) {
+        this.#needReRender = true;
+      }
+    }
+  );
+
+  __cleanupRenderTarget = autorun(() => {
+    if (!this.parent) {
+      if (this.#renderTarget) {
+        this.#renderTarget.delete();
+        this.#renderTarget = null;
+      }
+    }
+  });
 }

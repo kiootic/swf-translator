@@ -9,7 +9,13 @@ export interface AttributeType {
   normalized?: boolean;
 }
 
-export type UniformType = "vec2" | "mat3" | "intlist";
+export type UniformType =
+  | "vec2"
+  | "vec4"
+  | "mat3"
+  | "float"
+  | "int"
+  | "intlist";
 
 export interface ShaderDescriptor {
   kind: ShaderKind;

@@ -1,14 +1,17 @@
+import { mat2d, vec4 } from "gl-matrix";
 import { Sprite } from "../../classes/flash/display/Sprite";
+import { DisplayObject } from "../../classes/flash/display/DisplayObject";
+import { BitmapFilter } from "../../classes/flash/filters/BitmapFilter";
 import {
   SpriteCharacter,
   SpriteFrame,
   FrameActionKind,
   FrameAction,
-} from "../../classes/_internal/character";
+} from "../../classes/_internal/character/Sprite";
+import { FilterID } from "../../classes/_internal/character/filter";
 import type { AssetLibrary } from "../../classes/_internal";
+import { DropShadowFilter } from "../../classes/flash/filters/DropShadowFilter";
 import { CharacterInstance } from "./CharacterInstance";
-import { mat2d, vec4 } from "gl-matrix";
-import { DisplayObject } from "../../classes/flash/display";
 
 export class SpriteInstance implements CharacterInstance {
   readonly numFrames: number;
@@ -116,6 +119,29 @@ export class SpriteInstance implements CharacterInstance {
             character.name = action.name;
           }
 
+          if (action.filters != null) {
+            const filters: BitmapFilter[] = [];
+            for (const f of action.filters) {
+              switch (f.id) {
+                case FilterID.DropShadow: {
+                  const filter = new DropShadowFilter();
+                  filter.color = f.color;
+                  filter.blurX = f.blurX;
+                  filter.blurY = f.blurY;
+                  filter.angle = (f.angle * 180) / Math.PI;
+                  filter.distance = f.distance;
+                  filter.strength = f.strength;
+                  filter.inner = f.inner;
+                  filter.knockout = f.knockout;
+                  filter.quality = f.passes;
+
+                  filters.push(filter);
+                  break;
+                }
+              }
+            }
+            character.filters = filters;
+          }
           // TODO: filters
           // TODO: blendMode
 

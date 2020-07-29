@@ -5,9 +5,9 @@ import { Viewport } from "./Viewport";
 import { RenderObjectProgram, RenderObject } from "./RenderObject";
 import { rect } from "../math/rect";
 import { Framebuffer } from "./Framebuffer";
-import { GLTexture } from "./Texture";
-import { Renderbuffer } from "./Renderbuffer";
 import { RenderTarget } from "./RenderTarget";
+import { Buffer } from "./Buffer";
+import { Filter, FilterContext } from "./Filter";
 
 export class Renderer {
   gl: WebGL2RenderingContext;
@@ -17,8 +17,8 @@ export class Renderer {
 
   backgroundColor = 0x000000;
 
-  #framebufferRender = new Framebuffer();
-  #framebufferTex = new Framebuffer();
+  framebufferRender = new Framebuffer();
+  framebufferTex = new Framebuffer();
 
   renderFrame(fn: (ctx: RenderContext) => void) {
     const ctx = new RenderContext(this);
@@ -52,21 +52,16 @@ export class Renderer {
     gl.flush();
   }
 
-  renderToTarget(
-    target: RenderTarget,
-    viewportRect: rect,
-    fn: (ctx: RenderContext) => void
-  ) {
+  renderToTarget(target: RenderTarget, fn: (ctx: RenderContext) => void) {
     const ctx = new RenderContext(this);
     fn(ctx);
 
     const gl = this.gl;
 
-    this.#framebufferRender.attachRenderbuffer(gl, target.renderBuffer);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.#framebufferRender.ensure(gl));
+    this.framebufferRender.attachRenderbuffer(gl, target.renderBuffer);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebufferRender.ensure(gl));
 
-    const width = target.renderBuffer.width,
-      height = target.renderBuffer.height;
+    const [, , width, height] = target.viewport;
     gl.viewport(0, 0, width, height);
     gl.disable(gl.DEPTH_TEST);
     gl.enable(gl.BLEND);
@@ -76,21 +71,21 @@ export class Renderer {
 
     const projectionMat = mat3.projection(mat3.create(), width, height);
     mat3.translate(projectionMat, projectionMat, [
-      -viewportRect[0],
-      -viewportRect[1],
+      -target.viewport[0],
+      -target.viewport[1],
     ]);
     const viewport: Viewport = {
       matrix: projectionMat,
-      bounds: viewportRect,
+      bounds: target.viewport,
     };
 
     this.renderBatch(gl, true, ctx.objects, viewport);
 
     gl.flush();
 
-    this.#framebufferTex.attachTexture(gl, target.tex1);
-    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, this.#framebufferRender.ensure(gl));
-    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, this.#framebufferTex.ensure(gl));
+    this.framebufferTex.attachTexture(gl, target.texture);
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, this.framebufferRender.ensure(gl));
+    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, this.framebufferTex.ensure(gl));
     gl.blitFramebuffer(
       0,
       0,
@@ -101,7 +96,7 @@ export class Renderer {
       width,
       height,
       gl.COLOR_BUFFER_BIT,
-      gl.LINEAR
+      gl.NEAREST
     );
   }
 
@@ -128,5 +123,12 @@ export class Renderer {
     if (program) {
       program.render(gl, toTexture, viewport, objects.slice(begin));
     }
+  }
+
+  #filterVertices = new Buffer(Float32Array.from([0, 0, 0, 1, 1, 0, 1, 1]));
+
+  applyFilter(target: RenderTarget, filter: Filter) {
+    const context = new FilterContext(target, this.#filterVertices, this);
+    filter.apply(context);
   }
 }

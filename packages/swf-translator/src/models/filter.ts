@@ -3,7 +3,6 @@ export type Filter = FilterDropShadow | FilterBlur;
 export enum FilterID {
   DropShadow = 0,
   Blur = 1,
-  ColorMatrix = 2,
 }
 
 export interface FilterDropShadow {

@@ -10,15 +10,18 @@ export class Renderbuffer {
   }
 
   ensure(gl: WebGL2RenderingContext): WebGLRenderbuffer {
+    if (this.dirty && this.gl) {
+      gl.deleteRenderbuffer(this.gl);
+      this.gl = undefined;
+    }
+
     if (!this.gl) {
       const rb = gl.createRenderbuffer();
       if (!rb) {
         throw new Error("Cannot create texture");
       }
       this.gl = rb;
-    }
 
-    if (this.dirty) {
       gl.bindRenderbuffer(gl.RENDERBUFFER, this.gl);
       gl.renderbufferStorageMultisample(
         gl.RENDERBUFFER,
