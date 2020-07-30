@@ -7,6 +7,7 @@ import { translateSprites } from "./sprites";
 import { translateFonts } from "./fonts";
 import { translateStaticTexts } from "./static-texts";
 import { VariableDeclarationKind } from "ts-morph";
+import { translateEditTexts } from "./edit-text";
 
 export async function generateCharacters(ctx: OutputContext, swf: SWFFile) {
   const index = ctx.file("characters", "index.ts");
@@ -26,6 +27,7 @@ export async function generateCharacters(ctx: OutputContext, swf: SWFFile) {
             shapes: {},
             fonts: {},
             staticTexts: {},
+            editTexts: {},
             sprites: {},
           },
           null,
@@ -60,6 +62,7 @@ export async function generateCharacters(ctx: OutputContext, swf: SWFFile) {
   const sprites = await translateSprites(ctx, swf);
   const fonts = await translateFonts(ctx, swf);
   const staticTexts = await translateStaticTexts(ctx, swf);
+  const editTexts = await translateEditTexts(ctx, swf);
 
   index.tsSource.addExportAssignment({
     expression: "bundle",
@@ -75,6 +78,7 @@ export async function generateCharacters(ctx: OutputContext, swf: SWFFile) {
     shapes,
     fonts,
     staticTexts,
+    editTexts,
     sprites,
   };
   const bundleDataJSON = ctx.file("characters.bundle.json");

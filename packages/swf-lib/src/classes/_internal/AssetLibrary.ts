@@ -2,6 +2,7 @@ import { ImageCharacter } from "./character/Image";
 import { ShapeCharacter } from "./character/Shape";
 import { FontCharacter } from "./character/Font";
 import { StaticTextCharacter } from "./character/StaticText";
+import { EditTextCharacter } from "./character/EditText";
 import { SpriteCharacter } from "./character/Sprite";
 import type { DisplayObject } from "../flash/display/DisplayObject";
 import { Shape } from "../flash/display/Shape";
@@ -29,6 +30,7 @@ export class AssetLibraryBuilder {
   private readonly sprites = new Map<number, SpriteCharacter>();
   private readonly fonts = new Map<number, FontCharacter>();
   private readonly staticTexts = new Map<number, StaticTextCharacter>();
+  private readonly editTexts = new Map<number, EditTextCharacter>();
 
   registerImage(id: number, char: ImageCharacter) {
     this.images.set(id, char);
@@ -50,6 +52,10 @@ export class AssetLibraryBuilder {
     this.staticTexts.set(id, char);
   }
 
+  registerEditText(id: number, char: EditTextCharacter) {
+    this.editTexts.set(id, char);
+  }
+
   registerBundle(bundle: AssetBundle) {
     for (const [id, char] of Object.entries(bundle.images)) {
       this.registerImage(Number(id), char);
@@ -62,6 +68,9 @@ export class AssetLibraryBuilder {
     }
     for (const [id, char] of Object.entries(bundle.staticTexts)) {
       this.registerStaticText(Number(id), char);
+    }
+    for (const [id, char] of Object.entries(bundle.editTexts)) {
+      this.registerEditText(Number(id), char);
     }
     for (const [id, char] of Object.entries(bundle.sprites)) {
       this.registerSprite(Number(id), char);

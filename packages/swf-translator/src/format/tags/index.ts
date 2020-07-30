@@ -25,6 +25,7 @@ import { RemoveObject2Tag } from "./remove-object-2";
 import { DefineFont3Tag } from "./define-font-3";
 import { DefineTextTag } from "./define-text";
 import { DefineText2Tag } from "./define-text-2";
+import { DefineEditTextTag } from "./define-edit-text";
 
 interface TagClass {
   new (reader: Reader): Tag;
@@ -58,6 +59,7 @@ registerTag(RemoveObject2Tag);
 registerTag(DefineFont3Tag);
 registerTag(DefineTextTag);
 registerTag(DefineText2Tag);
+registerTag(DefineEditTextTag);
 
 function parseTag(reader: Reader): Tag {
   const codeAndLength = reader.nextUInt16();
