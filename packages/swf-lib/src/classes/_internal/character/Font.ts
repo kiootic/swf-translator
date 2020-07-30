@@ -2,6 +2,8 @@ import { ShapeCharacter } from "./Shape";
 
 export interface FontCharacter {
   name: string;
+  isItalic: boolean;
+  isBold: boolean;
   glyphs: FontGlyph[];
   layout?: FontLayout;
 }

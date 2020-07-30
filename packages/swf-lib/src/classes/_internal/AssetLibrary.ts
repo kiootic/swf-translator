@@ -14,8 +14,11 @@ import { ShapeInstance } from "../../internal/character/ShapeInstance";
 import { SpriteInstance } from "../../internal/character/SpriteInstance";
 import { FontInstance } from "../../internal/character/FontInstance";
 import { StaticTextInstance } from "../../internal/character/StaticTextInstance";
+import { EditTextInstance } from "../../internal/character/EditTextInstance";
 import { Texture } from "../../internal/render/Texture";
 import { AssetBundle } from "./AssetBundle";
+import { FontRegistry } from "./FontRegistry";
+import { TextField } from "../flash/text";
 
 export interface AssetLibrary {
   resolveImage(id: number): Texture;
@@ -96,7 +99,9 @@ export class AssetLibraryBuilder {
     }
 
     for (const [id, font] of this.fonts) {
-      library.fonts.set(id, new FontInstance(id, font, library));
+      const instance = new FontInstance(id, font, library);
+      library.fonts.set(id, instance);
+      FontRegistry.instance.registerFont(instance);
     }
 
     for (const [id, staticText] of this.staticTexts) {
@@ -104,6 +109,10 @@ export class AssetLibraryBuilder {
         id,
         new StaticTextInstance(id, staticText, library)
       );
+    }
+
+    for (const [id, editText] of this.editTexts) {
+      library.editTexts.set(id, new EditTextInstance(id, editText, library));
     }
 
     return library;
@@ -116,6 +125,7 @@ class InstantiatedLibrary implements AssetLibrary {
   readonly sprites = new Map<number, SpriteInstance>();
   readonly fonts = new Map<number, FontInstance>();
   readonly staticTexts = new Map<number, StaticTextInstance>();
+  readonly editTexts = new Map<number, EditTextInstance>();
 
   resolveImage(id: number): Texture {
     const instance = this.images.get(id);
@@ -150,6 +160,14 @@ class InstantiatedLibrary implements AssetLibrary {
       staticTextInstance.applyTo(staticText);
       staticText.__character = staticTextInstance;
       return staticText;
+    }
+
+    const editTextInstance = this.editTexts.get(id);
+    if (editTextInstance) {
+      const textField = new TextField();
+      editTextInstance.applyTo(textField);
+      textField.__character = editTextInstance;
+      return textField;
     }
 
     const spriteInstance = this.sprites.get(id);

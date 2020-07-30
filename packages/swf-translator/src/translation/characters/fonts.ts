@@ -68,7 +68,12 @@ function translateFont(tag: DefineFont3Tag): Font {
     glyphs[i] = { char, shape };
   }
 
-  const font: Font = { name: tag.fontName, glyphs };
+  const font: Font = {
+    name: tag.fontName,
+    isItalic: tag.isItalic,
+    isBold: tag.isBold,
+    glyphs,
+  };
   if (tag.glyphAdvances) {
     font.layout = {
       ascent: tag.ascent ?? 0,

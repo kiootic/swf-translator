@@ -3,6 +3,8 @@ import { Matrix, Rect } from "./primitives";
 
 export interface Font {
   name: string;
+  isItalic: boolean;
+  isBold: boolean;
   glyphs: FontGlyph[];
   layout?: FontLayout;
 }

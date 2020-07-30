@@ -15,8 +15,8 @@ export class DefineFont3Tag extends Tag {
     const isANSI = reader.nextBitBool();
     const useWideOffsets = reader.nextBitBool();
     const useWideCodes = reader.nextBitBool();
-    const isItalic = reader.nextBitBool();
-    const isBold = reader.nextBitBool();
+    this.isItalic = reader.nextBitBool();
+    this.isBold = reader.nextBitBool();
 
     const languageCode = reader.nextUInt8();
     const fontNameLen = reader.nextUInt8();
@@ -55,6 +55,8 @@ export class DefineFont3Tag extends Tag {
 
   readonly characterId: number;
   readonly fontName: string;
+  readonly isItalic: boolean;
+  readonly isBold: boolean;
   readonly glyphShapes: Shape[];
   readonly glyphCodes: number[];
 
