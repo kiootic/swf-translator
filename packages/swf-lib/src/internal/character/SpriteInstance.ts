@@ -117,7 +117,6 @@ export class SpriteInstance implements CharacterInstance {
             );
             character.transform.__reportColorTransformUpdated();
           }
-          // TODO: ratio
 
           if (action.name != null) {
             character.name = action.name;
@@ -146,14 +145,16 @@ export class SpriteInstance implements CharacterInstance {
             }
             character.filters = filters;
           }
-          // TODO: filters
-          // TODO: blendMode
-
-          // TODO: cacheAsBitmap
+          if (action.cacheAsBitmap != null) {
+            character.cacheAsBitmap = action.cacheAsBitmap;
+          }
 
           if (action.visible != null) {
             character.visible = action.visible;
           }
+
+          // TODO: ratio
+          // TODO: blendMode
 
           break;
         }
