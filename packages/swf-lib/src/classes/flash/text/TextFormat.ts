@@ -9,4 +9,16 @@ export class TextFormat {
   @observable font = "Times New Roman";
   @observable size = 12;
   @observable leading = 0;
+
+  __clone() {
+    const format = new TextFormat();
+    format.align = this.align;
+    format.bold = this.bold;
+    format.italic = this.italic;
+    format.color = this.color;
+    format.font = this.font;
+    format.size = this.size;
+    format.leading = this.leading;
+    return format;
+  }
 }

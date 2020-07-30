@@ -1,20 +1,16 @@
 import { mat2d, vec4 } from "gl-matrix";
 import { autorun, observable } from "mobx";
+import { Container } from "../../_internal/text/Container";
 import { InteractiveObject } from "../display/InteractiveObject";
 import { EditTextInstance } from "../../../internal/character/EditTextInstance";
 import { RenderObjectSprite } from "../../../internal/render/objects/RenderObjectSprite";
 import { TextFieldType } from "./TextFieldType";
-import { TextFormat } from "./TextFormat";
 
 export class TextField extends InteractiveObject {
   declare __character: EditTextInstance | null;
   declare __renderObjects: RenderObjectSprite[];
 
-  @observable
-  wordWrap = false;
-
-  @observable
-  multiline = false;
+  readonly __container = new Container();
 
   @observable
   type: TextFieldType = TextFieldType.DYNAMIC;
@@ -22,21 +18,47 @@ export class TextField extends InteractiveObject {
   @observable
   selectable = true;
 
-  @observable
-  defaultTextFormat = new TextFormat();
+  get wordWrap() {
+    return this.__container.wordWrap;
+  }
+  set wordWrap(value) {
+    this.__container.wordWrap = value;
+  }
+
+  get multiline() {
+    return this.__container.multiline;
+  }
+  set multiline(value) {
+    this.__container.multiline = value;
+  }
+
+  get defaultTextFormat() {
+    return this.__container.defaultTextFormat;
+  }
+  set defaultTextFormat(value) {
+    this.__container.defaultTextFormat = value;
+  }
 
   get textColor() {
-    return this.defaultTextFormat.color;
+    return this.__container.defaultTextFormat.color;
   }
   set textColor(value) {
-    this.defaultTextFormat.color = value;
+    this.__container.defaultTextFormat.color = value;
   }
 
-  @observable
-  text = "";
+  get text() {
+    return this.__container.text;
+  }
+  set text(value) {
+    this.__container.setText(value);
+  }
 
-  @observable
-  htmlText = "";
+  get htmlText() {
+    return this.__container.htmlText;
+  }
+  set htmlText(value) {
+    this.__container.setHTMLText(value);
+  }
 
   #updateRenderMatrix = autorun(() => {
     const matrix = this.transform.__worldMatrix.__value;
