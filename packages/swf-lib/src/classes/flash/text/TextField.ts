@@ -1,16 +1,20 @@
 import { mat2d, vec4 } from "gl-matrix";
-import { autorun, observable } from "mobx";
+import { autorun, observable, runInAction } from "mobx";
 import { Container } from "../../_internal/text/Container";
 import { InteractiveObject } from "../display/InteractiveObject";
 import { EditTextInstance } from "../../../internal/character/EditTextInstance";
 import { RenderObjectSprite } from "../../../internal/render/objects/RenderObjectSprite";
 import { TextFieldType } from "./TextFieldType";
+import { rect } from "../../../internal/math/rect";
 
 export class TextField extends InteractiveObject {
   declare __character: EditTextInstance | null;
   declare __renderObjects: RenderObjectSprite[];
 
   readonly __container = new Container();
+
+  @observable
+  __dirtyRender = false;
 
   @observable
   type: TextFieldType = TextFieldType.DYNAMIC;
@@ -60,7 +64,19 @@ export class TextField extends InteractiveObject {
     this.__container.setHTMLText(value);
   }
 
+  #copyBounds = autorun(() => {
+    this.__container.bounds = rect.copy(rect.create(), this.__bounds.__rect);
+  });
+
+  #copyRenderObjects = autorun(() => {
+    this.__renderObjects = this.__container.renderObjects;
+    this.__dirtyRender = true;
+  });
+
   #updateRenderMatrix = autorun(() => {
+    if (this.__dirtyRender) {
+      this.__dirtyRender = false;
+    }
     const matrix = this.transform.__worldMatrix.__value;
     const colorTransform = this.transform.__worldColorTransform;
     for (const obj of this.__renderObjects) {

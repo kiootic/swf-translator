@@ -1,7 +1,10 @@
-import { action, computed, observable } from "mobx";
+import { action, autorun, computed, observable } from "mobx";
 import { TextFormat } from "../../flash/text/TextFormat";
-import { TextSegment } from "./TextSegment";
 import { TextFormatAlign } from "../../flash/text";
+import { RenderObjectSprite } from "../../../internal/render/objects/RenderObjectSprite";
+import { TextSegment } from "./TextSegment";
+import { layout } from "./layout";
+import { rect } from "../../../internal/math/rect";
 
 const htmlParser = new DOMParser();
 
@@ -21,6 +24,15 @@ export class Container {
 
   @observable
   multiline = false;
+
+  @observable.ref
+  bounds: rect = rect.create();
+
+  @observable.ref
+  textBounds: rect = rect.create();
+
+  @observable.ref
+  renderObjects: RenderObjectSprite[] = [];
 
   @computed
   get text(): string {
@@ -65,49 +77,60 @@ export class Container {
 
       const format = currentSegment.format.__clone();
       let text = "";
-      switch (element.tagName) {
+      switch (element.tagName.toLowerCase()) {
         case "b":
           format.bold = true;
           break;
         case "br":
           text = "\n";
           break;
-        case "font": {
-          const color = element.getAttribute("color");
-          if (color != null && /^#[0-9a-fA-F]{6}$/.test(color)) {
-            format.color = parseInt(color.slice(1), 16) + 0xff000000;
-          }
-          const face = element.getAttribute("face");
-          if (face != null) {
-            format.font = face;
-          }
-          const size = element.getAttribute("size");
-          if (size != null && /^\d+$/.test(size)) {
-            format.size = Number(size);
+        case "font":
+          for (let i = 0; i < element.attributes.length; i++) {
+            const attr = element.attributes[i];
+            switch (attr.name.toLowerCase()) {
+              case "color":
+                if (/^#[0-9a-fA-F]{6}$/.test(attr.value)) {
+                  format.color = parseInt(attr.value.slice(1), 16) + 0xff000000;
+                }
+                break;
+              case "face":
+                format.font = attr.value;
+                break;
+              case "size":
+                if (/^\d+$/.test(attr.value)) {
+                  format.size = Number(attr.value);
+                }
+                break;
+            }
           }
           break;
-        }
         case "i":
           format.italic = true;
           break;
-        case "p": {
-          const align = element.getAttribute("align");
-          switch (align) {
-            case "left":
-              format.align = TextFormatAlign.LEFT;
-              break;
-            case "right":
-              format.align = TextFormatAlign.RIGHT;
-              break;
-            case "justify":
-              format.align = TextFormatAlign.JUSTIFY;
-              break;
-            case "center":
-              format.align = TextFormatAlign.CENTER;
-              break;
+        case "p":
+          for (let i = 0; i < element.attributes.length; i++) {
+            const attr = element.attributes[i];
+            switch (attr.name.toLowerCase()) {
+              case "align":
+                switch (attr.value) {
+                  case "left":
+                    format.align = TextFormatAlign.LEFT;
+                    break;
+                  case "right":
+                    format.align = TextFormatAlign.RIGHT;
+                    break;
+                  case "justify":
+                    format.align = TextFormatAlign.JUSTIFY;
+                    break;
+                  case "center":
+                    format.align = TextFormatAlign.CENTER;
+                    break;
+                }
+                break;
+            }
+            break;
           }
           break;
-        }
       }
 
       currentSegment = { format, text };
@@ -160,4 +183,15 @@ export class Container {
 
     this.segments = segments.filter((s) => s.text.length > 0);
   }
+
+  #layout = autorun(() => {
+    const result = layout(
+      this.segments,
+      this.bounds,
+      this.wordWrap,
+      this.multiline
+    );
+    this.textBounds = result.bounds;
+    this.renderObjects = result.renderObjects;
+  });
 }

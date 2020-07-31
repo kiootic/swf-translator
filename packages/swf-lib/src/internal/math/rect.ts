@@ -41,6 +41,13 @@ export const rect = {
     out[3] = rect[3] * factor;
     return out;
   },
+  translate(out: rect, rect: rect, t: vec2) {
+    out[0] = rect[0] + t[0];
+    out[1] = rect[1] + t[1];
+    out[2] = rect[2];
+    out[3] = rect[3];
+    return out;
+  },
   union(out: rect, a: rect, b: rect) {
     if (a[2] === 0 || a[3] === 0) {
       rect.copy(out, b);

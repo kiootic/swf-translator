@@ -4,6 +4,7 @@ import { rect } from "../math/rect";
 import { CharacterInstance } from "./CharacterInstance";
 import { TextFieldType, TextFormatAlign } from "../../classes/flash/text";
 import { AssetLibrary } from "../../classes/_internal";
+import { Rectangle } from "../../classes/flash/geom";
 
 export class EditTextInstance implements CharacterInstance {
   readonly def: EditTextCharacter;
@@ -31,6 +32,7 @@ export class EditTextInstance implements CharacterInstance {
       ? TextFieldType.DYNAMIC
       : TextFieldType.INPUT;
     textField.selectable = !this.def.noSelect;
+    textField.__bounds = new Rectangle(...this.def.bounds);
 
     switch (this.def.align) {
       case 0:
