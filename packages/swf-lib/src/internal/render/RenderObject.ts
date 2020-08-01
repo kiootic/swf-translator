@@ -1,4 +1,5 @@
 import { Viewport } from "./Viewport";
+import { rect } from "../math/rect";
 
 export interface RenderObjectProgram<T extends RenderObject> {
   render(
@@ -11,4 +12,6 @@ export interface RenderObjectProgram<T extends RenderObject> {
 
 export interface RenderObject {
   readonly program: RenderObjectProgram<this>;
+
+  getBounds(bounds: rect): void;
 }

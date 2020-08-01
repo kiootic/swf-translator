@@ -9,6 +9,8 @@ import { RenderTarget } from "./RenderTarget";
 import { Buffer } from "./Buffer";
 import { Filter, FilterContext } from "./Filter";
 
+const tmpBounds = rect.create();
+
 export class Renderer {
   gl: WebGL2RenderingContext;
   constructor(readonly canvas: Canvas) {
@@ -132,11 +134,20 @@ export class Renderer {
     const objects: RenderObject[] = [];
     for (const child of layer.children) {
       if (child instanceof RenderLayer) {
+        if (!rect.intersects(child.bounds, viewport.bounds)) {
+          continue;
+        }
+
         this.renderBatch(gl, objects, depth, viewport);
         objects.length = 0;
 
         this.renderLayer(gl, child, depth, inStencil, viewport);
       } else {
+        child.getBounds(tmpBounds);
+        if (!rect.intersects(tmpBounds, viewport.bounds)) {
+          continue;
+        }
+
         objects.push(child);
       }
     }

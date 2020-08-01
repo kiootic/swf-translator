@@ -1,5 +1,6 @@
 import type { Renderer } from "./Renderer";
 import { RenderObject } from "./RenderObject";
+import { rect } from "../math/rect";
 
 interface RenderLayerStencil {
   depth: number;
@@ -9,7 +10,10 @@ interface RenderLayerStencil {
 export class RenderLayer {
   stencil?: RenderLayerStencil;
   readonly children: (RenderObject | RenderLayer)[] = [];
+  readonly bounds = rect.create();
 }
+
+const tmpBounds = rect.create();
 
 export class RenderContext {
   readonly root = new RenderLayer();
@@ -41,6 +45,8 @@ export class RenderContext {
 
   render(obj: RenderObject) {
     this.currentLayer.children.push(obj);
+    obj.getBounds(tmpBounds);
+    rect.union(this.currentLayer.bounds, this.currentLayer.bounds, tmpBounds);
   }
 
   finalize() {}

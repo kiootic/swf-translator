@@ -28,6 +28,10 @@ export class RenderObjectSprite implements RenderObject {
   blendMode: BlendMode = BlendMode.Normal;
 
   constructor(readonly def: SpriteDef) {}
+
+  getBounds(bounds: rect): void {
+    rect.apply(bounds, this.def.bounds, this.renderMatrix);
+  }
 }
 
 const batchVertexSize = 0x20000;
@@ -74,11 +78,6 @@ class RenderObjectSpriteProgram
     const cAdd = vec4.create();
     const bounds = rect.create();
     for (const o of objects) {
-      rect.apply(bounds, o.def.bounds, o.renderMatrix);
-      if (!rect.intersects(bounds, viewport.bounds)) {
-        continue;
-      }
-
       if (this.blendMode != o.blendMode) {
         this.flushBatch(gl);
         this.blendMode = o.blendMode;
