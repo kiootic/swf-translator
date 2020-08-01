@@ -8,9 +8,12 @@ import {
 } from "../format/structs";
 
 export function color(color: RGB | RGBA | ARGB): number {
-  let c = color.red * 0x10000 + color.green * 0x100 + color.blue * 0x1;
+  let c =
+    Math.round(color.red) * 0x10000 +
+    Math.round(color.green) * 0x100 +
+    Math.round(color.blue) * 0x1;
   if ("alpha" in color) {
-    c = color.alpha * 0x1000000 + c;
+    c = Math.round(color.alpha) * 0x1000000 + c;
   }
   return c;
 }

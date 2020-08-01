@@ -26,6 +26,7 @@ import { DefineFont3Tag } from "./define-font-3";
 import { DefineTextTag } from "./define-text";
 import { DefineText2Tag } from "./define-text-2";
 import { DefineEditTextTag } from "./define-edit-text";
+import { DefineMorphShapeTag } from "./define-morph-shape";
 
 interface TagClass {
   new (reader: Reader): Tag;
@@ -60,6 +61,7 @@ registerTag(DefineFont3Tag);
 registerTag(DefineTextTag);
 registerTag(DefineText2Tag);
 registerTag(DefineEditTextTag);
+registerTag(DefineMorphShapeTag);
 
 function parseTag(reader: Reader): Tag {
   const codeAndLength = reader.nextUInt16();

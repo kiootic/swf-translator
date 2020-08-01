@@ -11,3 +11,7 @@ export interface ShapeContour {
   vertices: number[];
   indices: number[];
 }
+
+export interface MorphShape {
+  frames: [number, Shape][];
+}

@@ -1,4 +1,4 @@
-import { FillStyle as SWFFillStyle } from "../format/structs/shape";
+import { FillStyle as SWFFillStyle } from "../format/structs";
 import { color, matrix, Matrix } from "./primitives";
 import { gradient, Gradient } from "./gradient";
 

@@ -7,6 +7,12 @@ export interface Gradient {
   gradientRecords: GradientRecord[];
 }
 
+export interface MorphGradient {
+  spreadMode: number;
+  interpolationMode: number;
+  gradientRecords: MorphGradientRecord[];
+}
+
 export function gradient(version: 1 | 2 | 3 | 4): Parser<Gradient> {
   const record = gradientRecord(version);
   return (reader) => {
@@ -20,6 +26,17 @@ export function gradient(version: 1 | 2 | 3 | 4): Parser<Gradient> {
     return { spreadMode, interpolationMode, gradientRecords };
   };
 }
+
+export const morphGradient: Parser<MorphGradient> = (reader) => {
+  const spreadMode = reader.nextBits(2);
+  const interpolationMode = reader.nextBits(2);
+  const numGradients = reader.nextBits(4);
+  const gradientRecords = new Array<MorphGradientRecord>(numGradients);
+  for (let i = 0; i < gradientRecords.length; i++) {
+    gradientRecords[i] = morphGradientRecord(reader);
+  }
+  return { spreadMode, interpolationMode, gradientRecords };
+};
 
 export interface FocalGradient {
   spreadMode: number;
@@ -54,3 +71,17 @@ function gradientRecord(version: 1 | 2 | 3 | 4): Parser<GradientRecord> {
     ["color", version >= 3 ? rgba : rgb2rgba]
   );
 }
+
+export interface MorphGradientRecord {
+  startRatio: number;
+  startColor: ARGB;
+  endRatio: number;
+  endColor: ARGB;
+}
+
+const morphGradientRecord = object<MorphGradientRecord>(
+  ["startRatio", uint8],
+  ["startColor", rgba],
+  ["endRatio", uint8],
+  ["endColor", rgba]
+);
