@@ -49,7 +49,10 @@ export class RenderTarget {
     padY: number
   ) {
     this.#gl = gl;
-    let resized = false;
+    let needReRender = false;
+
+    padX = Math.ceil(padX);
+    padY = Math.ceil(padY);
 
     let [x, y, width, height] = viewport;
     x -= padX;
@@ -71,7 +74,7 @@ export class RenderTarget {
       this.textureAux2.height = texHeight;
       this.#texWidth = texWidth;
       this.#texHeight = texHeight;
-      resized = true;
+      needReRender = true;
     }
 
     this.viewport[0] = Math.floor(x);
@@ -79,20 +82,21 @@ export class RenderTarget {
     this.viewport[2] = texWidth;
     this.viewport[3] = texHeight;
 
-    mat2d.fromScaling(this.#uvMat, [1 / texWidth, -1 / texHeight]);
-    mat2d.translate(this.#uvMat, this.#uvMat, [0, -texHeight]);
+    mat2d.identity(this.#uvMat);
+    mat2d.scale(this.#uvMat, this.#uvMat, [1 / texWidth, 1 / texHeight]);
+    mat2d.translate(this.#uvMat, this.#uvMat, [padX, padY]);
 
     this.#renderObject.def.vertices.set([
       width,
-      0,
-      0,
+      -padY,
+      -padX,
       height,
-      0,
-      0,
-      0,
+      -padX,
+      -padY,
+      -padX,
       height,
       width,
-      0,
+      -padY,
       width,
       height,
     ]);
@@ -101,7 +105,7 @@ export class RenderTarget {
     this.#renderObject.def.bounds[2] = width;
     this.#renderObject.def.bounds[3] = height;
 
-    return resized;
+    return needReRender;
   }
 
   delete() {

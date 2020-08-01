@@ -109,7 +109,7 @@ export class DisplayObject extends EventDispatcher {
       return;
     }
 
-    const [, , width, height] = this.#bounds.__rect;
+    const [x, y, width, height] = this.#bounds.__rect;
     if (this.cacheAsBitmap && width > 0 && height > 0) {
       let target = this.#renderTarget;
       if (!target) {
@@ -139,10 +139,8 @@ export class DisplayObject extends EventDispatcher {
       }
 
       mat2d.copy(target.renderMatrix, this.transform.__worldMatrix.__value);
-      target.renderMatrix[4] =
-        Math.floor(target.renderMatrix[4]) + target.viewport[0];
-      target.renderMatrix[5] =
-        Math.floor(target.renderMatrix[5]) + target.viewport[1];
+      target.renderMatrix[4] = Math.floor(target.renderMatrix[4] + x);
+      target.renderMatrix[5] = Math.floor(target.renderMatrix[5] + y);
       vec4.copy(target.colorMul, this.transform.__worldColorTransform.__mul);
       vec4.copy(target.colorAdd, this.transform.__worldColorTransform.__add);
       target.renderTo(ctx);

@@ -1,4 +1,4 @@
-import { mat3 } from "gl-matrix";
+import { mat3, mat4 } from "gl-matrix";
 import { Canvas } from "./Canvas";
 import { RenderContext, RenderLayer } from "./RenderContext";
 import { Viewport } from "./Viewport";
@@ -73,7 +73,8 @@ export class Renderer {
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.STENCIL_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
 
-    const projectionMat = mat3.projection(mat3.create(), width, height);
+    const projectionMat = mat3.fromTranslation(mat3.create(), [-1, -1]);
+    mat3.scale(projectionMat, projectionMat, [2 / width, 2 / height]);
     mat3.translate(projectionMat, projectionMat, [
       -target.viewport[0],
       -target.viewport[1],
