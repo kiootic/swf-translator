@@ -102,7 +102,7 @@ export class DisplayObject extends EventDispatcher {
     });
   }
 
-  __onNewFrame() {}
+  __onNewFrame() { }
 
   __render(ctx: RenderContext) {
     if (!this.visible) {

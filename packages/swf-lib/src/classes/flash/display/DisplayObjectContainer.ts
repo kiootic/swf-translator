@@ -118,9 +118,6 @@ export class DisplayObjectContainer extends InteractiveObject {
     let transform = this.transform;
     if (this.cacheAsBitmap) {
       transform = new Transform();
-      const { tx, ty } = this.transform.__worldMatrix;
-      transform.__worldMatrix.tx = tx - Math.floor(tx);
-      transform.__worldMatrix.ty = ty - Math.floor(ty);
     }
     for (const child of this.__children) {
       const isChildDirty = child.transform.__update(transform);
