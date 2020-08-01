@@ -7,11 +7,14 @@ import { SpriteCharacter } from "./character/Sprite";
 import { MorphShapeCharacter } from "./character/MorphShape";
 import type { DisplayObject } from "../flash/display/DisplayObject";
 import { Shape } from "../flash/display/Shape";
+import { MorphShape } from "../flash/display/MorphShape";
 import { Sprite } from "../flash/display/Sprite";
 import { MovieClip } from "../flash/display/MovieClip";
 import { StaticText } from "../flash/text/StaticText";
+import { TextField } from "../flash/text";
 import { ImageInstance } from "../../internal/character/ImageInstance";
 import { ShapeInstance } from "../../internal/character/ShapeInstance";
+import { MorphShapeInstance } from "../../internal/character/MorphShapeInstance";
 import { SpriteInstance } from "../../internal/character/SpriteInstance";
 import { FontInstance } from "../../internal/character/FontInstance";
 import { StaticTextInstance } from "../../internal/character/StaticTextInstance";
@@ -19,7 +22,6 @@ import { EditTextInstance } from "../../internal/character/EditTextInstance";
 import { Texture } from "../../internal/render/Texture";
 import { AssetBundle } from "./AssetBundle";
 import { FontRegistry } from "./FontRegistry";
-import { TextField } from "../flash/text";
 
 export interface AssetLibrary {
   resolveImage(id: number): Texture;
@@ -103,6 +105,13 @@ export class AssetLibraryBuilder {
       library.shapes.set(id, new ShapeInstance(id, shape, library));
     }
 
+    for (const [id, morphShape] of this.morphShapes) {
+      library.morphShapes.set(
+        id,
+        new MorphShapeInstance(id, morphShape, library)
+      );
+    }
+
     for (const [id, sprite] of this.sprites) {
       library.sprites.set(id, new SpriteInstance(id, sprite, library));
     }
@@ -131,6 +140,7 @@ export class AssetLibraryBuilder {
 class InstantiatedLibrary implements AssetLibrary {
   readonly images = new Map<number, ImageInstance>();
   readonly shapes = new Map<number, ShapeInstance>();
+  readonly morphShapes = new Map<number, MorphShapeInstance>();
   readonly sprites = new Map<number, SpriteInstance>();
   readonly fonts = new Map<number, FontInstance>();
   readonly staticTexts = new Map<number, StaticTextInstance>();
@@ -161,6 +171,14 @@ class InstantiatedLibrary implements AssetLibrary {
       shapeInstance.applyTo(shape);
       shape.__character = shapeInstance;
       return shape;
+    }
+
+    const morphShapeInstance = this.morphShapes.get(id);
+    if (morphShapeInstance) {
+      const morphShape = new MorphShape();
+      morphShapeInstance.applyTo(morphShape);
+      morphShape.__character = morphShapeInstance;
+      return morphShape;
     }
 
     const staticTextInstance = this.staticTexts.get(id);

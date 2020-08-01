@@ -1,5 +1,6 @@
 import { mat2d, vec4 } from "gl-matrix";
 import { Sprite } from "../../classes/flash/display/Sprite";
+import { MorphShape } from "../../classes/flash/display/MorphShape";
 import { DisplayObject } from "../../classes/flash/display/DisplayObject";
 import { BitmapFilter } from "../../classes/flash/filters/BitmapFilter";
 import {
@@ -153,7 +154,12 @@ export class SpriteInstance implements CharacterInstance {
             character.visible = action.visible;
           }
 
-          // TODO: ratio
+          if (action.ratio != null) {
+            if (character instanceof MorphShape) {
+              character.__ratio = action.ratio;
+              character.__character?.applyTo(character);
+            }
+          }
           // TODO: blendMode
 
           break;
