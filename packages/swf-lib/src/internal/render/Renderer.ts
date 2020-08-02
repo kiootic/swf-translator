@@ -23,14 +23,20 @@ export class Renderer {
   framebufferTex = new Framebuffer();
 
   renderFrame(fn: (ctx: RenderContext) => void) {
-    const ctx = new RenderContext(this);
+    const { width, height } = this.canvas;
+    const projectionMat = mat3.projection(mat3.create(), width, height);
+    const viewport: Viewport = {
+      matrix: projectionMat,
+      bounds: rect.fromValues(0, 0, width, height),
+    };
+
+    const ctx = new RenderContext(this, viewport.bounds);
     fn(ctx);
 
     const gl = this.gl;
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-    const { width, height } = this.canvas;
     gl.viewport(0, 0, width, height);
     gl.enable(gl.BLEND);
     gl.enable(gl.STENCIL_TEST);
@@ -44,35 +50,13 @@ export class Renderer {
     );
     gl.clear(gl.STENCIL_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
 
-    const projectionMat = mat3.projection(mat3.create(), width, height);
-    const viewport: Viewport = {
-      matrix: projectionMat,
-      bounds: rect.fromValues(0, 0, width, height),
-    };
-
     this.renderLayer(gl, ctx.root, false, viewport);
 
     gl.flush();
   }
 
   renderToTarget(target: RenderTarget, fn: (ctx: RenderContext) => void) {
-    const ctx = new RenderContext(this);
-    fn(ctx);
-
-    const gl = this.gl;
-
-    this.framebufferRender.attachRenderbuffer(gl, target.renderBuffer);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebufferRender.ensure(gl));
-
     const [, , width, height] = target.viewport;
-    gl.viewport(0, 0, width, height);
-    gl.enable(gl.BLEND);
-    gl.enable(gl.STENCIL_TEST);
-    gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
-
-    gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.STENCIL_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
-
     const projectionMat = mat3.fromTranslation(mat3.create(), [-1, -1]);
     mat3.scale(projectionMat, projectionMat, [2 / width, 2 / height]);
     mat3.translate(projectionMat, projectionMat, [
@@ -83,6 +67,22 @@ export class Renderer {
       matrix: projectionMat,
       bounds: target.viewport,
     };
+
+    const ctx = new RenderContext(this, viewport.bounds);
+    fn(ctx);
+
+    const gl = this.gl;
+
+    this.framebufferRender.attachRenderbuffer(gl, target.renderBuffer);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebufferRender.ensure(gl));
+
+    gl.viewport(0, 0, width, height);
+    gl.enable(gl.BLEND);
+    gl.enable(gl.STENCIL_TEST);
+    gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.STENCIL_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
 
     this.renderLayer(gl, ctx.root, false, viewport);
 

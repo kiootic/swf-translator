@@ -15,7 +15,7 @@ export class RenderContext {
   readonly root = new RenderLayer();
   currentLayer = this.root;
 
-  constructor(readonly renderer: Renderer) {}
+  constructor(readonly renderer: Renderer, readonly bounds: rect) {}
 
   get gl() {
     return this.renderer.gl;

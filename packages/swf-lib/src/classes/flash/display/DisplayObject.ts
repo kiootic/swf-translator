@@ -11,6 +11,8 @@ import { Transform } from "../geom/Transform";
 import { Rectangle } from "../geom/Rectangle";
 import { BitmapFilter } from "../filters/BitmapFilter";
 
+const tmpBounds = rect.create();
+
 export class DisplayObject extends EventDispatcher {
   __character: CharacterInstance | null = null;
   __depth: number = -1;
@@ -105,7 +107,13 @@ export class DisplayObject extends EventDispatcher {
   __onNewFrame() {}
 
   __render(ctx: RenderContext) {
-    if (!this.visible) {
+    rect.apply(
+      tmpBounds,
+      this.#bounds.__rect,
+      this.transform.__worldMatrix.__value
+    );
+
+    if (!this.visible || !rect.intersects(tmpBounds, ctx.bounds)) {
       return;
     }
 
