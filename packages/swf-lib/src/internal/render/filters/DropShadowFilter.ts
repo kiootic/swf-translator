@@ -26,7 +26,7 @@ export class DropShadowFilter implements Filter {
     const uDeltaY = vec2.fromValues(0, radiusY / 8 / ctx.height);
     const color = preMultiplyAlpha(vec4.create(), this.color);
     vec4.scale(color, color, this.strength);
-    const offset = vec2.fromValues(0, this.distance);
+    const offset = vec2.fromValues(this.distance, 0);
     vec2.rotate(offset, offset, [0, 0], (this.angle * Math.PI) / 180);
     vec2.mul(offset, offset, [1 / ctx.width, 1 / ctx.height]);
 
