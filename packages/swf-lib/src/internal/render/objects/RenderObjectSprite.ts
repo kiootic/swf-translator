@@ -41,6 +41,7 @@ class RenderObjectSpriteProgram
   static readonly instance = new RenderObjectSpriteProgram();
 
   private numVertex = 0;
+  private depth = 0;
   private projectionMatrix = mat3.create();
   private blendMode: BlendMode = BlendMode.Normal;
   private readonly textures: GLTexture[] = [];
@@ -60,11 +61,13 @@ class RenderObjectSpriteProgram
 
   render(
     gl: WebGL2RenderingContext,
+    depth: number,
     viewport: Viewport,
     objects: RenderObjectSprite[]
   ): void {
     this.reset();
     mat3.copy(this.projectionMatrix, viewport.matrix);
+    this.depth = depth;
 
     const vertices = this.vertices.data;
     const colorTint = this.colorTint.data;
@@ -176,6 +179,7 @@ class RenderObjectSpriteProgram
 
     programSprite.setUniform(gl, "uProjectionMatrix", this.projectionMatrix);
     programSprite.setUniform(gl, "uTex", this.texIDs);
+    programSprite.setUniform(gl, "uDepth", this.depth);
     programSprite.setAttr(gl, "aVertex", this.vertices);
     programSprite.setAttr(gl, "aColorTint", this.colorTint);
     programSprite.setAttr(gl, "aColorMul", this.colorMul);

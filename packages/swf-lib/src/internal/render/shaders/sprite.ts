@@ -9,6 +9,7 @@ attribute vec4 aColorMul;
 attribute vec4 aColorAdd;
 attribute float aMode;
 uniform mat3 uProjectionMatrix;
+uniform float uDepth;
 
 varying vec2 vTextureCoords;
 varying vec4 vColorTint;
@@ -19,7 +20,7 @@ varying float vMode;
 void main(void) {
     vec2 pos = aVertex.xy;
     vec2 uv = aVertex.zw;
-    gl_Position = vec4((uProjectionMatrix * vec3(pos, 1.0)).xy, 1.0, 1.0);
+    gl_Position = vec4((uProjectionMatrix * vec3(pos, 1.0)).xy, uDepth, 1.0);
 
     vTextureCoords = uv;
     vColorTint = aColorTint;
@@ -37,6 +38,7 @@ void main(void) {
   },
   {
     uProjectionMatrix: "mat3",
+    uDepth: "float",
   }
 );
 

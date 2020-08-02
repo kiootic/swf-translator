@@ -32,6 +32,7 @@ export class Renderer {
 
     const ctx = new RenderContext(this, viewport.bounds);
     fn(ctx);
+    ctx.finalize();
 
     const gl = this.gl;
 
@@ -39,8 +40,8 @@ export class Renderer {
 
     gl.viewport(0, 0, width, height);
     gl.enable(gl.BLEND);
-    gl.enable(gl.STENCIL_TEST);
-    gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.GEQUAL);
 
     gl.clearColor(
       ((this.backgroundColor >>> 16) & 0xff) / 0xff,
@@ -48,9 +49,9 @@ export class Renderer {
       ((this.backgroundColor >>> 0) & 0xff) / 0xff,
       1
     );
-    gl.clear(gl.STENCIL_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
+    gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
 
-    this.renderLayer(gl, ctx.root, false, viewport);
+    this.renderLayer(gl, ctx.root, 1, false, viewport);
 
     gl.flush();
   }
@@ -70,6 +71,7 @@ export class Renderer {
 
     const ctx = new RenderContext(this, viewport.bounds);
     fn(ctx);
+    ctx.finalize();
 
     const gl = this.gl;
 
@@ -78,13 +80,13 @@ export class Renderer {
 
     gl.viewport(0, 0, width, height);
     gl.enable(gl.BLEND);
-    gl.enable(gl.STENCIL_TEST);
-    gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.GEQUAL);
 
     gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.STENCIL_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
+    gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
 
-    this.renderLayer(gl, ctx.root, false, viewport);
+    this.renderLayer(gl, ctx.root, 1, false, viewport);
 
     gl.flush();
 
@@ -105,26 +107,36 @@ export class Renderer {
     );
   }
 
+  // TODO: use correct stencil algorithm
   private renderLayer(
     gl: WebGL2RenderingContext,
     layer: RenderLayer,
+    depth: number,
     inStencil: boolean,
     viewport: Viewport
   ) {
     if (layer.stencil) {
       if (!inStencil) {
         gl.colorMask(false, false, false, false);
-        gl.stencilMask(0xff);
-        gl.stencilOp(gl.KEEP, gl.KEEP, gl.INCR);
+        gl.depthMask(true);
+        gl.depthFunc(gl.ALWAYS);
       }
 
-      this.renderLayer(gl, layer.stencil, true, viewport);
+      this.renderLayer(
+        gl,
+        layer.stencil.layer,
+        layer.stencil.depth,
+        true,
+        viewport
+      );
 
       if (!inStencil) {
         gl.colorMask(true, true, true, true);
-        gl.stencilMask(0);
-        gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+        gl.depthMask(false);
+        gl.depthFunc(gl.GEQUAL);
       }
+
+      depth = layer.stencil.depth;
     }
 
     const objects: RenderObject[] = [];
@@ -134,10 +146,10 @@ export class Renderer {
           continue;
         }
 
-        this.renderBatch(gl, objects, layer.stencilDepth, viewport);
+        this.renderBatch(gl, objects, depth, viewport);
         objects.length = 0;
 
-        this.renderLayer(gl, child, inStencil, viewport);
+        this.renderLayer(gl, child, depth, inStencil, viewport);
       } else {
         child.getBounds(tmpBounds);
         if (!rect.intersects(tmpBounds, viewport.bounds)) {
@@ -147,7 +159,7 @@ export class Renderer {
         objects.push(child);
       }
     }
-    this.renderBatch(gl, objects, layer.stencilDepth, viewport);
+    this.renderBatch(gl, objects, depth, viewport);
   }
 
   private renderBatch(
@@ -156,8 +168,6 @@ export class Renderer {
     depth: number,
     viewport: Viewport
   ) {
-    gl.stencilFunc(gl.LEQUAL, depth, 0xff);
-
     let program: RenderObjectProgram<RenderObject> | undefined;
     let begin = 0;
     for (let i = 0; i < objects.length; i++) {
@@ -166,14 +176,14 @@ export class Renderer {
       }
 
       if (program !== objects[i].program) {
-        program.render(gl, viewport, objects.slice(begin, i));
+        program.render(gl, depth, viewport, objects.slice(begin, i));
         program = objects[i].program;
         begin = i;
       }
     }
 
     if (program) {
-      program.render(gl, viewport, objects.slice(begin));
+      program.render(gl, depth, viewport, objects.slice(begin));
     }
   }
 
