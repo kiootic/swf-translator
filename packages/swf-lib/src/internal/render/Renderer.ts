@@ -25,7 +25,6 @@ export class Renderer {
   renderFrame(fn: (ctx: RenderContext) => void) {
     const ctx = new RenderContext(this);
     fn(ctx);
-    ctx.finalize();
 
     const gl = this.gl;
 
@@ -51,7 +50,7 @@ export class Renderer {
       bounds: rect.fromValues(0, 0, width, height),
     };
 
-    this.renderLayer(gl, ctx.root, 0, false, viewport);
+    this.renderLayer(gl, ctx.root, false, viewport);
 
     gl.flush();
   }
@@ -59,7 +58,6 @@ export class Renderer {
   renderToTarget(target: RenderTarget, fn: (ctx: RenderContext) => void) {
     const ctx = new RenderContext(this);
     fn(ctx);
-    ctx.finalize();
 
     const gl = this.gl;
 
@@ -86,7 +84,7 @@ export class Renderer {
       bounds: target.viewport,
     };
 
-    this.renderLayer(gl, ctx.root, 0, false, viewport);
+    this.renderLayer(gl, ctx.root, false, viewport);
 
     gl.flush();
 
@@ -110,7 +108,6 @@ export class Renderer {
   private renderLayer(
     gl: WebGL2RenderingContext,
     layer: RenderLayer,
-    depth: number,
     inStencil: boolean,
     viewport: Viewport
   ) {
@@ -121,14 +118,13 @@ export class Renderer {
         gl.stencilOp(gl.KEEP, gl.KEEP, gl.INCR);
       }
 
-      this.renderLayer(gl, layer.stencil.layer, depth, true, viewport);
+      this.renderLayer(gl, layer.stencil, true, viewport);
 
       if (!inStencil) {
         gl.colorMask(true, true, true, true);
         gl.stencilMask(0);
         gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
       }
-      depth = layer.stencil.depth;
     }
 
     const objects: RenderObject[] = [];
@@ -138,10 +134,10 @@ export class Renderer {
           continue;
         }
 
-        this.renderBatch(gl, objects, depth, viewport);
+        this.renderBatch(gl, objects, layer.stencilDepth, viewport);
         objects.length = 0;
 
-        this.renderLayer(gl, child, depth, inStencil, viewport);
+        this.renderLayer(gl, child, inStencil, viewport);
       } else {
         child.getBounds(tmpBounds);
         if (!rect.intersects(tmpBounds, viewport.bounds)) {
@@ -151,7 +147,7 @@ export class Renderer {
         objects.push(child);
       }
     }
-    this.renderBatch(gl, objects, depth, viewport);
+    this.renderBatch(gl, objects, layer.stencilDepth, viewport);
   }
 
   private renderBatch(
@@ -170,14 +166,14 @@ export class Renderer {
       }
 
       if (program !== objects[i].program) {
-        program.render(gl, viewport, depth, objects.slice(begin, i));
+        program.render(gl, viewport, objects.slice(begin, i));
         program = objects[i].program;
         begin = i;
       }
     }
 
     if (program) {
-      program.render(gl, viewport, depth, objects.slice(begin));
+      program.render(gl, viewport, objects.slice(begin));
     }
   }
 
