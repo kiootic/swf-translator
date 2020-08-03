@@ -29,16 +29,24 @@ export class SpriteInstance implements CharacterInstance {
   }
 
   applyTo(sprite: Sprite, prevFrameNum: number, thisFrameNum: number) {
+    interface EffectiveAction {
+      frame: number;
+      action: FrameAction;
+    }
+
     // ref: https://github.com/mozilla/shumway/blob/16451d8836fa85f4b16eeda8b4bda2fa9e2b22b0/src/flash/display/Sprite.ts#L147
-    const effectiveActions = new Map<number, FrameAction>();
+    const effectiveActions = new Map<number, EffectiveAction>();
     const setActions = (frameNum: number) => {
       if (frameNum === 1) {
         // Reset timeline on frame 1
         for (const child of sprite.__children) {
           if (child.__depth >= 0) {
             effectiveActions.set(child.__depth, {
-              kind: FrameActionKind.RemoveObject,
-              depth: child.__depth,
+              frame: frameNum,
+              action: {
+                kind: FrameActionKind.RemoveObject,
+                depth: child.__depth,
+              },
             });
           }
         }
@@ -50,10 +58,13 @@ export class SpriteInstance implements CharacterInstance {
       }
       for (const action of frame.actions) {
         const ea = effectiveActions.get(action.depth);
-        if (!ea || ea.kind !== action.kind) {
-          effectiveActions.set(action.depth, action);
+        if (!ea || ea.action.kind !== action.kind) {
+          effectiveActions.set(action.depth, { frame: frameNum, action });
         } else {
-          effectiveActions.set(action.depth, { ...(ea || {}), ...action });
+          effectiveActions.set(action.depth, {
+            frame: frameNum,
+            action: { ...(ea.action || {}), ...action },
+          });
         }
       }
     };
@@ -67,7 +78,7 @@ export class SpriteInstance implements CharacterInstance {
     setActions(thisFrameNum);
 
     const children = sprite.__children;
-    for (const action of effectiveActions.values()) {
+    for (const { frame, action } of effectiveActions.values()) {
       switch (action.kind) {
         case FrameActionKind.PlaceObject: {
           let character: DisplayObject | undefined;
@@ -106,6 +117,9 @@ export class SpriteInstance implements CharacterInstance {
             character.transform.matrix.__value[4] /= 20;
             character.transform.matrix.__value[5] /= 20;
             character.transform.__reportMatrixUpdated();
+          } else if (frame === 1) {
+            mat2d.identity(character.transform.matrix.__value);
+            character.transform.__reportMatrixUpdated();
           }
 
           if (action.colorTransform != null) {
@@ -117,6 +131,10 @@ export class SpriteInstance implements CharacterInstance {
               character.transform.colorTransform.__add,
               action.colorTransform.slice(4, 8) as vec4
             );
+            character.transform.__reportColorTransformUpdated();
+          } else if (frame === 1) {
+            vec4.set(character.transform.colorTransform.__mul, 1, 1, 1, 1);
+            vec4.set(character.transform.colorTransform.__add, 0, 0, 0, 0);
             character.transform.__reportColorTransformUpdated();
           }
 
@@ -155,13 +173,20 @@ export class SpriteInstance implements CharacterInstance {
               }
             }
             character.filters = filters;
+          } else if (frame === 1) {
+            character.filters = [];
           }
+
           if (action.cacheAsBitmap != null) {
             character.cacheAsBitmap = action.cacheAsBitmap;
+          } else if (frame === 1) {
+            character.cacheAsBitmap = false;
           }
 
           if (action.visible != null) {
             character.visible = action.visible;
+          } else if (frame === 1) {
+            character.visible = true;
           }
 
           if (action.ratio != null) {
