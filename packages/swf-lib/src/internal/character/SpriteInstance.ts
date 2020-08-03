@@ -12,6 +12,7 @@ import {
 import { FilterID } from "../../classes/_internal/character/filter";
 import type { AssetLibrary } from "../../classes/_internal";
 import { DropShadowFilter } from "../../classes/flash/filters/DropShadowFilter";
+import { BlurFilter } from "../../classes/flash/filters/BlurFilter";
 import { CharacterInstance } from "./CharacterInstance";
 
 export class SpriteInstance implements CharacterInstance {
@@ -127,6 +128,15 @@ export class SpriteInstance implements CharacterInstance {
             const filters: BitmapFilter[] = [];
             for (const f of action.filters) {
               switch (f.id) {
+                case FilterID.Blur: {
+                  const filter = new BlurFilter();
+                  filter.blurX = f.blurX;
+                  filter.blurY = f.blurY;
+                  filter.quality = f.passes;
+
+                  filters.push(filter);
+                  break;
+                }
                 case FilterID.DropShadow: {
                   const filter = new DropShadowFilter();
                   filter.color = f.color;

@@ -31,7 +31,7 @@ uniform sampler2D uTexture;
 uniform vec2 uDelta;
 
 vec4 sample(vec2 coords) {
-  return texture2D(uTexture, coords).aaaa;
+  return texture2D(uTexture, coords);
 }
 
 void main(void) {
