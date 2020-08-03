@@ -139,22 +139,22 @@ function layoutLine(line: Line, y: number, bounds: rect): LayoutResult {
   switch (alignment) {
     case TextFormatAlign.RIGHT:
       spacing = 0;
-      x = bounds[2] - line.width;
+      x = bounds[0] + bounds[2] - line.width;
       break;
     case TextFormatAlign.CENTER:
       spacing = 0;
-      x = (bounds[2] - line.width) / 2;
+      x = bounds[0] + (bounds[2] - line.width) / 2;
       break;
     case TextFormatAlign.JUSTIFY:
       spacing =
-        line.glyphs.length > 0
+        bounds[0] + line.glyphs.length > 0
           ? (bounds[2] - line.width) / (line.glyphs.length - 1)
           : 0;
-      x = 0;
+      x = bounds[0];
       break;
     default:
       spacing = 0;
-      x = 0;
+      x = bounds[0];
       break;
   }
 
