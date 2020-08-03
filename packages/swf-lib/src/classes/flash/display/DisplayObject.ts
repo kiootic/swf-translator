@@ -146,9 +146,13 @@ export class DisplayObject extends EventDispatcher {
         this.#needReRender = false;
       }
 
-      mat2d.copy(target.renderMatrix, this.transform.__worldMatrix.__value);
-      target.renderMatrix[4] = Math.floor(target.renderMatrix[4] + x);
-      target.renderMatrix[5] = Math.floor(target.renderMatrix[5] + y);
+      mat2d.translate(
+        target.renderMatrix,
+        this.transform.__worldMatrix.__value,
+        [x, y]
+      );
+      target.renderMatrix[4] = Math.floor(target.renderMatrix[4]);
+      target.renderMatrix[5] = Math.floor(target.renderMatrix[5]);
       vec4.copy(target.colorMul, this.transform.__worldColorTransform.__mul);
       vec4.copy(target.colorAdd, this.transform.__worldColorTransform.__add);
       target.renderTo(ctx);
