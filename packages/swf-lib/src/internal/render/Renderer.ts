@@ -76,6 +76,7 @@ export class Renderer {
     const gl = this.gl;
 
     this.framebufferRender.attachRenderbuffer(gl, target.renderBuffer);
+    this.framebufferRender.attachRenderbuffer(gl, target.depthBuffer);
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebufferRender.ensure(gl));
 
     gl.viewport(0, 0, width, height);

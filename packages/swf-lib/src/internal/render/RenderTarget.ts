@@ -13,7 +13,8 @@ function nextPow2(n: number) {
 export class RenderTarget {
   #gl?: WebGLRenderingContext;
 
-  renderBuffer = new Renderbuffer(0, 0);
+  renderBuffer = new Renderbuffer(0, 0, false);
+  depthBuffer = new Renderbuffer(0, 0, true);
   texture = new RenderTexture(0, 0);
   textureAux1 = new RenderTexture(0, 0);
   textureAux2 = new RenderTexture(0, 0);
@@ -66,6 +67,8 @@ export class RenderTarget {
       this.delete();
       this.renderBuffer.width = texWidth;
       this.renderBuffer.height = texHeight;
+      this.depthBuffer.width = texWidth;
+      this.depthBuffer.height = texHeight;
       this.texture.width = texWidth;
       this.texture.height = texHeight;
       this.textureAux1.width = texWidth;

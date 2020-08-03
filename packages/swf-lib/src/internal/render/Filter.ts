@@ -55,6 +55,12 @@ export class FilterContext {
       gl.FRAMEBUFFER,
       this.renderer.framebufferRender.ensure(gl)
     );
+    gl.framebufferRenderbuffer(
+      gl.FRAMEBUFFER,
+      gl.DEPTH_ATTACHMENT,
+      gl.RENDERBUFFER,
+      null
+    );
 
     const { width, height } = to;
     gl.viewport(0, 0, width, height);

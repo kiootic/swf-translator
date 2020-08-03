@@ -38,7 +38,7 @@ export class Framebuffer {
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.ensure(gl));
     gl.framebufferRenderbuffer(
       gl.FRAMEBUFFER,
-      gl.COLOR_ATTACHMENT0,
+      rb.isDepth ? gl.DEPTH_ATTACHMENT : gl.COLOR_ATTACHMENT0,
       gl.RENDERBUFFER,
       rb.ensure(gl)
     );

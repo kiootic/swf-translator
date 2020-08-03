@@ -4,7 +4,7 @@ export class Renderbuffer {
   width: number;
   height: number;
 
-  constructor(width: number, height: number) {
+  constructor(width: number, height: number, readonly isDepth: boolean) {
     this.width = width;
     this.height = height;
   }
@@ -26,7 +26,7 @@ export class Renderbuffer {
       gl.renderbufferStorageMultisample(
         gl.RENDERBUFFER,
         gl.getParameter(gl.MAX_SAMPLES),
-        gl.RGBA8,
+        this.isDepth ? gl.DEPTH_COMPONENT16 : gl.RGBA8,
         this.width,
         this.height
       );
