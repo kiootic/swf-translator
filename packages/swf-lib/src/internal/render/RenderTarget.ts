@@ -116,6 +116,7 @@ export class RenderTarget {
       return;
     }
     this.renderBuffer.delete(this.#gl);
+    this.depthBuffer.delete(this.#gl);
     this.texture.delete(this.#gl);
     this.textureAux1.delete(this.#gl);
     this.textureAux2.delete(this.#gl);
