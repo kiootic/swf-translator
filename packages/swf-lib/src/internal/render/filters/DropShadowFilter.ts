@@ -20,6 +20,10 @@ export class DropShadowFilter implements Filter {
   }
 
   apply(ctx: FilterContext): void {
+    if (this.strength === 0) {
+      return;
+    }
+
     const radiusX = this.blurX / 2;
     const radiusY = this.blurY / 2;
     const uDeltaX = vec2.fromValues(radiusX / 8 / ctx.width, 0);

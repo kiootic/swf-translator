@@ -15,6 +15,10 @@ export class BlurFilter implements Filter {
   }
 
   apply(ctx: FilterContext): void {
+    if (this.blurX === 0 && this.blurY === 0) {
+      return;
+    }
+
     const radiusX = this.blurX / 2;
     const radiusY = this.blurY / 2;
     const uDeltaX = vec2.fromValues(radiusX / 8 / ctx.width, 0);
@@ -23,28 +27,32 @@ export class BlurFilter implements Filter {
     let from = ctx.target.textureAux1;
     let to = ctx.target.textureAux2;
 
-    for (let i = 0; i < this.passes; i++) {
-      ctx.applyFilter(
-        programBlur,
-        { from: i === 0 ? ctx.target.texture : from, to },
-        (gl) => {
-          programBlur.setUniform(gl, "uDelta", uDeltaX);
-        }
-      );
+    if (this.blurX > 0) {
+      for (let i = 0; i < this.passes; i++) {
+        ctx.applyFilter(
+          programBlur,
+          { from: i === 0 ? ctx.target.texture : from, to },
+          (gl) => {
+            programBlur.setUniform(gl, "uDelta", uDeltaX);
+          }
+        );
 
-      const t = from;
-      from = to;
-      to = t;
+        const t = from;
+        from = to;
+        to = t;
+      }
     }
 
-    for (let i = 0; i < this.passes; i++) {
-      ctx.applyFilter(programBlur, { from, to }, (gl) => {
-        programBlur.setUniform(gl, "uDelta", uDeltaY);
-      });
+    if (this.blurY > 0) {
+      for (let i = 0; i < this.passes; i++) {
+        ctx.applyFilter(programBlur, { from, to }, (gl) => {
+          programBlur.setUniform(gl, "uDelta", uDeltaY);
+        });
 
-      const t = from;
-      from = to;
-      to = t;
+        const t = from;
+        from = to;
+        to = t;
+      }
     }
 
     ctx.blit(from, ctx.target.texture);
