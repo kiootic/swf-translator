@@ -4,6 +4,7 @@ import { InteractiveObject } from "./InteractiveObject";
 import { Transform } from "../geom";
 import { RenderContext } from "../../../internal/render/RenderContext";
 import { rect } from "../../../internal/math/rect";
+import { vec2 } from "gl-matrix";
 
 export class DisplayObjectContainer extends InteractiveObject {
   #children: DisplayObject[] = [];
@@ -74,8 +75,10 @@ export class DisplayObjectContainer extends InteractiveObject {
       return super.hitTestPoint(x, y, shapeFlag);
     }
 
+    const v = vec2.create();
     for (const child of this.#children) {
-      if (child.hitTestPoint(x, y, shapeFlag)) {
+      vec2.transformMat2d(v, [x, y], child.transform.__matrixInverted);
+      if (child.hitTestPoint(v[0], v[1], shapeFlag)) {
         return true;
       }
     }

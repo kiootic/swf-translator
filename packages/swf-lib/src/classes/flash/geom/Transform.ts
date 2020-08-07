@@ -25,6 +25,13 @@ export class Transform {
     this.#matrixAtom.reportChanged();
   }
 
+  @computed
+  get __matrixInverted() {
+    const mat = mat2d.create();
+    mat2d.invert(mat, this.matrix.__value);
+    return mat;
+  }
+
   get __worldMatrix() {
     this.#worldMatrixAtom.reportObserved();
     return this.#worldMatrix;

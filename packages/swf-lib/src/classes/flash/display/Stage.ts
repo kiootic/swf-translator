@@ -56,15 +56,13 @@ export class Stage extends DisplayObjectContainer {
   };
 
   __hitTestObject(x: number, y: number): InteractiveObject | null {
-    const hitTest = (
-      point: Point,
-      target: InteractiveObject
-    ): InteractiveObject | null => {
+    const globalPoint = new Point(x, y);
+    const childPoint = new Point();
+    const hitTest = (target: InteractiveObject): InteractiveObject | null => {
       if (!(target instanceof DisplayObjectContainer)) {
         return target;
       }
 
-      const childPoint = new Point();
       const children = target.__children;
       for (let i = children.length - 1; i >= 0; i--) {
         const child = children[i];
@@ -72,19 +70,19 @@ export class Stage extends DisplayObjectContainer {
           continue;
         }
 
-        child.globalToLocal(point, childPoint);
+        child.globalToLocal(globalPoint, childPoint);
         if (!child.hitTestPoint(childPoint.x, childPoint.y)) {
           continue;
         }
 
-        const hit = hitTest(childPoint, child);
+        const hit = hitTest(child);
         if (hit) {
           return hit;
         }
       }
       return null;
     };
-    return hitTest(new Point(x, y), this);
+    return hitTest(this);
   }
 
   #handleMouseEvent = (sourceEvent: globalThis.MouseEvent) => {

@@ -98,9 +98,7 @@ export class SimpleButton extends InteractiveObject {
     if (this.downState.transform.__update(transform)) {
       this.downState.__reportDirty();
     }
-    if (this.hitTestState.transform.__update(transform)) {
-      this.hitTestState.__reportDirty();
-    }
+    this.hitTestState.transform.__update(this.transform);
   });
 
   #copyBounds = autorun(() => {
