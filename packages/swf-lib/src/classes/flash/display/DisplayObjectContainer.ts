@@ -69,6 +69,19 @@ export class DisplayObjectContainer extends InteractiveObject {
     }
   }
 
+  hitTestPoint(x: number, y: number, shapeFlag?: boolean) {
+    if (!shapeFlag) {
+      return super.hitTestPoint(x, y, shapeFlag);
+    }
+
+    for (const child of this.#children) {
+      if (child.hitTestPoint(x, y, shapeFlag)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   __onNewFrame() {
     for (const child of this.__children) {
       child.__onNewFrame();

@@ -17,4 +17,14 @@ export class Shape extends DisplayObject {
       vec4.copy(obj.colorAdd, colorTransform.__add);
     }
   });
+
+  hitTestPoint(x: number, y: number, shapeFlag?: boolean) {
+    if (!super.hitTestPoint(x, y, shapeFlag)) {
+      return false;
+    }
+    if (shapeFlag && this.__renderObjects.every((obj) => !obj.hitTest(x, y))) {
+      return false;
+    }
+    return true;
+  }
 }

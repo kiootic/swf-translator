@@ -32,6 +32,35 @@ export class RenderObjectSprite implements RenderObject {
   getBounds(bounds: rect): void {
     rect.apply(bounds, this.def.bounds, this.renderMatrix);
   }
+
+  hitTest(x: number, y: number): boolean {
+    // https://stackoverflow.com/a/2049593
+    const sign = (ax: number, ay: number, bx: number, by: number) => {
+      return (x - bx) * (ay - by) - (ax - bx) * (y - by);
+    };
+
+    const vertices = this.def.vertices;
+    const numTriangles = vertices.length / 6;
+    for (let i = 0; i < numTriangles; i++) {
+      const ax = vertices[i * 6 + 0];
+      const ay = vertices[i * 6 + 1];
+      const bx = vertices[i * 6 + 2];
+      const by = vertices[i * 6 + 3];
+      const cx = vertices[i * 6 + 4];
+      const cy = vertices[i * 6 + 5];
+
+      const d1 = sign(ax, ay, bx, by);
+      const d2 = sign(bx, by, cx, cy);
+      const d3 = sign(cx, cy, ax, ay);
+
+      const hasNegative = d1 < 0 || d2 < 0 || d3 < 0;
+      const hasPositive = d1 > 0 || d2 > 0 || d3 > 0;
+      if (!hasNegative || !hasPositive) {
+        return true;
+      }
+    }
+    return false;
+  }
 }
 
 const batchVertexSize = 0x20000;

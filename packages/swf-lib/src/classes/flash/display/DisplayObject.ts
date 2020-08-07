@@ -128,7 +128,7 @@ export class DisplayObject extends EventDispatcher {
     return local;
   }
 
-  hitTestPoint(x: number, y: number): boolean {
+  hitTestPoint(x: number, y: number, shapeFlag = false): boolean {
     return rect.contains(this.__bounds.__rect, x, y);
   }
 

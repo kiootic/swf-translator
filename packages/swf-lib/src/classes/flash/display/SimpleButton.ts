@@ -70,6 +70,10 @@ export class SimpleButton extends InteractiveObject {
     this.__activeState?.__render(ctx);
   }
 
+  hitTestPoint(x: number, y: number): boolean {
+    return this.hitTestState.hitTestPoint(x, y, true);
+  }
+
   #activateState = reaction(
     () => this.__state,
     (state) => {
