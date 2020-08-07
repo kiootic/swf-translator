@@ -77,7 +77,10 @@ export class Stage extends DisplayObjectContainer {
           continue;
         }
 
-        return hitTest(childPoint, child);
+        const hit = hitTest(childPoint, child);
+        if (hit) {
+          return hit;
+        }
       }
       return null;
     };
