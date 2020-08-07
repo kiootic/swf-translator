@@ -1,5 +1,5 @@
 import { mat2d, vec4 } from "gl-matrix";
-import { createAtom } from "mobx";
+import { createAtom, computed } from "mobx";
 import { Matrix } from "./Matrix";
 import { ColorTransform } from "./ColorTransform";
 
@@ -32,6 +32,13 @@ export class Transform {
   set __worldMatrix(value) {
     this.#worldMatrix = value;
     this.#worldMatrixAtom.reportChanged();
+  }
+
+  @computed
+  get __worldMatrixInverted() {
+    const mat = mat2d.create();
+    mat2d.invert(mat, this.__worldMatrix.__value);
+    return mat;
   }
 
   get colorTransform() {

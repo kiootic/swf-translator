@@ -1,5 +1,5 @@
 import { observable, runInAction, createAtom, autorun, reaction } from "mobx";
-import { mat2d, vec4, mat3 } from "gl-matrix";
+import { mat2d, vec4, mat3, vec2 } from "gl-matrix";
 import { CharacterInstance } from "../../../internal/character/CharacterInstance";
 import { RenderObject } from "../../../internal/render/RenderObject";
 import { RenderContext } from "../../../internal/render/RenderContext";
@@ -9,6 +9,7 @@ import type { DisplayObjectContainer } from "./DisplayObjectContainer";
 import { EventDispatcher } from "../events/EventDispatcher";
 import { Transform } from "../geom/Transform";
 import { Rectangle } from "../geom/Rectangle";
+import { Point } from "../geom/Point";
 import { BitmapFilter } from "../filters/BitmapFilter";
 
 const tmpBounds = rect.create();
@@ -102,6 +103,20 @@ export class DisplayObject extends EventDispatcher {
         this.__bounds.__rect[3] === 0 ? 1 : value / this.__bounds.__rect[3];
       this.transform.__reportMatrixUpdated();
     });
+  }
+
+  globalToLocal(point: Point, __out?: Point): Point {
+    const local = __out ?? new Point();
+    vec2.transformMat2d(
+      local.__value,
+      point.__value,
+      this.transform.__worldMatrixInverted
+    );
+    return local;
+  }
+
+  hitTestPoint(x: number, y: number): boolean {
+    return rect.contains(this.__bounds.__rect, x, y);
   }
 
   __onNewFrame() {}

@@ -27,6 +27,14 @@ export const rect = {
       a[1] + a[3] > b[1]
     );
   },
+  contains(rect: rect, x: number, y: number) {
+    return (
+      x >= rect[0] &&
+      x < rect[0] + rect[2] &&
+      y >= rect[1] &&
+      y < rect[1] + rect[3]
+    );
+  },
   clear(out: rect) {
     out[0] = 0;
     out[1] = 0;
