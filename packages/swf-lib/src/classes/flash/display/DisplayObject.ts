@@ -221,4 +221,8 @@ export class DisplayObject extends EventDispatcher {
       }
     }
   });
+
+  __copyParent = autorun(() => {
+    this.__setEventParent(this.parent);
+  });
 }

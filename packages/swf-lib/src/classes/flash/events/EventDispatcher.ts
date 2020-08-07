@@ -1,10 +1,10 @@
 import type { Event } from "./Event";
 
-export type ListenerFn = (event: Event) => void;
+export type ListenerFn<T extends Event> = (event: T) => void;
 
 interface Listener {
   priority: number;
-  listener: ListenerFn;
+  listener: ListenerFn<Event>;
 }
 
 export class EventDispatcher {
@@ -12,9 +12,13 @@ export class EventDispatcher {
   #captureListeners = new Map<string | symbol, Listener[]>();
   #bubbleListeners = new Map<string | symbol, Listener[]>();
 
-  addEventListener(
+  __setEventParent(parent: EventDispatcher | null) {
+    this.#parent = parent;
+  }
+
+  addEventListener<T extends Event>(
     type: string | symbol,
-    listener: ListenerFn,
+    listener: ListenerFn<T>,
     useCapture = false,
     priority = 0,
     useWeakReference = false
@@ -31,14 +35,17 @@ export class EventDispatcher {
       return;
     }
 
-    const newListeners = [...oldListeners, { priority, listener }];
+    const newListeners = [
+      ...oldListeners,
+      { priority, listener: listener as ListenerFn<Event> },
+    ];
     newListeners.sort((a, b) => b.priority - a.priority);
     listeners.set(type, newListeners);
   }
 
-  removeEventListener(
+  removeEventListener<T extends Event>(
     type: string | symbol,
-    listener: ListenerFn,
+    listener: ListenerFn<T>,
     useCapture = false,
     priority = 0,
     useWeakReference = false

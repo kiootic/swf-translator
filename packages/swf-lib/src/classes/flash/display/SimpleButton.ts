@@ -1,4 +1,4 @@
-import { autorun, observable, computed, reaction } from "mobx";
+import { autorun, observable, computed, reaction, runInAction } from "mobx";
 import { DisplayObject } from "./DisplayObject";
 import { InteractiveObject } from "./InteractiveObject";
 import { Transform } from "../geom/Transform";
@@ -8,9 +8,19 @@ import {
 } from "../../../internal/character/ButtonInstance";
 import { rect } from "../../../internal/math/rect";
 import { RenderContext } from "../../../internal/render/RenderContext";
+import { MouseEvent } from "../events";
 
 export class SimpleButton extends InteractiveObject {
   declare __character: ButtonInstance | null;
+
+  constructor() {
+    super();
+
+    this.addEventListener(MouseEvent.MOUSE_OVER, this.#handleMouseEvent);
+    this.addEventListener(MouseEvent.MOUSE_OUT, this.#handleMouseEvent);
+    this.addEventListener(MouseEvent.MOUSE_DOWN, this.#handleMouseEvent);
+    this.addEventListener(MouseEvent.MOUSE_UP, this.#handleMouseEvent);
+  }
 
   @observable
   __state = ButtonState.Up;
@@ -93,4 +103,17 @@ export class SimpleButton extends InteractiveObject {
       this.__reportBoundsChanged();
     }
   });
+
+  #handleMouseEvent = (event: MouseEvent) => {
+    let newState: ButtonState = this.__state;
+    if (event.type === MouseEvent.MOUSE_OUT) {
+      newState = ButtonState.Up;
+    } else if (event.buttonDown) {
+      newState = ButtonState.Down;
+    } else {
+      newState = ButtonState.Over;
+    }
+
+    runInAction(() => (this.__state = newState));
+  };
 }
