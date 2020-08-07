@@ -1,4 +1,4 @@
-import { runInAction } from "mobx";
+import { runInAction, computed } from "mobx";
 import { DisplayObject } from "./DisplayObject";
 import { DisplayObjectContainer } from "./DisplayObjectContainer";
 import { InteractiveObject } from "./InteractiveObject";
@@ -14,7 +14,13 @@ export class Stage extends DisplayObjectContainer {
   readonly __ticker: Ticker;
   readonly __renderer: Renderer;
 
-  __mouseOn: DisplayObject | null = null;
+  __mouseOn: InteractiveObject | null = null;
+  __mouseTrackTarget: InteractiveObject | null = null;
+
+  @computed
+  get stage() {
+    return this;
+  }
 
   constructor(properties?: Properties) {
     super();
@@ -82,41 +88,50 @@ export class Stage extends DisplayObjectContainer {
     const rect = this.__canvas.canvas.getBoundingClientRect();
     const x = sourceEvent.clientX - rect.left;
     const y = sourceEvent.clientY - rect.top;
-    const target = this.__hitTestObject(x, y);
+    let target = this.__hitTestObject(x, y);
 
-    const isMouseDown = sourceEvent.buttons !== 0;
-    const newMouseEvent = (type: string) => {
-      const event = new MouseEvent();
-      event.type = type;
-      event.buttonDown = isMouseDown;
-      return event;
-    };
-
-    const mouseOn = (obj: DisplayObject | null) => {
-      if (this.__mouseOn === obj) {
+    const dispatchMouseEvent = (type: string, target: DisplayObject | null) => {
+      if (!target) {
         return;
       }
-      this.__mouseOn?.dispatchEvent(newMouseEvent(MouseEvent.MOUSE_OUT));
-      this.__mouseOn = obj;
-      this.__mouseOn?.dispatchEvent(newMouseEvent(MouseEvent.MOUSE_OVER));
+      const { x: localX, y: localY } = target.globalToLocal(new Point(x, y));
+
+      const event = new MouseEvent();
+      event.type = type;
+      event.buttonDown = sourceEvent.buttons !== 0;
+      event.localX = localX;
+      event.localY = localY;
+      target.dispatchEvent(event);
     };
 
-    mouseOn(sourceEvent.type === "mouseleave" ? null : target);
+    if (this.__mouseTrackTarget) {
+      if (this.__mouseTrackTarget.stage !== this) {
+        this.__mouseTrackTarget = null;
+      }
+      target = this.__mouseTrackTarget;
+    }
+    if (sourceEvent.type === "mouseleave") {
+      target = null;
+    }
+
+    if (this.__mouseOn !== target) {
+      dispatchMouseEvent(MouseEvent.MOUSE_OUT, this.__mouseOn);
+      this.__mouseOn = target;
+      dispatchMouseEvent(MouseEvent.MOUSE_OVER, this.__mouseOn);
+    }
+
     switch (sourceEvent.type) {
-      case "mouseenter":
-      case "mouseleave":
-        break;
       case "mousemove":
-        this.__mouseOn?.dispatchEvent(newMouseEvent(MouseEvent.MOUSE_MOVE));
+        dispatchMouseEvent(MouseEvent.MOUSE_MOVE, this.__mouseOn);
         break;
       case "mousedown":
-        this.__mouseOn?.dispatchEvent(newMouseEvent(MouseEvent.MOUSE_DOWN));
+        dispatchMouseEvent(MouseEvent.MOUSE_DOWN, this.__mouseOn);
         break;
       case "mouseup":
-        this.__mouseOn?.dispatchEvent(newMouseEvent(MouseEvent.MOUSE_UP));
+        dispatchMouseEvent(MouseEvent.MOUSE_UP, this.__mouseOn);
         break;
       case "click":
-        this.__mouseOn?.dispatchEvent(newMouseEvent(MouseEvent.CLICK));
+        dispatchMouseEvent(MouseEvent.CLICK, this.__mouseOn);
         break;
     }
   };

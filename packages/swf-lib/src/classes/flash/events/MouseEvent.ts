@@ -9,6 +9,8 @@ export class MouseEvent extends Event {
   static readonly MOUSE_UP = "mouseUp";
 
   buttonDown = false;
+  localX = 0;
+  localY = 0;
 
   constructor() {
     super();

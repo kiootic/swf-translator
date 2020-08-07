@@ -1,4 +1,11 @@
-import { observable, runInAction, createAtom, autorun, reaction } from "mobx";
+import {
+  observable,
+  runInAction,
+  createAtom,
+  autorun,
+  reaction,
+  computed,
+} from "mobx";
 import { mat2d, vec4, mat3, vec2 } from "gl-matrix";
 import { CharacterInstance } from "../../../internal/character/CharacterInstance";
 import { RenderObject } from "../../../internal/render/RenderObject";
@@ -6,6 +13,7 @@ import { RenderContext } from "../../../internal/render/RenderContext";
 import { RenderTarget } from "../../../internal/render/RenderTarget";
 import { rect } from "../../../internal/math/rect";
 import type { DisplayObjectContainer } from "./DisplayObjectContainer";
+import type { Stage } from "./Stage";
 import { EventDispatcher } from "../events/EventDispatcher";
 import { Transform } from "../geom/Transform";
 import { Rectangle } from "../geom/Rectangle";
@@ -49,6 +57,11 @@ export class DisplayObject extends EventDispatcher {
 
   @observable
   parent: DisplayObjectContainer | null = null;
+
+  @computed
+  get stage(): Stage | null {
+    return this.parent?.stage ?? null;
+  }
 
   @observable
   __cacheAsBitmap: boolean = false;

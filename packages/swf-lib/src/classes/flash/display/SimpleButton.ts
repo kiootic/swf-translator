@@ -20,6 +20,7 @@ export class SimpleButton extends InteractiveObject {
     this.addEventListener(MouseEvent.MOUSE_OUT, this.#handleMouseEvent);
     this.addEventListener(MouseEvent.MOUSE_DOWN, this.#handleMouseEvent);
     this.addEventListener(MouseEvent.MOUSE_UP, this.#handleMouseEvent);
+    this.addEventListener(MouseEvent.MOUSE_MOVE, this.#handleMouseEvent);
   }
 
   @observable
@@ -106,14 +107,27 @@ export class SimpleButton extends InteractiveObject {
 
   #handleMouseEvent = (event: MouseEvent) => {
     let newState: ButtonState = this.__state;
+    let isMouseDown = event.type !== MouseEvent.MOUSE_OUT && event.buttonDown;
     if (event.type === MouseEvent.MOUSE_OUT) {
       newState = ButtonState.Up;
-    } else if (event.buttonDown) {
+    } else if (
+      event.buttonDown &&
+      this.hitTestPoint(event.localX, event.localY)
+    ) {
       newState = ButtonState.Down;
     } else {
       newState = ButtonState.Over;
     }
 
     runInAction(() => (this.__state = newState));
+
+    const stage = this.stage;
+    if (!this.trackAsMenu && stage) {
+      if (isMouseDown) {
+        stage.__mouseTrackTarget = this;
+      } else if (stage.__mouseTrackTarget === this) {
+        stage.__mouseTrackTarget = null;
+      }
+    }
   };
 }
