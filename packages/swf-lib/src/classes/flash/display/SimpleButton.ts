@@ -56,6 +56,10 @@ export class SimpleButton extends InteractiveObject {
   @observable
   useHandCursor = true;
 
+  get __cursor() {
+    return this.useHandCursor ? "pointer" : "default";
+  }
+
   __onNewFrame() {
     this.__activeState?.__onNewFrame();
     this.hitTestState.__onNewFrame();

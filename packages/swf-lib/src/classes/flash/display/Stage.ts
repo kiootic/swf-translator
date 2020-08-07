@@ -134,5 +134,11 @@ export class Stage extends DisplayObjectContainer {
         dispatchMouseEvent(MouseEvent.CLICK, this.__mouseOn);
         break;
     }
+
+    if (this.__mouseOn) {
+      this.__canvas.cursor = this.__mouseOn.__cursor;
+    } else {
+      this.__canvas.cursor = "default";
+    }
   };
 }

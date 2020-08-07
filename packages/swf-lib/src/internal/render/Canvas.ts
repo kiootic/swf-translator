@@ -1,5 +1,6 @@
 export class Canvas {
   readonly canvas = document.createElement("canvas");
+  #cursor = "";
 
   get width(): number {
     return this.canvas.width;
@@ -13,6 +14,17 @@ export class Canvas {
   }
   set height(value: number) {
     this.canvas.height = value;
+  }
+
+  get cursor(): string {
+    return this.#cursor;
+  }
+
+  set cursor(value: string) {
+    if (value !== this.#cursor) {
+      this.canvas.style.cursor = value;
+      this.#cursor = value;
+    }
   }
 
   getContext(): WebGL2RenderingContext {
