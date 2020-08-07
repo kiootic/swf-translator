@@ -20,9 +20,11 @@ import { SpriteInstance } from "../../internal/character/SpriteInstance";
 import { FontInstance } from "../../internal/character/FontInstance";
 import { StaticTextInstance } from "../../internal/character/StaticTextInstance";
 import { EditTextInstance } from "../../internal/character/EditTextInstance";
+import { ButtonInstance } from "../../internal/character/ButtonInstance";
 import { Texture } from "../../internal/render/Texture";
 import { AssetBundle } from "./AssetBundle";
 import { FontRegistry } from "./FontRegistry";
+import { SimpleButton } from "../flash/display";
 
 export interface AssetLibrary {
   resolveImage(id: number): Texture;
@@ -142,6 +144,10 @@ export class AssetLibraryBuilder {
       library.editTexts.set(id, new EditTextInstance(id, editText, library));
     }
 
+    for (const [id, button] of this.buttons) {
+      library.buttons.set(id, new ButtonInstance(id, button, library));
+    }
+
     return library;
   }
 }
@@ -154,6 +160,7 @@ class InstantiatedLibrary implements AssetLibrary {
   readonly fonts = new Map<number, FontInstance>();
   readonly staticTexts = new Map<number, StaticTextInstance>();
   readonly editTexts = new Map<number, EditTextInstance>();
+  readonly buttons = new Map<number, ButtonInstance>();
 
   resolveImage(id: number): Texture {
     const instance = this.images.get(id);
@@ -204,6 +211,14 @@ class InstantiatedLibrary implements AssetLibrary {
       editTextInstance.applyTo(textField);
       textField.__character = editTextInstance;
       return textField;
+    }
+
+    const buttonInstance = this.buttons.get(id);
+    if (buttonInstance) {
+      const button = new SimpleButton();
+      buttonInstance.applyTo(button);
+      button.__character = buttonInstance;
+      return button;
     }
 
     const spriteInstance = this.sprites.get(id);

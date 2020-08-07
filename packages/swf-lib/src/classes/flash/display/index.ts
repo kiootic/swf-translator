@@ -6,3 +6,4 @@ export * from "./MorphShape";
 export * from "./Sprite";
 export * from "./MovieClip";
 export * from "./Stage";
+export * from "./SimpleButton";
