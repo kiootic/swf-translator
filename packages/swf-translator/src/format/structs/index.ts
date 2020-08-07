@@ -4,3 +4,4 @@ export * from "./shape";
 export * from "./styles";
 export * from "./filter";
 export * from "./text";
+export * from "./button";

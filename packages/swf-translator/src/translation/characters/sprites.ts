@@ -1,10 +1,9 @@
 import JSON5 from "json5";
 import { OutputContext } from "../../output";
 import { SWFFile } from "../../format/swf";
-import { FilterID as RawFilterID } from "../../format/structs";
 import { DefineSpriteTag } from "../../format/tags/define-sprite";
-import { FilterID, Filter } from "../../models/filter";
-import { color, matrix, colorTransform } from "../../models/primitives";
+import { filter } from "../../models/filter";
+import { matrix, colorTransform } from "../../models/primitives";
 import { Sprite, SpriteFrame, FrameActionKind } from "../../models/sprite";
 import { VariableDeclarationKind } from "ts-morph";
 import { PlaceObject2Tag } from "../../format/tags/place-object-2";
@@ -87,51 +86,7 @@ function handlePlaceObject(
     tag instanceof PlaceObject3Tag ? tag.cacheAsBitmap : undefined;
   const visible = tag instanceof PlaceObject3Tag ? tag.visible : undefined;
 
-  const filterModels: Filter[] = [];
-  for (const filter of filters ?? []) {
-    switch (filter.id) {
-      case RawFilterID.DropShadow:
-        filterModels.push({
-          id: FilterID.DropShadow,
-          color: color(filter.color),
-          blurX: filter.blurX,
-          blurY: filter.blurY,
-          angle: filter.angle,
-          distance: filter.distance,
-          strength: filter.strength,
-          inner: filter.innerShadow,
-          knockout: filter.knockout,
-          compositeSource: filter.compositeSource,
-          passes: filter.passes,
-        });
-        break;
-
-      case RawFilterID.Blur:
-        filterModels.push({
-          id: FilterID.Blur,
-          blurX: filter.blurX,
-          blurY: filter.blurY,
-          passes: filter.passes,
-        });
-        break;
-
-      case RawFilterID.Glow:
-        filterModels.push({
-          id: FilterID.DropShadow,
-          color: color(filter.color),
-          blurX: filter.blurX,
-          blurY: filter.blurY,
-          angle: 0,
-          distance: 0,
-          strength: filter.strength,
-          inner: filter.innerGlow,
-          knockout: filter.knockout,
-          compositeSource: filter.compositeSource,
-          passes: filter.passes,
-        });
-        break;
-    }
-  }
+  const filterModels = (filters ?? []).map((f) => filter(f));
 
   frame.actions.push({
     kind: FrameActionKind.PlaceObject,

@@ -27,6 +27,7 @@ import { DefineTextTag } from "./define-text";
 import { DefineText2Tag } from "./define-text-2";
 import { DefineEditTextTag } from "./define-edit-text";
 import { DefineMorphShapeTag } from "./define-morph-shape";
+import { DefineButton2Tag } from "./define-button-2";
 
 interface TagClass {
   new (reader: Reader): Tag;
@@ -62,6 +63,7 @@ registerTag(DefineTextTag);
 registerTag(DefineText2Tag);
 registerTag(DefineEditTextTag);
 registerTag(DefineMorphShapeTag);
+registerTag(DefineButton2Tag);
 
 function parseTag(reader: Reader): Tag {
   const codeAndLength = reader.nextUInt16();

@@ -5,3 +5,4 @@ export * from "./Sprite";
 export * from "./Font";
 export * from "./StaticText";
 export * from "./EditText";
+export * from "./Button";
