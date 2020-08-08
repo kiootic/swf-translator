@@ -64,6 +64,7 @@ export class Renderer {
       -target.viewport[0],
       -target.viewport[1],
     ]);
+    mat3.scale(projectionMat, projectionMat, [target.scaleX, target.scaleY]);
     const viewport: Viewport = {
       matrix: projectionMat,
       bounds: target.viewport,

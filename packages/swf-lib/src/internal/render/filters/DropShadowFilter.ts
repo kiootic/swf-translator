@@ -13,10 +13,10 @@ export class DropShadowFilter implements Filter {
   distance = 4;
 
   get padX() {
-    return this.blurX * 2;
+    return this.blurX / 2 + this.distance;
   }
   get padY() {
-    return this.blurY * 2;
+    return this.blurY / 2 + this.distance;
   }
 
   apply(ctx: FilterContext): void {

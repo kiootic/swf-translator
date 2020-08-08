@@ -160,7 +160,11 @@ export class DisplayObject extends EventDispatcher {
         padX = Math.max(padX, filter.__padX);
         padY = Math.max(padY, filter.__padY);
       }
-      if (target.resize(ctx.gl, this.#bounds.__rect, padX, padY)) {
+      const scaleX = Math.abs(this.transform.__worldMatrix.a);
+      const scaleY = Math.abs(this.transform.__worldMatrix.d);
+      if (
+        target.resize(ctx.gl, this.#bounds.__rect, padX, padY, scaleX, scaleY)
+      ) {
         this.#needReRender = true;
       }
 

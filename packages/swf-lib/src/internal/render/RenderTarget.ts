@@ -19,6 +19,8 @@ export class RenderTarget {
   textureAux1 = new RenderTexture(0, 0);
   textureAux2 = new RenderTexture(0, 0);
   viewport = rect.create();
+  scaleX = 1;
+  scaleY = 1;
 
   #texWidth = 0;
   #texHeight = 0;
@@ -47,22 +49,26 @@ export class RenderTarget {
     gl: WebGLRenderingContext,
     viewport: rect,
     padX: number,
-    padY: number
+    padY: number,
+    scaleX: number,
+    scaleY: number
   ) {
     this.#gl = gl;
     let needReRender = false;
 
     padX = Math.ceil(padX);
     padY = Math.ceil(padY);
+    scaleX = Math.ceil(scaleX);
+    scaleY = Math.ceil(scaleY);
 
-    let [x, y, width, height] = viewport;
-    x -= padX;
-    y -= padY;
-    width += padX * 2;
-    height += padY * 2;
+    const [x, y, width, height] = viewport;
+    const targetX = Math.floor(x * scaleX - padX);
+    const targetY = Math.floor(y * scaleY - padY);
+    const targetWidth = width * scaleX + padX * 2;
+    const targetHeight = height * scaleY + padY * 2;
 
-    const texWidth = nextPow2(width);
-    const texHeight = nextPow2(height);
+    const texWidth = nextPow2(targetWidth);
+    const texHeight = nextPow2(targetHeight);
     if (this.#texWidth !== texWidth || this.#texHeight !== texHeight) {
       this.delete();
       this.renderBuffer.width = texWidth;
@@ -80,33 +86,36 @@ export class RenderTarget {
       needReRender = true;
     }
 
-    this.viewport[0] = Math.floor(x);
-    this.viewport[1] = Math.floor(y);
+    this.viewport[0] = targetX;
+    this.viewport[1] = targetY;
     this.viewport[2] = texWidth;
     this.viewport[3] = texHeight;
+    this.scaleX = scaleX;
+    this.scaleY = scaleY;
 
     mat2d.identity(this.#uvMat);
     mat2d.scale(this.#uvMat, this.#uvMat, [1 / texWidth, 1 / texHeight]);
     mat2d.translate(this.#uvMat, this.#uvMat, [padX, padY]);
+    mat2d.scale(this.#uvMat, this.#uvMat, [scaleX, scaleY]);
 
     this.#renderObject.def.vertices.set([
-      width,
+      width + padX,
       -padY,
       -padX,
-      height,
+      height + padY,
       -padX,
       -padY,
       -padX,
-      height,
-      width,
+      height + padY,
+      width + padX,
       -padY,
-      width,
-      height,
+      width + padX,
+      height + padY,
     ]);
     this.#renderObject.def.bounds[0] = -padX;
     this.#renderObject.def.bounds[1] = -padY;
-    this.#renderObject.def.bounds[2] = width;
-    this.#renderObject.def.bounds[3] = height;
+    this.#renderObject.def.bounds[2] = width + padX * 2;
+    this.#renderObject.def.bounds[3] = height + padY * 2;
 
     return needReRender;
   }

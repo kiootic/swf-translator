@@ -8,10 +8,10 @@ export class BlurFilter implements Filter {
   passes = 3;
 
   get padX() {
-    return this.blurX * 2;
+    return this.blurX / 2;
   }
   get padY() {
-    return this.blurY * 2;
+    return this.blurY / 2;
   }
 
   apply(ctx: FilterContext): void {
