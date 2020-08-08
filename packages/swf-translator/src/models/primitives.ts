@@ -29,10 +29,8 @@ export type ColorTransform = [
   number
 ];
 
-export function colorTransform(
-  m: ColorTransformWithAlpha
-): ColorTransform | undefined {
-  const result: ColorTransform = [
+export function colorTransform(m: ColorTransformWithAlpha): ColorTransform {
+  return [
     m.redMul / 256,
     m.greenMul / 256,
     m.blueMul / 256,
@@ -42,12 +40,6 @@ export function colorTransform(
     m.blueAdd,
     m.alphaAdd,
   ];
-  for (let i = 0; i < result.length; i++) {
-    if (result[i] !== [1, 1, 1, 1, 0, 0, 0, 0][i]) {
-      return result;
-    }
-  }
-  return undefined;
 }
 
 export type Matrix = [number, number, number, number, number, number];
