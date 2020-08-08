@@ -53,6 +53,11 @@ export function layout(
   return { bounds: resultBounds, renderObjects: resultObjects };
 }
 
+function fontSize(format: TextFormat) {
+  // http://www.moock.org/blog/archives/000284.html
+  return Math.min(127, format.size);
+}
+
 function placeholderGlyph(format: TextFormat): Glyph {
   return {
     sprite: {
@@ -61,14 +66,19 @@ function placeholderGlyph(format: TextFormat): Glyph {
       texture: Texture.WHITE,
       color: null,
       fillMode: FillStyleKind.SolidColor,
-      bounds: rect.fromValues(0, -format.size, format.size, format.size),
+      bounds: rect.fromValues(
+        0,
+        -fontSize(format),
+        fontSize(format),
+        fontSize(format)
+      ),
     },
     color: format.color,
     align: format.align,
-    size: format.size,
+    size: fontSize(format),
     leading: format.leading,
-    advance: format.size,
-    ascent: format.size,
+    advance: fontSize(format),
+    ascent: fontSize(format),
     descent: 0,
   };
 }
@@ -91,9 +101,9 @@ function resolveGlyph(format: TextFormat, char: string): Glyph {
     sprite: font.glyphSprites[index],
     color: format.color,
     align: format.align,
-    size: format.size,
+    size: fontSize(format),
     leading: format.leading,
-    advance: (font.layout?.advances[index] ?? 0) * format.size,
+    advance: (font.layout?.advances[index] ?? 0) * fontSize(format),
     ascent: font.layout?.ascent ?? 0,
     descent: font.layout?.descent ?? 0,
   };
@@ -134,27 +144,30 @@ function layoutLine(line: Line, y: number, bounds: rect): LayoutResult {
     return { bounds: rect.create(), renderObjects: [] };
   }
 
+  const boundsX = bounds[0] + 2;
+  const boundsWidth = bounds[2] - 4;
+
   const alignment = line.glyphs[0].align;
   let spacing: number, x: number;
   switch (alignment) {
     case TextFormatAlign.RIGHT:
       spacing = 0;
-      x = bounds[0] + bounds[2] - line.width;
+      x = boundsX + boundsWidth - line.width;
       break;
     case TextFormatAlign.CENTER:
       spacing = 0;
-      x = bounds[0] + (bounds[2] - line.width) / 2;
+      x = boundsX + (boundsWidth - line.width) / 2;
       break;
     case TextFormatAlign.JUSTIFY:
       spacing =
-        bounds[0] + line.glyphs.length > 0
-          ? (bounds[2] - line.width) / (line.glyphs.length - 1)
+        line.glyphs.length > 0
+          ? boundsX + (boundsWidth - line.width) / (line.glyphs.length - 1)
           : 0;
-      x = bounds[0];
+      x = 0;
       break;
     default:
       spacing = 0;
-      x = bounds[0];
+      x = boundsX;
       break;
   }
 
