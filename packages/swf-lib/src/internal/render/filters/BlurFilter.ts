@@ -45,9 +45,13 @@ export class BlurFilter implements Filter {
 
     if (this.blurY > 0) {
       for (let i = 0; i < this.passes; i++) {
-        ctx.applyFilter(programBlur, { from, to }, (gl) => {
-          programBlur.setUniform(gl, "uDelta", uDeltaY);
-        });
+        ctx.applyFilter(
+          programBlur,
+          { from: i === 0 ? ctx.target.texture : from, to },
+          (gl) => {
+            programBlur.setUniform(gl, "uDelta", uDeltaY);
+          }
+        );
 
         const t = from;
         from = to;
