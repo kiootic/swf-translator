@@ -21,8 +21,9 @@ void main(void) {
   }
 );
 
-const fragBlur = Shader.fragment(
-  `
+const fragBlur = (quality: number) =>
+  Shader.fragment(
+    `
 precision highp float;
 
 varying vec2 vTextureCoords;
@@ -36,15 +37,26 @@ vec4 sample(vec2 coords) {
 
 void main(void) {
     gl_FragColor = vec4(0.0);
-    for (int i = -8; i <= 8; i++) {
-      gl_FragColor += sample(vTextureCoords + uDelta * float(i)) / 17.0;
+    for (int i = -${quality}; i <= ${quality}; i++) {
+      gl_FragColor += sample(vTextureCoords + uDelta * float(i)) / (${
+        quality * 2 + 1
+      }.0);
     }
 }
 `,
-  {
-    uTexture: "int",
-    uDelta: "vec2",
-  }
-);
+    {
+      uTexture: "int",
+      uDelta: "vec2",
+    }
+  );
 
-export const programBlur = new Program(vertBlur, fragBlur);
+const fragBlurCache = new Map<number, Shader>();
+
+export const programBlur = (quality: number) => {
+  let fragBlurInstance = fragBlurCache.get(quality);
+  if (!fragBlurInstance) {
+    fragBlurInstance = fragBlur(quality);
+    fragBlurCache.set(quality, fragBlurInstance);
+  }
+  return new Program(vertBlur, fragBlurInstance);
+};
