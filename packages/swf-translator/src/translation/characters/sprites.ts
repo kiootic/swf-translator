@@ -6,6 +6,7 @@ import { filter } from "../../models/filter";
 import { matrix, colorTransform } from "../../models/primitives";
 import { Sprite, SpriteFrame, FrameActionKind } from "../../models/sprite";
 import { VariableDeclarationKind } from "ts-morph";
+import { Tag } from "../../format/tag";
 import { PlaceObject2Tag } from "../../format/tags/place-object-2";
 import { PlaceObject3Tag } from "../../format/tags/place-object-3";
 import { RemoveObject2Tag } from "../../format/tags/remove-object-2";
@@ -14,14 +15,14 @@ import { ShowFrameTag } from "../../format/tags/show-frame";
 export async function translateSprites(ctx: OutputContext, swf: SWFFile) {
   const sprites: Record<number, unknown> = {};
   for (const tag of swf.characters.values()) {
-    let sprite: Sprite;
     if (tag instanceof DefineSpriteTag) {
-      sprite = translateSprite(tag);
-    } else {
-      continue;
+      sprites[tag.characterId] = translateSprite(tag);
     }
+  }
+  sprites[0] = translateDocumentSprite(swf);
 
-    const char = ctx.file("characters", `${tag.characterId}.ts`);
+  for (const [characterId, sprite] of Object.entries(sprites)) {
+    const char = ctx.file("characters", `${characterId}.ts`);
     char.tsSource.addImportDeclaration({
       defaultImport: "lib",
       moduleSpecifier: "@swf/lib",
@@ -43,23 +44,33 @@ export async function translateSprites(ctx: OutputContext, swf: SWFFile) {
 
     const index = ctx.file("characters", `index.ts`);
     index.tsSource.addImportDeclaration({
-      defaultImport: `character${tag.characterId}`,
-      moduleSpecifier: `./${tag.characterId}`,
+      defaultImport: `character${characterId}`,
+      moduleSpecifier: `./${characterId}`,
     });
     index.tsSource.addStatements(
-      `bundle.sprites[${tag.characterId}] = character${tag.characterId};`
+      `bundle.sprites[${characterId}] = character${characterId};`
     );
-
-    sprites[tag.characterId] = sprite;
   }
   return sprites;
 }
 
 function translateSprite(sprite: DefineSpriteTag): Sprite {
+  const frames = processTags(sprite.controlTags);
+
+  return { numFrames: sprite.frameCount, frames };
+}
+
+function translateDocumentSprite(swf: SWFFile): Sprite {
+  const frames = processTags(swf.tags);
+
+  return { numFrames: swf.frameCount, frames };
+}
+
+function processTags(tags: Tag[]): SpriteFrame[] {
   let frame: SpriteFrame = { frame: 1, actions: [] };
   const frames: SpriteFrame[] = [frame];
 
-  for (const tag of sprite.controlTags) {
+  for (const tag of tags) {
     if (tag instanceof PlaceObject2Tag || tag instanceof PlaceObject3Tag) {
       handlePlaceObject(frame, tag);
     } else if (tag instanceof RemoveObject2Tag) {
@@ -70,10 +81,7 @@ function translateSprite(sprite: DefineSpriteTag): Sprite {
     }
   }
 
-  return {
-    numFrames: sprite.frameCount,
-    frames: frames.filter((f) => f.actions.length > 0),
-  };
+  return frames.filter((f) => f.actions.length > 0);
 }
 
 function handlePlaceObject(

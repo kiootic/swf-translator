@@ -98,6 +98,7 @@ function extractRatios(swf: SWFFile): Map<number, number[]> {
       processControlTags(tag.controlTags);
     }
   }
+  processControlTags(swf.tags);
 
   return ratios;
 }
