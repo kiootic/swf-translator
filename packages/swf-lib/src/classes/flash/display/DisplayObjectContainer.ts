@@ -156,6 +156,12 @@ export class DisplayObjectContainer extends InteractiveObject {
       rect.apply(childBounds, childBounds, child.transform.matrix.__value);
       rect.union(newBounds, newBounds, childBounds);
     }
+    if (this.cacheAsBitmap) {
+      newBounds[0] = Math.floor(newBounds[0]);
+      newBounds[1] = Math.floor(newBounds[1]);
+      newBounds[2] += 1;
+      newBounds[3] += 1;
+    }
     const changed = !rect.equals(newBounds, this.__bounds.__rect);
     rect.copy(this.__bounds.__rect, newBounds);
     if (changed) {
