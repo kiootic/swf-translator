@@ -11,6 +11,7 @@ export class DropShadowFilter implements Filter {
   strength = 1;
   angle = 45;
   distance = 4;
+  knockout = false;
 
   get padX() {
     return this.blurX + this.distance;
@@ -69,7 +70,16 @@ export class DropShadowFilter implements Filter {
       (gl) => {
         gl.enable(gl.BLEND);
         gl.blendEquation(gl.FUNC_ADD);
-        gl.blendFunc(gl.ONE_MINUS_DST_ALPHA, gl.ONE);
+        if (this.knockout) {
+          gl.blendFuncSeparate(
+            gl.ONE_MINUS_DST_ALPHA,
+            gl.ZERO,
+            gl.ONE_MINUS_DST_ALPHA,
+            gl.ZERO
+          );
+        } else {
+          gl.blendFunc(gl.ONE_MINUS_DST_ALPHA, gl.ONE);
+        }
         programDropShadow.setUniform(gl, "uOffset", offset);
         programDropShadow.setUniform(gl, "uColor", color);
       }

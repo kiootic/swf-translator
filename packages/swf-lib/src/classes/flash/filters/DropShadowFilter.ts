@@ -35,6 +35,7 @@ export class DropShadowFilter extends BitmapFilter {
     this.filter.strength = this.strength;
     this.filter.angle = this.angle;
     this.filter.distance = this.distance;
+    this.filter.knockout = this.knockout;
   }
 
   __apply(target: RenderTarget, ctx: RenderContext) {
