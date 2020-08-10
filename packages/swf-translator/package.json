@@ -17,7 +17,8 @@
     "rimraf": "3.0.2",
     "sharp": "0.25.4",
     "ts-morph": "7.1.2",
-    "typescript": "3.9.6"
+    "typescript": "3.9.6",
+    "yargs": "15.4.1"
   },
   "devDependencies": {
     "@types/json5": "0.0.30",
@@ -25,6 +26,7 @@
     "@types/node": "12.12.50",
     "@types/rimraf": "3.0.0",
     "@types/sharp": "0.25.0",
+    "@types/yargs": "15.0.5",
     "prettier": "2.0.5"
   }
 }

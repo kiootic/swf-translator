@@ -1,4 +1,5 @@
 import consola from "consola";
+import yargs from "yargs";
 import { readFileSync } from "fs";
 import { SWFFile } from "./format/swf";
 import { UnknownTag } from "./format/tags/unknown";
@@ -7,17 +8,14 @@ import { translate } from "./translation";
 import { Tag } from "./format/tag";
 import { DefineSpriteTag } from "./format/tags/define-sprite";
 
-export async function main(args: string[]) {
-  if (args.length !== 2) {
-    consola.error("usage: swf-translator <in swf> <out dir>");
-    process.exit(1);
-  }
+interface Arguments {
+  inFile: string;
+  outDir: string;
+}
 
-  const inFile = args[0];
-  const outDir = args[1];
-
-  consola.info(`reading from ${inFile}...`);
-  const buf = readFileSync(inFile);
+export async function main(args: Arguments) {
+  consola.info(`reading from ${args.inFile}...`);
+  const buf = readFileSync(args.inFile);
   const file = new SWFFile(buf);
 
   const unknownTags = new Set<number>();
@@ -42,12 +40,28 @@ export async function main(args: string[]) {
   const ctx = new OutputContext();
   await translate(ctx, file);
 
-  await ctx.writeTo(outDir);
-  consola.success(`output written to ${outDir}`);
+  await ctx.writeTo(args.outDir);
+  consola.success(`output written to ${args.outDir}`);
 }
 
-main(process.argv.slice(2))
-  .then(() => process.exit(0))
-  .catch((err) => {
-    consola.error("unexpected error: ", err);
-  });
+yargs.command(
+  "build <inFile> <outDir>",
+  "transform swf file",
+  (builder) =>
+    builder
+      .positional("inFile", {
+        type: "string",
+        description: "input swf file",
+      })
+      .positional("outDir", {
+        type: "string",
+        description: "output directory",
+      }),
+  (argv) => {
+    main(argv as Arguments)
+      .then(() => process.exit(0))
+      .catch((err) => {
+        consola.error("unexpected error: ", err);
+      });
+  }
+).argv;
