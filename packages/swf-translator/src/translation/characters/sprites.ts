@@ -32,7 +32,7 @@ export async function translateSprites(ctx: OutputContext, swf: SWFFile) {
       declarations: [
         {
           name: `character`,
-          type: "lib._internal.character.SpriteCharacter",
+          type: "lib.__internal.character.SpriteCharacter",
           initializer: JSON5.stringify(sprite, null, 4),
         },
       ],

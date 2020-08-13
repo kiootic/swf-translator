@@ -1,9 +1,9 @@
-import { EditTextCharacter } from "../../classes/_internal/character";
+import { EditTextCharacter } from "../../classes/__internal/character";
 import { TextField } from "../../classes/flash/text/TextField";
 import { rect } from "../math/rect";
 import { CharacterInstance } from "./CharacterInstance";
 import { TextFieldType, TextFormatAlign } from "../../classes/flash/text";
-import { AssetLibrary } from "../../classes/_internal";
+import { AssetLibrary } from "../../classes/__internal";
 import { Rectangle } from "../../classes/flash/geom";
 
 export class EditTextInstance implements CharacterInstance {

@@ -125,7 +125,7 @@ function fixupInstanceOf(methodDef: MethodDef, body: ast.NodeBlock) {
               new ast.NodeExprType(
                 {
                   kind: TypeRefKind.Class,
-                  namespace: "_internal.avm2",
+                  namespace: "__internal.avm2",
                   name: "Runtime",
                 },
                 true

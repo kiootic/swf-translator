@@ -45,7 +45,7 @@ export async function translateMorphShapes(ctx: OutputContext, swf: SWFFile) {
       declarations: [
         {
           name: `character`,
-          type: "lib._internal.character.MorphShapeCharacter",
+          type: "lib.__internal.character.MorphShapeCharacter",
           initializer: JSON5.stringify(morphShape, null, 4),
         },
       ],

@@ -3,7 +3,7 @@ import { DisplayObject } from "./DisplayObject";
 import { DisplayObjectContainer } from "./DisplayObjectContainer";
 import { InteractiveObject } from "./InteractiveObject";
 import { Point } from "../geom/Point";
-import { Properties } from "../../_internal/Properties";
+import { Properties } from "../../__internal/Properties";
 import { Canvas } from "../../../internal/render/Canvas";
 import { Ticker } from "../../../internal/render/Ticker";
 import { Renderer } from "../../../internal/render/Renderer";

@@ -1,9 +1,9 @@
 import { mat2d, vec2, vec4 } from "gl-matrix";
 import { StaticText } from "../../classes/flash/text/StaticText";
 import { CharacterInstance } from "./CharacterInstance";
-import { StaticTextCharacter } from "../../classes/_internal/character";
-import { AssetLibrary } from "../../classes/_internal";
-import { FillStyleKind } from "../../classes/_internal/character/styles";
+import { StaticTextCharacter } from "../../classes/__internal/character";
+import { AssetLibrary } from "../../classes/__internal";
+import { FillStyleKind } from "../../classes/__internal/character/styles";
 import {
   SpriteDef,
   RenderObjectSprite,

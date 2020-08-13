@@ -4,9 +4,9 @@ import { Sprite } from "../../classes/flash/display/Sprite";
 import {
   ButtonCharacter,
   ButtonRecord,
-} from "../../classes/_internal/character/Button";
-import { FrameActionKind } from "../../classes/_internal/character/Sprite";
-import type { AssetLibrary } from "../../classes/_internal";
+} from "../../classes/__internal/character/Button";
+import { FrameActionKind } from "../../classes/__internal/character/Sprite";
+import type { AssetLibrary } from "../../classes/__internal";
 import { CharacterInstance } from "./CharacterInstance";
 import { executeFrameAction } from "./frame";
 

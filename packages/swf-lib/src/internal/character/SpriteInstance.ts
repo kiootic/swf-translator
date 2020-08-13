@@ -4,8 +4,8 @@ import {
   SpriteFrame,
   FrameActionKind,
   FrameAction,
-} from "../../classes/_internal/character/Sprite";
-import type { AssetLibrary } from "../../classes/_internal";
+} from "../../classes/__internal/character/Sprite";
+import type { AssetLibrary } from "../../classes/__internal";
 import { CharacterInstance } from "./CharacterInstance";
 import { executeFrameAction } from "./frame";
 

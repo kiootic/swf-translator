@@ -27,7 +27,7 @@ export async function translateStaticTexts(ctx: OutputContext, swf: SWFFile) {
       declarations: [
         {
           name: `character`,
-          type: `lib._internal.character.StaticTextCharacter`,
+          type: `lib.__internal.character.StaticTextCharacter`,
           initializer: JSON5.stringify(text, null, 4),
         },
       ],

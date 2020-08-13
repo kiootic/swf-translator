@@ -22,11 +22,11 @@ declare module "*.png" {
 import lib from "@swf/lib";
 import bundle from "./bundle";
 
-const builder = new lib._internal.AssetLibraryBuilder();
+const builder = new lib.__internal.AssetLibraryBuilder();
 builder.registerBundle(bundle);
 
-let assetLibrary: Promise<lib._internal.AssetLibrary> | undefined;
-export function library(): Promise<lib._internal.AssetLibrary> {
+let assetLibrary: Promise<lib.__internal.AssetLibrary> | undefined;
+export function __library(): Promise<lib.__internal.AssetLibrary> {
   return assetLibrary ?? (assetLibrary = builder.instantiate());
 }
 

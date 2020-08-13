@@ -8,4 +8,8 @@ export abstract class InteractiveObject extends DisplayObject {
   get __cursor(): string {
     return "default";
   }
+
+  tabEnabled = false;
+
+  tabIndex = -1;
 }

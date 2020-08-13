@@ -8,9 +8,9 @@ import { DropShadowFilter } from "../../classes/flash/filters/DropShadowFilter";
 import {
   FrameAction,
   FrameActionKind,
-} from "../../classes/_internal/character/Sprite";
-import { FilterID } from "../../classes/_internal/character/filter";
-import { AssetLibrary } from "../../classes/_internal/AssetLibrary";
+} from "../../classes/__internal/character/Sprite";
+import { FilterID } from "../../classes/__internal/character/filter";
+import { AssetLibrary } from "../../classes/__internal/AssetLibrary";
 
 export function executeFrameAction(
   library: AssetLibrary,

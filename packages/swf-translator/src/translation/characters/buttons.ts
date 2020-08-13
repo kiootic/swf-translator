@@ -27,7 +27,7 @@ export async function translateButtons(ctx: OutputContext, swf: SWFFile) {
       declarations: [
         {
           name: `character`,
-          type: `lib._internal.character.ButtonCharacter`,
+          type: `lib.__internal.character.ButtonCharacter`,
           initializer: JSON5.stringify(button, null, 4),
         },
       ],

@@ -102,7 +102,7 @@ export class Scope {
       case "Class":
       case "XML":
       case "XMLList":
-        return { kind: TypeRefKind.Class, namespace: "_internal.avm2", name };
+        return { kind: TypeRefKind.Class, namespace: "__internal.avm2", name };
 
       default:
         return null;

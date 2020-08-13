@@ -22,7 +22,7 @@ export async function generateCharacters(ctx: OutputContext, swf: SWFFile) {
     declarations: [
       {
         name: "bundle",
-        type: "lib._internal.AssetBundle",
+        type: "lib.__internal.AssetBundle",
         initializer: JSON5.stringify(
           {
             images: {},
@@ -55,7 +55,7 @@ export async function generateCharacters(ctx: OutputContext, swf: SWFFile) {
     declarations: [
       {
         name: "bundle",
-        type: "lib._internal.AssetBundle",
+        type: "lib.__internal.AssetBundle",
         initializer: "charactersBundle as any",
       },
     ],

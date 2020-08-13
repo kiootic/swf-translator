@@ -1,6 +1,6 @@
 import { CharacterInstance } from "./CharacterInstance";
-import { FontCharacter, FontLayout } from "../../classes/_internal/character";
-import type { AssetLibrary } from "../../classes/_internal";
+import { FontCharacter, FontLayout } from "../../classes/__internal/character";
+import type { AssetLibrary } from "../../classes/__internal";
 import { makeShapeRenderObject, joinSpriteShapes } from "./shapes";
 import { SpriteDef } from "../render/objects/RenderObjectSprite";
 

@@ -28,7 +28,7 @@ export class EmitContext {
       case TypeRefKind.Global:
         return typeRef.name;
       case TypeRefKind.Class:
-        if (/^(flash|_internal)/.test(typeRef.namespace)) {
+        if (/^(flash|__internal)/.test(typeRef.namespace)) {
           this.importLib = true;
           return `lib.${typeRef.namespace}.${typeRef.name}`;
         } else {

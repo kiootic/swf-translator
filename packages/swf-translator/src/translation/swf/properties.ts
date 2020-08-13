@@ -28,7 +28,7 @@ export async function generateProperties(ctx: OutputContext, swf: SWFFile) {
       declarations: [
         {
           name: `properties`,
-          type: "lib._internal.Properties",
+          type: "lib.__internal.Properties",
           initializer: JSON5.stringify(props, null, 4),
         },
       ],

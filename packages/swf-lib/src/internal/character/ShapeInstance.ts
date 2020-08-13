@@ -1,6 +1,6 @@
 import { Shape } from "../../classes/flash/display/Shape";
-import type { AssetLibrary } from "../../classes/_internal/AssetLibrary";
-import { ShapeCharacter } from "../../classes/_internal/character/Shape";
+import type { AssetLibrary } from "../../classes/__internal/AssetLibrary";
+import { ShapeCharacter } from "../../classes/__internal/character/Shape";
 import { CharacterInstance } from "./CharacterInstance";
 import { makeShapeRenderObject } from "./shapes";
 import {

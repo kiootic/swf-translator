@@ -1,9 +1,9 @@
 import { mat2d, vec4 } from "gl-matrix";
 import { SpriteDef } from "../render/objects/RenderObjectSprite";
 import { Texture } from "../render/Texture";
-import type { AssetLibrary } from "../../classes/_internal/AssetLibrary";
-import { ShapeContour } from "../../classes/_internal/character/Shape";
-import { FillStyleKind } from "../../classes/_internal/character/styles";
+import type { AssetLibrary } from "../../classes/__internal/AssetLibrary";
+import { ShapeContour } from "../../classes/__internal/character/Shape";
+import { FillStyleKind } from "../../classes/__internal/character/styles";
 import { makeGradientTexture } from "./gradient";
 import { rect } from "../math/rect";
 import { preMultiplyAlpha } from "../math/color";

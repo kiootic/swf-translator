@@ -1,4 +1,4 @@
-import { Gradient } from "../../classes/_internal/character/styles";
+import { Gradient } from "../../classes/__internal/character/styles";
 
 export function makeGradientTexture(gradient: Gradient): HTMLCanvasElement {
   const canvas = document.createElement("canvas");

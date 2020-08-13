@@ -26,7 +26,7 @@ export async function translateEditTexts(ctx: OutputContext, swf: SWFFile) {
       declarations: [
         {
           name: `character`,
-          type: `lib._internal.character.EditTextCharacter`,
+          type: `lib.__internal.character.EditTextCharacter`,
           initializer: JSON5.stringify(text, null, 4),
         },
       ],

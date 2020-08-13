@@ -1,6 +1,6 @@
 import { MorphShape } from "../../classes/flash/display/MorphShape";
-import type { AssetLibrary } from "../../classes/_internal/AssetLibrary";
-import { MorphShapeCharacter } from "../../classes/_internal/character/MorphShape";
+import type { AssetLibrary } from "../../classes/__internal/AssetLibrary";
+import { MorphShapeCharacter } from "../../classes/__internal/character/MorphShape";
 import { CharacterInstance } from "./CharacterInstance";
 import { makeShapeRenderObject } from "./shapes";
 import {

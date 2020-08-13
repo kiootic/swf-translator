@@ -513,7 +513,7 @@ function translateVarType(scope: Scope, name: string): ast.NodeExpression {
         new ast.NodeExprType(
           {
             kind: TypeRefKind.Class,
-            namespace: "_internal.avm2",
+            namespace: "__internal.avm2",
             name: "Runtime",
           },
           true

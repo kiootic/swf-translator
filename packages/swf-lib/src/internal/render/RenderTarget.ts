@@ -1,7 +1,7 @@
 import { mat2d, vec2 } from "gl-matrix";
 import { rect } from "../math/rect";
 import { RenderObjectSprite } from "./objects/RenderObjectSprite";
-import { FillStyleKind } from "../../classes/_internal/character/styles";
+import { FillStyleKind } from "../../classes/__internal/character/styles";
 import { RenderTexture } from "./Texture";
 import type { RenderContext } from "./RenderContext";
 import { Renderbuffer } from "./Renderbuffer";

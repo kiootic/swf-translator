@@ -26,7 +26,7 @@ export async function translateFonts(ctx: OutputContext, swf: SWFFile) {
       declarations: [
         {
           name: `character`,
-          type: "lib._internal.character.FontCharacter",
+          type: "lib.__internal.character.FontCharacter",
           initializer: JSON5.stringify(font, null, 4),
         },
       ],

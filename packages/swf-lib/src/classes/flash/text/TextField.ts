@@ -1,6 +1,6 @@
 import { mat2d, vec4 } from "gl-matrix";
 import { autorun, observable, runInAction } from "mobx";
-import { Container } from "../../_internal/text/Container";
+import { Container } from "../../__internal/text/Container";
 import { InteractiveObject } from "../display/InteractiveObject";
 import { EditTextInstance } from "../../../internal/character/EditTextInstance";
 import { RenderObjectSprite } from "../../../internal/render/objects/RenderObjectSprite";
