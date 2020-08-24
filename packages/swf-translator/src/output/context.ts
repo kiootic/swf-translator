@@ -19,7 +19,7 @@ export class OutputContext {
 
   async writeTo(directory: string) {
     await mkdirp(directory);
-    await promisify(rimraf)(directory + "/*");
+    await promisify(rimraf)(directory + "/!(classes)");
 
     for (const [relPath, file] of this.files) {
       const path = join(directory, relPath);

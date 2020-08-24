@@ -48,7 +48,7 @@
   resolved "https://registry.yarnpkg.com/@types/color-name/-/color-name-1.1.1.tgz#1c1261bbeaa10a8055bbc5d8ab84b7b2afc846a0"
   integrity sha512-rr+OQyAjxze7GgWrSaJwydHStIhHq2lvY3BOC2Mj7KnzI7XK0Uw1TOOdI9lDoajEbSWLiYgoo4f1R51erQfhPQ==
 
-"@types/glob@*":
+"@types/glob@*", "@types/glob@7.1.3":
   version "7.1.3"
   resolved "https://registry.yarnpkg.com/@types/glob/-/glob-7.1.3.tgz#e6ba80f36b7daad2c685acd9266382e68985c183"
   integrity sha512-SEYeGAIQIQX8NN6LDKprLjbrd5dARM5EXsd8GI/A5l0apYI1fGMWgPHSe4ZKL4eozlAyI+doUE9XbYS4xCkQ1w==
@@ -450,7 +450,7 @@ glob-parent@^5.1.0:
   dependencies:
     is-glob "^4.0.1"
 
-glob@^7.1.3:
+glob@7.1.6, glob@^7.1.3:
   version "7.1.6"
   resolved "https://registry.yarnpkg.com/glob/-/glob-7.1.6.tgz#141f33b81a7c2492e125594307480c46679278a6"
   integrity sha512-LwaxwyZ72Lk7vZINtNNrywX0ZuLyStrdDtabefZKAY5ZGJhVtgdznluResxNmPitE0SAO+O26sWTHeKSI2wMBA==
@@ -586,6 +586,25 @@ jsonfile@^6.0.1:
     universalify "^1.0.0"
   optionalDependencies:
     graceful-fs "^4.1.6"
+
+lezer-generator@0.10.1:
+  version "0.10.1"
+  resolved "https://registry.yarnpkg.com/lezer-generator/-/lezer-generator-0.10.1.tgz#c62c3c8e19a0e65817b87d57b6499688844063fd"
+  integrity sha512-yYy/Mo6SFPODvCAsVnW/Ko6p0fVpWBsPhGi1DHbVrjGQ/QU2dP1MqAAimxxX2z9Qse3fIv0NID/F6u4WjNXPQw==
+  dependencies:
+    lezer "^0.10.0"
+
+lezer-tree@^0.10.0:
+  version "0.10.0"
+  resolved "https://registry.yarnpkg.com/lezer-tree/-/lezer-tree-0.10.0.tgz#e7bb3fbd604a718fa43d373e6240a2600d7c5ea2"
+  integrity sha512-77hwilCuD4azYqwazv4A6EL7mKiSPcqgJV4V173hLV3UkAKa6/smNHeROhIzzWHLU6Y5qtR1mRf22RFzE3fVrg==
+
+lezer@0.10.1, lezer@^0.10.0:
+  version "0.10.1"
+  resolved "https://registry.yarnpkg.com/lezer/-/lezer-0.10.1.tgz#a0290a61e7274b205b2534814b48b56fb3911d28"
+  integrity sha512-MEvJ4ybZUyGYDjcV91exy4moDFyGB8e3b7TxqvAZECmxky/UyMleE3ZEHnyin75RI7NzQCv97pvkVbq7PC/7Yg==
+  dependencies:
+    lezer-tree "^0.10.0"
 
 libtess@1.2.2:
   version "1.2.2"

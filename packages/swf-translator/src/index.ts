@@ -1,19 +1,23 @@
 import consola from "consola";
 import yargs from "yargs";
-import { readFileSync } from "fs";
+import { glob } from "glob";
+import { join, dirname } from "path";
+import { readFileSync, writeFileSync } from "fs";
 import { SWFFile } from "./format/swf";
 import { UnknownTag } from "./format/tags/unknown";
 import { OutputContext } from "./output";
-import { translate } from "./translation";
+import { translateSWF } from "./translation";
 import { Tag } from "./format/tag";
 import { DefineSpriteTag } from "./format/tags/define-sprite";
+import { File, parseAS3 } from "./as3/parse";
+import mkdirp from "mkdirp";
 
-interface Arguments {
+interface SWFArguments {
   inFile: string;
   outDir: string;
 }
 
-export async function main(args: Arguments) {
+export async function buildSWF(args: SWFArguments) {
   consola.info(`reading from ${args.inFile}...`);
   const buf = readFileSync(args.inFile);
   const file = new SWFFile(buf);
@@ -38,30 +42,82 @@ export async function main(args: Arguments) {
 
   consola.info(`translating...`);
   const ctx = new OutputContext();
-  await translate(ctx, file);
+  await translateSWF(ctx, file);
 
   await ctx.writeTo(args.outDir);
   consola.success(`output written to ${args.outDir}`);
 }
 
-yargs.command(
-  "build <inFile> <outDir>",
-  "transform swf file",
-  (builder) =>
-    builder
-      .positional("inFile", {
-        type: "string",
-        description: "input swf file",
-      })
-      .positional("outDir", {
-        type: "string",
-        description: "output directory",
-      }),
-  (argv) => {
-    main(argv as Arguments)
-      .then(() => process.exit(0))
-      .catch((err) => {
-        consola.error("unexpected error: ", err);
-      });
+interface AS3Arguments {
+  inDir: string;
+  outDir: string;
+}
+
+export async function buildAS3(args: AS3Arguments) {
+  consola.info(`reading from ${args.inDir}...`);
+
+  const paths = await new Promise<string[]>((resolve, reject) =>
+    glob("**/*.as", { cwd: args.inDir }, (err, paths) => {
+      if (err) {
+        reject(err);
+      }
+      resolve(paths);
+    })
+  );
+  const files: File[] = [];
+  for (const path of paths) {
+    const src = readFileSync(join(args.inDir, path));
+    files.push(parseAS3(path, src.toString("utf-8")));
   }
-).argv;
+
+  for (const file of files) {
+    const src = String(file.tree).replace(/\(/g, "(\n").replace(/\)/g, "\n)");
+    const outPath = join(args.outDir, "classes", file.path);
+    await mkdirp(dirname(outPath));
+    writeFileSync(outPath, src);
+  }
+}
+
+yargs
+  .command(
+    "build-swf <inFile> <outDir>",
+    "transform swf file",
+    (builder) =>
+      builder
+        .positional("inFile", {
+          type: "string",
+          description: "input swf file",
+        })
+        .positional("outDir", {
+          type: "string",
+          description: "output directory",
+        }),
+    (argv) => {
+      buildSWF(argv as SWFArguments)
+        .then(() => process.exit(0))
+        .catch((err) => {
+          consola.error("unexpected error: ", err);
+        });
+    }
+  )
+  .command(
+    "build-as3 <inDir> <outDir>",
+    "transform as3 scripts",
+    (builder) =>
+      builder
+        .positional("inDir", {
+          type: "string",
+          description: "input as3 directory",
+        })
+        .positional("outDir", {
+          type: "string",
+          description: "output directory",
+        }),
+    (argv) => {
+      buildAS3(argv as AS3Arguments)
+        .then(() => process.exit(0))
+        .catch((err) => {
+          consola.error("unexpected error: ", err);
+        });
+    }
+  ).argv;

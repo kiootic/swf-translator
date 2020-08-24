@@ -1,8 +1,8 @@
 import JSON5 from "json5";
 import { VariableDeclarationKind } from "ts-morph";
-import { OutputContext } from "../output";
-import { SWFFile } from "../format/swf";
-import { SetBackgroundColorTag } from "../format/tags/set-background-color";
+import { OutputContext } from "../../output";
+import { SWFFile } from "../../format/swf";
+import { SetBackgroundColorTag } from "../../format/tags/set-background-color";
 
 export async function generateProperties(ctx: OutputContext, swf: SWFFile) {
   const bgColor = swf.tags.find(
