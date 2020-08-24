@@ -1,18 +1,8 @@
 /* Hand-written tokenizers for JavaScript tokens that can't be
    expressed by lezer's built-in tokenizer. */
 
-import { ExternalTokenizer, Stack, InputStream } from "lezer";
-import {
-  insertSemi,
-  noSemi,
-  incdec,
-  incdecPrefix,
-  templateContent,
-  templateDollarBrace,
-  templateEnd,
-  TSExtends,
-  Dialect_ts,
-} from "./parser.terms";
+import { ExternalTokenizer, InputStream } from "lezer";
+import { insertSemi, noSemi, incdec, incdecPrefix } from "./parser.terms";
 
 const newline = [10, 13, 8232, 8233];
 const space = [
@@ -106,36 +96,3 @@ export const incdecToken = new ExternalTokenizer(
   },
   { contextual: true }
 );
-
-export const template = new ExternalTokenizer((input, token) => {
-  let pos = token.start,
-    afterDollar = false;
-  for (;;) {
-    let next = input.get(pos++);
-    if (next < 0) {
-      if (pos - 1 > token.start) token.accept(templateContent, pos - 1);
-      break;
-    } else if (next == backtick) {
-      if (pos == token.start + 1) token.accept(templateEnd, pos);
-      else token.accept(templateContent, pos - 1);
-      break;
-    } else if (next == braceL && afterDollar) {
-      if (pos == token.start + 2) token.accept(templateDollarBrace, pos);
-      else token.accept(templateContent, pos - 2);
-      break;
-    } else if (next == 10 /* "\n" */ && pos > token.start + 1) {
-      // Break up template strings on lines, to avoid huge tokens
-      token.accept(templateContent, pos);
-      break;
-    } else if (next == backslash && pos != input.length) {
-      pos++;
-    }
-    afterDollar = next == dollar;
-  }
-});
-
-export function tsExtends(value: string, stack: Stack) {
-  return value == "extends" && stack.dialectEnabled(Dialect_ts)
-    ? TSExtends
-    : -1;
-}
