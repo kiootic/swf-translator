@@ -46,7 +46,7 @@ statement {
 }
 
 ImportDeclaration {
-  kw<"import"> ImportName { identifier ("." (identifier | Star))* } semi
+  kw<"import"> ImportName { identifier ("." (identifier | "*"))* } semi
 }
 
 ForSpec {
@@ -77,10 +77,18 @@ FunctionDeclaration {
   access? kw<"function"> VariableDefinition? functionSignature Block
 }
 
+ExtendsClause {
+  kw<"extends"> Type
+}
+
+ImplementsClause {
+  kw<"implements"> commaSep1<Type>
+}
+
 ClassDeclaration {
   access? (kw<"final">|kw<"dynamic">)* kw<"class"> VariableDefinition
-  (kw<"extends"> type)?
-  (kw<"implements"> commaSep1<type>)?
+  ExtendsClause?
+  ImplementsClause?
   ClassBody
 }
 
@@ -122,14 +130,14 @@ VariableDeclaration {
 }
 
 InterfaceDeclaration {
-  access? kw<"interface"> TypeDefinition (kw<"extends"> type)? ClassBody
+  access? kw<"interface"> TypeDefinition ExtendsClause? ClassBody
 }
 
 PackageDeclaration {
   kw<"package"> PackageName { (identifier ("." identifier)*)? } DeclarationBlock
 }
 
-TypeAnnotation { ":" type }
+TypeAnnotation { ":" Type }
 
 VariableBinding {
   VariableDefinition TypeAnnotation? ("=" expressionNoComma)?
@@ -172,7 +180,7 @@ expressionNoComma {
   RegExp |
   ArrayExpression |
   ObjectExpression { "{" commaSep<Property> "}" } |
-  NewExpression { kw<"new"> type ArgList } |
+  NewExpression { kw<"new"> Type ArgList } |
   UnaryExpression |
   ParenthesizedExpression |
   FunctionExpression |
@@ -216,7 +224,7 @@ BinaryExpression {
   expressionNoComma !plus ArithOp<"+" | "-"> expressionNoComma |
   expressionNoComma !shift BitOp<">>" ">"? | "<<"> expressionNoComma |
   expressionNoComma !rel (LessThan | CompareOp<"<=" | ">" "="?> | kw<"in"> | kw<"is">) expressionNoComma |
-  expressionNoComma !rel ckw<"as"> type |
+  expressionNoComma !rel ckw<"as"> Type |
   expressionNoComma !equal CompareOp<"==" "="? | "!=" "="?> expressionNoComma |
   expressionNoComma !bitOr BitOp { "|" } expressionNoComma |
   expressionNoComma !bitXor BitOp<"^"> expressionNoComma |
@@ -239,10 +247,10 @@ ArgList {
   "(" commaSep<"..."? expressionNoComma> ")"
 }
 
-type {
+Type {
   kw<"void"> |
-  Star |
-  VectorType { ckw<"Vector"> "." "<" type ">" } |
+  "*" |
+  VectorType { ckw<"Vector"> "." "<" Type ">" } |
   TypeName
 }
 
@@ -265,8 +273,6 @@ ckw<term> { @extend[name={term}]<identifier, term> }
 semi { ";" | insertSemi }
 
 boolean { @specialize[name=BooleanLiteral]<identifier, "true" | "false"> }
-
-Star { "*" }
 
 VariableName { identifier ~arrow }
 

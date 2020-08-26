@@ -11,6 +11,7 @@ import { Tag } from "./format/tag";
 import { DefineSpriteTag } from "./format/tags/define-sprite";
 import { File, parseAS3 } from "./as3/parse";
 import mkdirp from "mkdirp";
+import { translateAS3 } from "./translation/as3";
 
 interface SWFArguments {
   inFile: string;
@@ -70,12 +71,8 @@ export async function buildAS3(args: AS3Arguments) {
     files.push(parseAS3(path, src.toString("utf-8")));
   }
 
-  for (const file of files) {
-    const src = String(file.tree).replace(/\(/g, "(\n").replace(/\)/g, "\n)");
-    const outPath = join(args.outDir, "classes", file.path);
-    await mkdirp(dirname(outPath));
-    writeFileSync(outPath, src);
-  }
+  consola.info(`translating...`);
+  translateAS3(files);
 }
 
 yargs
