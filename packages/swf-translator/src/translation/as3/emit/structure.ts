@@ -82,6 +82,7 @@ function emitField(ctx: EmitContext, field: FieldDef) {
     ctx.emit(" = {} as any");
   }
   ctx.emitLine(";");
+  ctx.emitLine();
 }
 
 function emitMethod(ctx: EmitContext, method: MethodDef) {
@@ -101,10 +102,11 @@ function emitMethod(ctx: EmitContext, method: MethodDef) {
   }
   if (method.body) {
     // TODO: emit AST
-    ctx.emit(`{throw "not implemented";}`);
+    ctx.emitLine(`{throw "not implemented";}`);
   } else {
-    ctx.emit(";");
+    ctx.emitLine(";");
   }
+  ctx.emitLine();
 }
 
 function emitCtor(ctx: EmitContext, method: MethodDef) {
@@ -113,12 +115,13 @@ function emitCtor(ctx: EmitContext, method: MethodDef) {
   emitParams(ctx, method.params);
   if (method.body) {
     // TODO: emit AST
-    ctx.emit(
+    ctx.emitLine(
       `{${ctx.classDef.extendType ? "super();" : ""}throw "not implemented";}`
     );
   } else {
-    ctx.emit(";");
+    ctx.emitLine(";");
   }
+  ctx.emitLine();
 }
 
 function emitCctor(ctx: EmitContext, method: MethodDef) {
@@ -126,10 +129,11 @@ function emitCctor(ctx: EmitContext, method: MethodDef) {
   ctx.emit("static __cctor()");
   if (method.body) {
     // TODO: emit AST
-    ctx.emit(`{throw "not implemented";}`);
+    ctx.emitLine(`{throw "not implemented";}`);
   } else {
-    ctx.emit(";");
+    ctx.emitLine(";");
   }
+  ctx.emitLine();
 }
 
 function emitParams(ctx: EmitContext, params: ParamDef[]) {

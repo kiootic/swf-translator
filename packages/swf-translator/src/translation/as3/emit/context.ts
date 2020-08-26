@@ -1,3 +1,4 @@
+import { format } from "prettier";
 import { TypeRefClass, TypeRef, TypeRefKind } from "../code/type-ref";
 import { ClassDef } from "../code/structure";
 import { relative, join } from "path";
@@ -72,7 +73,9 @@ export class EmitContext {
       text += `import { ${name} } from "${importPath}"; \n`;
     }
 
-    text += this.content;
+    text += "\n\n" + this.content;
+
+    text = format(text, { parser: "typescript" });
     return text;
   }
 }
