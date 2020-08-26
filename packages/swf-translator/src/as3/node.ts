@@ -26,7 +26,7 @@ export class Node {
       if (child.type.id === term) {
         children.push(new Node(this.sourceText, child));
       }
-      child = this.tree.childAfter(child.end);
+      child = this.tree.childAfter(child.end + 1);
     }
     return children;
   }
@@ -37,7 +37,7 @@ export class Node {
       if (child.type.id === term) {
         break;
       }
-      child = this.tree.childAfter(child.end);
+      child = this.tree.childAfter(child.end + 1);
     }
     return child && new Node(this.sourceText, child);
   }

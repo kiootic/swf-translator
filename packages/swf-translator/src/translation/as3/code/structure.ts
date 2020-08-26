@@ -1,5 +1,6 @@
 import { TypeRef } from "./type-ref";
 import { ASTNode } from "./ast";
+import { Scope } from "./scope";
 
 export class ClassDef {
   readonly extendTypes: TypeRef[] = [];
@@ -10,6 +11,7 @@ export class ClassDef {
   cctor?: MethodDef;
 
   constructor(
+    readonly scope: Scope,
     readonly namespace: string,
     readonly name: string,
     readonly isInterface: boolean
@@ -41,6 +43,7 @@ export enum MethodKind {
 
 export class MethodDef {
   constructor(
+    readonly scope: Scope,
     readonly kind: MethodKind,
     readonly name: string,
     readonly isStatic: boolean,

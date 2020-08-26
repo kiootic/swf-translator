@@ -130,7 +130,7 @@ VariableDeclaration {
 }
 
 InterfaceDeclaration {
-  access? kw<"interface"> TypeDefinition ExtendsClause? ClassBody
+  access? kw<"interface"> VariableDefinition ExtendsClause? ClassBody
 }
 
 PackageDeclaration {
@@ -277,8 +277,6 @@ boolean { @specialize[name=BooleanLiteral]<identifier, "true" | "false"> }
 VariableName { identifier ~arrow }
 
 VariableDefinition { identifier ~arrow }
-
-TypeDefinition { identifier }
 
 TypeName { identifier ~arrow }
 
