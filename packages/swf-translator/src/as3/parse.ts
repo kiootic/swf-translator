@@ -3,10 +3,11 @@ import { Tree } from "lezer";
 
 export interface File {
   path: string;
+  source: string;
   tree: Tree;
 }
 
-export function parseAS3(path: string, src: string): File {
+export function parseAS3(path: string, source: string): File {
   // Parser adapted from https://github.com/lezer-parser/javascript
-  return { path, tree: parser.parse(src) };
+  return { path, source, tree: parser.parse(source) };
 }

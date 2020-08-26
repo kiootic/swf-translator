@@ -1,14 +1,6 @@
 @precedence {
-  typeMember,
-  typePrefix,
-  intersection @left,
-  union @left,
-  typeTernary @left,
   else @left,
   member,
-  array @left,
-  readonly,
-  newArgs,
   call,
   prefix,
   postfix,
@@ -34,13 +26,13 @@
 @top Script { declaration+ }
 
 statement {
-  ForStatement { kw<"for"> ckw<"each">? (ForSpec | ForInSpec | ForOfSpec) statement } |
+  ForStatement { kw<"for"> ckw<"each">? (ForSpec | ForInSpec) statement } |
   WhileStatement { kw<"while"> ParenthesizedExpression statement } |
   WithStatement { kw<"with"> ParenthesizedExpression statement } |
   DoStatement { kw<"do"> statement kw<"while"> ParenthesizedExpression semi } |
   IfStatement { kw<"if"> ParenthesizedExpression statement (!else kw<"else"> statement)? } |
   SwitchStatement { kw<"switch"> ParenthesizedExpression SwitchBody { "{" switchItem* "}" } } |
-  TryStatement { kw<"try"> Block (kw<"catch"> ("(" pattern TypeAnnotation? ")")? Block)? (kw<"finally"> Block)? } |
+  TryStatement { kw<"try"> Block (kw<"catch"> ("(" VariableDefinition TypeAnnotation? ")")? Block)? (kw<"finally"> Block)? } |
   ReturnStatement { kw<"return"> (noSemi expression)? semi } |
   ThrowStatement { kw<"throw"> expression semi } |
   BreakStatement { kw<"break"> (noSemi Label)? semi } |
@@ -65,13 +57,12 @@ ForSpec {
 
 forXSpec<op> {
   "("
-  (kw<"var"> pattern | VariableName | MemberExpression | ArrayPattern | ObjectPattern)
+  (kw<"var"> VariableDefinition | VariableName | MemberExpression)
   !loop op expression
   ")"
 }
 
 ForInSpec { forXSpec<kw<"in">> }
-ForOfSpec { forXSpec<ckw<"of">> }
 
 declaration {
   PackageDeclaration |
@@ -121,14 +112,13 @@ PropertyDeclaration {
   (ckw<"static">)?
   (kw<"var">|kw<"const">)
   PropertyNameDefinition
-  (Optional | LogicOp<"!">)?
   TypeAnnotation?
   ("=" expressionNoComma)?
   semi
 }
 
 VariableDeclaration {
-  kw<"var"> commaSep1<patternAssignTyped> semi
+  kw<"var"> commaSep1<VariableBinding> semi
 }
 
 InterfaceDeclaration {
@@ -139,24 +129,14 @@ PackageDeclaration {
   kw<"package"> PackageName { (identifier ("." identifier)*)? } DeclarationBlock
 }
 
-pattern { VariableDefinition | ArrayPattern | ObjectPattern }
-
-ArrayPattern { "[" commaSep<"..."? patternAssign> ~destructure "]" }
-
-ObjectPattern { "{" commaSep<PatternProperty> ~destructure "}" }
-
-patternAssign {
-  pattern ("=" expressionNoComma)?
-}
-
 TypeAnnotation { ":" type }
 
-patternAssignTyped {
-  pattern Optional? TypeAnnotation? ("=" expressionNoComma)?
+VariableBinding {
+  VariableDefinition TypeAnnotation? ("=" expressionNoComma)?
 }
 
 ParamList {
-  "(" commaSep<"..."? patternAssignTyped> ")"
+  "(" commaSep<"..."? VariableBinding> ")"
 }
 
 Block {
@@ -191,12 +171,11 @@ expressionNoComma {
   kw<"super"> |
   RegExp |
   ArrayExpression |
-  ObjectExpression { "{" commaSep<Property> ~destructure "}" } |
+  ObjectExpression { "{" commaSep<Property> "}" } |
   NewExpression { kw<"new"> type ArgList } |
   UnaryExpression |
   ParenthesizedExpression |
   FunctionExpression |
-  ArrowFunction |
   MemberExpression |
   BinaryExpression |
   ConditionalExpression { expressionNoComma !ternary questionOp expressionNoComma LogicOp<":"> expressionNoComma } |
@@ -208,20 +187,15 @@ expressionNoComma {
 ParenthesizedExpression { "(" expression ")" }
 
 ArrayExpression {
-  "[" commaSep1<"..."? expressionNoComma | ""> ~destructure "]"
+  "[" commaSep1<"..."? expressionNoComma | ""> "]"
 }
 
 propName { PropertyNameDefinition | "[" expression "]" | Number | String }
 
 Property {
   (ckw<"get"> | ckw<"set">)? propName functionSignature Block |
-  propName ~destructure (":" expressionNoComma)? |
+  propName (":" expressionNoComma)? |
   "..." expressionNoComma
-}
-
-PatternProperty {
-  "..." patternAssign |
-  (PropertyName | Number | String) ~destructure (":" pattern)? ("=" expressionNoComma)?
 }
 
 functionSignature { ParamList TypeAnnotation? }
@@ -254,7 +228,7 @@ BinaryExpression {
 AssignmentExpression {
   (VariableName | MemberExpression) !assign UpdateOp<($[+\-/%^] | "*" "*"? | "|" "|"? | "&" "&"? | "<<" | ">>" ">"? | "??") "=">
     expressionNoComma |
-  (VariableName | MemberExpression | ArrayPattern | ObjectPattern) !assign "=" expressionNoComma
+  (VariableName | MemberExpression) !assign "=" expressionNoComma
 }
 
 MemberExpression {
@@ -265,14 +239,9 @@ ArgList {
   "(" commaSep<"..."? expressionNoComma> ")"
 }
 
-ArrowFunction {
-  (ParamList { VariableDefinition } | ParamList TypeAnnotation?) "=>" (Block | expression)
-}
-
 type {
   kw<"void"> |
   Star |
-  ArrayType { type "[" "]" } |
   VectorType { ckw<"Vector"> "." "<" type ">" } |
   TypeName
 }
@@ -312,8 +281,6 @@ Label { identifier }
 PropertyName { identifier }
 
 PropertyNameDefinition { identifier }
-
-Optional { "?" }
 
 questionOp[name=LogicOp] { "?" }
 
