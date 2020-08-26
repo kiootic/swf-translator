@@ -90,6 +90,9 @@ function emitMethod(ctx: EmitContext, method: MethodDef) {
   if (method.isStatic) {
     ctx.emit("static ");
   }
+  if (ctx.classDef.isInterface) {
+    ctx.emit("abstract ");
+  }
   if (method.kind === MethodKind.Getter) {
     ctx.emit("get ");
   } else if (method.kind === MethodKind.Setter) {
@@ -147,8 +150,11 @@ function emitParams(ctx: EmitContext, params: ParamDef[]) {
     if (param.isRest) {
       ctx.emit("...");
     }
-    ctx.emit(`${param.name}: ${ctx.importType(param.type)}`);
-    if (param.defaultValue) {
+    const isOptional = ctx.classDef.isInterface && param.defaultValue;
+    ctx.emit(
+      `${param.name}${isOptional ? "?" : ""}: ${ctx.importType(param.type)}`
+    );
+    if (!ctx.classDef.isInterface && param.defaultValue) {
       // TODO: emit AST
       ctx.emit(" = {} as any");
     }

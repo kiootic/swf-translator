@@ -62,6 +62,10 @@ export class EmitContext {
 
     for (const importType of imports) {
       const [namespace, name] = importType.split("::");
+      if (namespace === this.classDef.namespace && name == this.classDef.name) {
+        continue;
+      }
+
       const relNamespacePath = relative(
         this.classDef.namespace.replace(/\./g, "/"),
         namespace.replace(/\./g, "/")
