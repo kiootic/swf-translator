@@ -3,7 +3,7 @@ import { ASTNode } from "./ast";
 import { Scope } from "./scope";
 
 export class ClassDef {
-  readonly extendTypes: TypeRef[] = [];
+  extendType?: TypeRef;
   readonly implementTypes: TypeRef[] = [];
   readonly fields: FieldDef[] = [];
   readonly methods: MethodDef[] = [];

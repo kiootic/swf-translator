@@ -1,8 +1,9 @@
-import { File, terms } from "../../as3/parse";
+import { terms } from "../../as3/parse";
 import { TypeRef, TypeRefKind } from "./code/type-ref";
 import { Node } from "../../as3/node";
+import { Scope } from "./code/scope";
 
-export function translateType(file: File, typeNode: Node): TypeRef {
+export function translateType(scope: Scope, typeNode: Node): TypeRef {
   let typeInstanceNode: Node | null;
   if (typeNode.findNamedChild("*")) {
     return { kind: TypeRefKind.Any };
@@ -11,14 +12,16 @@ export function translateType(file: File, typeNode: Node): TypeRef {
   } else if ((typeInstanceNode = typeNode.findChild(terms.VectorType))) {
     const elementTypeNode = typeInstanceNode.findChild(terms.Type);
     if (!elementTypeNode) {
-      throw new Error("expect vector element type");
+      throw new Error("Expect vector element type");
     }
     return {
       kind: TypeRefKind.Array,
-      elementType: translateType(file, elementTypeNode),
+      elementType: translateType(scope, elementTypeNode),
     };
   } else if ((typeInstanceNode = typeNode.findChild(terms.TypeName))) {
-    throw new Error("NYI");
+    const name = typeInstanceNode.text;
+    return scope.resolveType(name);
+  } else {
+    throw new Error("Unexpected type instance node");
   }
-  throw new Error("NYI");
 }

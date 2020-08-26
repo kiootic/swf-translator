@@ -17,7 +17,7 @@ export class Scope {
     return scope;
   }
 
-  resolveType(name: string): TypeRef | null {
+  resolveType(name: string): TypeRef {
     const importedType = this.importedTypes.find((t) => t.name === name);
     if (importedType) {
       return importedType;
@@ -39,6 +39,18 @@ export class Scope {
       };
     }
 
-    return this.parent && this.parent.resolveType(name);
+    return this.parent
+      ? this.parent.resolveType(name)
+      : this.resolveRootType(name);
+  }
+
+  private resolveRootType(name: string): TypeRef {
+    switch (name) {
+      case "Error":
+        return { kind: TypeRefKind.Global, name };
+
+      default:
+        throw new Error(`Cannot resolve type: ${name}`);
+    }
   }
 }

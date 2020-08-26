@@ -1,4 +1,8 @@
-export type TypeRef = TypeRefClass | TypeRefArray | TypeRefPrimitive;
+export type TypeRef =
+  | TypeRefGlobal
+  | TypeRefClass
+  | TypeRefArray
+  | TypeRefPrimitive;
 
 export enum TypeRefKind {
   Global = "global",
