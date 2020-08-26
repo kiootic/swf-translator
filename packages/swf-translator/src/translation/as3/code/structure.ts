@@ -1,6 +1,7 @@
 import { TypeRef } from "./type-ref";
 import { ASTNode } from "./ast";
 import { Scope } from "./scope";
+import { Node } from "../../../as3/node";
 
 export class ClassDef {
   extendType?: TypeRef;
@@ -52,6 +53,7 @@ export class MethodDef {
     readonly returnType: TypeRef
   ) {}
 
+  bodyNode: Node | null = null;
   body?: unknown;
 }
 
