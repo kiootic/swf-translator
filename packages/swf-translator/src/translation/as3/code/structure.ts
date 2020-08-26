@@ -54,7 +54,7 @@ export class MethodDef {
   ) {}
 
   bodyNode: Node | null = null;
-  body?: unknown;
+  body?: ASTNode;
 }
 
 export class ParamDef {

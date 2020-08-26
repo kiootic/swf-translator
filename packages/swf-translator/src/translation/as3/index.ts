@@ -1,10 +1,11 @@
 import { File } from "../../as3/parse";
 import { AS3Context } from "./context";
 import { translateStructure } from "./structure";
+import { emit } from "./emit";
 
-export function translateAS3(files: File[]) {
+export async function translateAS3(files: File[], outDir: string) {
   const ctx = new AS3Context();
   translateStructure(ctx, files);
 
-  console.log(ctx);
+  await emit(ctx, outDir);
 }

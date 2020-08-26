@@ -235,6 +235,10 @@ function translateMethod(classDef: ClassDef, methodNode: Node) {
   }
 
   methodDef.bodyNode = methodNode.findChild(terms.Block);
+  if (methodDef.bodyNode) {
+    // FIXME: remove this
+    methodDef.body = new ASTNode();
+  }
 }
 
 function translateParam(classDef: ClassDef, paramNode: Node): ParamDef | null {
@@ -281,4 +285,8 @@ function translateClassInitializer(classDef: ClassDef, initializerNode: Node) {
   classDef.cctor = methodDef;
 
   methodDef.bodyNode = initializerNode.findChild(terms.Block);
+  if (methodDef.bodyNode) {
+    // FIXME: remove this
+    methodDef.body = new ASTNode();
+  }
 }

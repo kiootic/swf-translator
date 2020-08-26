@@ -72,7 +72,7 @@ export async function buildAS3(args: AS3Arguments) {
   }
 
   consola.info(`translating...`);
-  translateAS3(files);
+  await translateAS3(files, args.outDir);
 }
 
 yargs
