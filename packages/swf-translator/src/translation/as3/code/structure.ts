@@ -1,5 +1,5 @@
 import { TypeRef } from "./type-ref";
-import { ASTNode } from "./ast";
+import * as ast from "./ast";
 import { Scope } from "./scope";
 import { Node } from "../../../as3/node";
 
@@ -32,8 +32,10 @@ export class FieldDef {
     readonly isStatic: boolean,
     readonly isReadonly: boolean,
     readonly visibility: Visibility,
-    readonly initialValue: ASTNode | null
+    readonly initializerNode: Node | null
   ) {}
+
+  initialValue: ast.NodeExpression | null = null;
 }
 
 export enum MethodKind {
@@ -50,18 +52,20 @@ export class MethodDef {
     readonly isStatic: boolean,
     readonly visibility: Visibility,
     readonly params: ParamDef[],
-    readonly returnType: TypeRef
+    readonly returnType: TypeRef,
+    readonly bodyNode: Node | null
   ) {}
 
-  bodyNode: Node | null = null;
-  body?: ASTNode;
+  body: ast.NodeBlock | null = null;
 }
 
 export class ParamDef {
   constructor(
     readonly name: string,
     readonly type: TypeRef,
-    readonly defaultValue: ASTNode | null,
+    readonly initializerNode: Node | null,
     readonly isRest: boolean
   ) {}
+
+  defaultValue: ast.NodeExpression | null = null;
 }

@@ -26,13 +26,16 @@
 @top Script { declaration+ }
 
 statement {
-  ForStatement { kw<"for"> ckw<"each">? (ForSpec | ForInSpec) statement } |
+  Statement
+}
+
+Statement {
+  ForStatement { kw<"for"> (ForSpec | ForInSpec) statement } |
   WhileStatement { kw<"while"> ParenthesizedExpression statement } |
-  WithStatement { kw<"with"> ParenthesizedExpression statement } |
   DoStatement { kw<"do"> statement kw<"while"> ParenthesizedExpression semi } |
   IfStatement { kw<"if"> ParenthesizedExpression statement (!else kw<"else"> statement)? } |
-  SwitchStatement { kw<"switch"> ParenthesizedExpression SwitchBody { "{" switchItem* "}" } } |
-  TryStatement { kw<"try"> Block (kw<"catch"> ("(" VariableDefinition TypeAnnotation? ")")? Block)? (kw<"finally"> Block)? } |
+  SwitchStatement { kw<"switch"> ParenthesizedExpression "{" SwitchItem* "}" } |
+  TryStatement { kw<"try"> Block kw<"catch"> ("(" VariableDefinition TypeAnnotation? ")")? Block } |
   ReturnStatement { kw<"return"> (noSemi expression)? semi } |
   ThrowStatement { kw<"throw"> expression semi } |
   BreakStatement { kw<"break"> (noSemi Label)? semi } |
@@ -51,18 +54,20 @@ ImportDeclaration {
 
 ForSpec {
   "("
-  (VariableDeclaration | expression ";" | ";") expression? ";" expression?
+  ForInitializer { VariableDeclaration | expression ";" | ";" }
+  ForCondition { expression }?
+  ";"
+  ForNext { expression }?
   ")"
 }
 
-forXSpec<op> {
+ForInSpec {
+  ckw<"each">?
   "("
-  (kw<"var"> VariableDefinition | VariableName | MemberExpression)
-  !loop op expression
+  (kw<"var"> VariableDefinition | VariableName)
+  !loop kw<"in"> expression
   ")"
 }
-
-ForInSpec { forXSpec<kw<"in">> }
 
 declaration {
   PackageDeclaration |
@@ -159,10 +164,9 @@ DeclarationBlock {
   "{" declaration* "}"
 }
 
-switchItem {
-  CaseLabel { kw<"case"> expression ":" } |
-  DefaultLabel { kw<"default"> ":" } |
-  statement
+SwitchItem {
+  (CaseLabel { kw<"case"> expression ":" } | DefaultLabel { kw<"default"> ":" })
+  statement*
 }
 
 expression {
@@ -180,23 +184,22 @@ expressionNoComma {
 Expression {
   Number |
   String |
-  VariableName |
-  boolean |
-  kw<"this"> |
+  BooleanLiteral |
   kw<"null"> |
+  kw<"undefined"> |
+  kw<"this"> |
   kw<"super"> |
-  RegExp |
+  VariableName |
   ArrayExpression |
   ObjectExpression { "{" commaSep<Property> "}" } |
   NewExpression { kw<"new"> Type ArgList } |
   UnaryExpression |
   ParenthesizedExpression |
-  FunctionExpression |
   MemberExpression |
   BinaryExpression |
   ConditionalExpression { expressionNoComma !ternary questionOp expressionNoComma LogicOp<":"> expressionNoComma } |
   AssignmentExpression |
-  PostfixExpression { expressionNoComma !postfix (incdec | LogicOp<"!">) } |
+  PostfixExpression { expressionNoComma !postfix PostfixOp { incdec | LogicOp<"!"> } } |
   CallExpression { expressionNoComma !call ArgList }
 }
 
@@ -206,23 +209,20 @@ ArrayExpression {
   "[" commaSep1<"..."? expressionNoComma | ""> "]"
 }
 
-propName { PropertyNameDefinition | "[" expression "]" | Number | String }
+propName { PropertyNameDefinition | Number | String }
 
 Property {
-  (ckw<"get"> | ckw<"set">)? propName functionSignature Block |
-  propName (":" expressionNoComma)? |
-  "..." expressionNoComma
+  propName ":" expressionNoComma
 }
 
 functionSignature { ParamList TypeAnnotation? }
 
-FunctionExpression {
-  kw<"function"> VariableDefinition? functionSignature Block
-}
-
 UnaryExpression {
-  !prefix (kw<"void"> | kw<"typeof"> | kw<"delete"> |
-           LogicOp<"!"> | BitOp<"~"> | incdec | incdecPrefix | ArithOp<"+" | "-">)
+  !prefix
+  UnaryOp {
+    kw<"void"> | kw<"typeof"> | kw<"delete"> |
+    LogicOp<"!"> | BitOp<"~"> | incdec | incdecPrefix | ArithOp<"+" | "-">
+  }
   expressionNoComma
 }
 
@@ -242,13 +242,16 @@ BinaryExpression {
 }
 
 AssignmentExpression {
-  (VariableName | MemberExpression) !assign UpdateOp<($[+\-/%^] | "*" "*"? | "|" "|"? | "&" "&"? | "<<" | ">>" ">"? | "??") "=">
-    expressionNoComma |
-  (VariableName | MemberExpression) !assign "=" expressionNoComma
+  (VariableName | MemberExpression)
+  AssignmentOp {
+    !assign UpdateOp<($[+\-/%^] | "*" "*"? | "|" "|"? | "&" "&"? | "<<" | ">>" ">"? | "??") "="> |
+    !assign "="
+  }
+  expressionNoComma
 }
 
 MemberExpression {
-  expressionNoComma !member (("." | "?." | ".@") PropertyName | "[" expression "]")
+  expressionNoComma !member MemberPath { ("." | ".@") PropertyName | "[" expression "]" }
 }
 
 ArgList {
@@ -280,7 +283,7 @@ ckw<term> { @extend[name={term}]<identifier, term> }
 
 semi { ";" | insertSemi }
 
-boolean { @specialize[name=BooleanLiteral]<identifier, "true" | "false"> }
+BooleanLiteral { @specialize[name=BooleanLiteral]<identifier, "true" | "false"> }
 
 VariableName { identifier ~arrow }
 
@@ -320,8 +323,6 @@ questionOp[name=LogicOp] { "?" }
 
   @precedence { BlockComment, LineComment, divide }
 
-  @precedence { BlockComment, LineComment, RegExp }
-
   identifierChar { std.asciiLetter | $[_$\u{a1}-\u{10ffff}] }
 
   identifier { identifierChar (identifierChar | std.digit)* }
@@ -348,8 +349,6 @@ questionOp[name=LogicOp] { "?" }
   BitOp<expr> { expr }
   CompareOp<expr> { expr }
   UpdateOp<expr> { expr }
-
-  RegExp { "/" (![/\\\n[] | "\\" ![\n] | "[" (![\n\\\]] | "\\" ![\n])* "]")+ ("/" $[gimsuy]*)? }
 
   LessThan[name=CompareOp] { "<" }
 

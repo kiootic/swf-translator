@@ -162,19 +162,13 @@ function translateField(classDef: ClassDef, fieldNode: Node) {
     }
   }
 
-  let initializer: ASTNode | null = null;
-  if ((node = fieldNode.findChild(terms.Expression))) {
-    // FIXME: translate initializer
-    initializer = new ASTNode();
-  }
-
   const fieldDef = new FieldDef(
     name,
     fieldType,
     isStatic,
     isReadonly,
     visibility,
-    initializer
+    fieldNode.findChild(terms.Expression)
   );
   classDef.fields.push(fieldDef);
 }
@@ -225,19 +219,14 @@ function translateMethod(classDef: ClassDef, methodNode: Node) {
     isStatic,
     visibility,
     parameters,
-    returnType
+    returnType,
+    methodNode.findChild(terms.Block)
   );
   methodScope.methodDef = methodDef;
   if (methodDef.name === classDef.name) {
     classDef.ctor = methodDef;
   } else {
     classDef.methods.push(methodDef);
-  }
-
-  methodDef.bodyNode = methodNode.findChild(terms.Block);
-  if (methodDef.bodyNode) {
-    // FIXME: remove this
-    methodDef.body = new ASTNode();
   }
 }
 
@@ -261,13 +250,12 @@ function translateParam(classDef: ClassDef, paramNode: Node): ParamDef | null {
     }
   }
 
-  let defaultValue: ASTNode | null = null;
-  if ((node = bindingNode.findChild(terms.Expression))) {
-    // FIXME: translate default value
-    defaultValue = new ASTNode();
-  }
-
-  return new ParamDef(nameNode.text, paramType, defaultValue, isRest);
+  return new ParamDef(
+    nameNode.text,
+    paramType,
+    bindingNode.findChild(terms.Expression),
+    isRest
+  );
 }
 
 function translateClassInitializer(classDef: ClassDef, initializerNode: Node) {
@@ -279,14 +267,9 @@ function translateClassInitializer(classDef: ClassDef, initializerNode: Node) {
     true,
     Visibility.Public,
     [],
-    { kind: TypeRefKind.Void }
+    { kind: TypeRefKind.Void },
+    initializerNode.findChild(terms.Block)
   );
   methodScope.methodDef = methodDef;
   classDef.cctor = methodDef;
-
-  methodDef.bodyNode = initializerNode.findChild(terms.Block);
-  if (methodDef.bodyNode) {
-    // FIXME: remove this
-    methodDef.body = new ASTNode();
-  }
 }
