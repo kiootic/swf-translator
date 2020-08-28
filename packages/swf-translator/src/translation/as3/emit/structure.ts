@@ -7,6 +7,7 @@ import {
   ParamDef,
 } from "../code/structure";
 import { EmitContext } from "./context";
+import { emitAST } from "./ast";
 
 export function emitClass(cls: ClassDef): string {
   const ctx = new EmitContext(cls);
@@ -17,12 +18,12 @@ export function emitClass(cls: ClassDef): string {
   }
   ctx.emit(` class ${cls.name}`);
   if (cls.extendType) {
-    ctx.emit(` extends ${ctx.importType(cls.extendType)}`);
+    ctx.emit(` extends ${ctx.importType(cls.extendType, true)}`);
   }
   if (cls.implementTypes.length > 0) {
     ctx.emit(
       ` implements ${cls.implementTypes
-        .map((t) => ctx.importType(t))
+        .map((t) => ctx.importType(t, true))
         .join(", ")}`
     );
   }
@@ -76,10 +77,10 @@ function emitField(ctx: EmitContext, field: FieldDef) {
   if (field.isReadonly) {
     ctx.emit("readonly ");
   }
-  ctx.emit(`${field.name}: ${ctx.importType(field.type)}`);
+  ctx.emit(`${field.name}: ${ctx.importType(field.type, false)}`);
   if (field.initialValue) {
-    // TODO: emit AST
-    ctx.emit(" = {} as any");
+    ctx.emit(" = ");
+    emitAST(ctx, field.initialValue);
   }
   ctx.emitLine(";");
   ctx.emitLine();
@@ -101,11 +102,10 @@ function emitMethod(ctx: EmitContext, method: MethodDef) {
   ctx.emit(method.name);
   emitParams(ctx, method.params);
   if (method.kind !== MethodKind.Setter) {
-    ctx.emit(`: ${ctx.importType(method.returnType)}`);
+    ctx.emit(`: ${ctx.importType(method.returnType, false)}`);
   }
   if (method.body) {
-    // TODO: emit AST
-    ctx.emitLine(`{throw "not implemented";}`);
+    emitAST(ctx, method.body);
   } else {
     ctx.emitLine(";");
   }
@@ -117,10 +117,7 @@ function emitCtor(ctx: EmitContext, method: MethodDef) {
   ctx.emit("constructor");
   emitParams(ctx, method.params);
   if (method.body) {
-    // TODO: emit AST
-    ctx.emitLine(
-      `{${ctx.classDef.extendType ? "super();" : ""}throw "not implemented";}`
-    );
+    emitAST(ctx, method.body);
   } else {
     ctx.emitLine(";");
   }
@@ -131,8 +128,7 @@ function emitCctor(ctx: EmitContext, method: MethodDef) {
   emitVisibility(ctx, method.visibility);
   ctx.emit("static __cctor()");
   if (method.body) {
-    // TODO: emit AST
-    ctx.emitLine(`{throw "not implemented";}`);
+    emitAST(ctx, method.body);
   } else {
     ctx.emitLine(";");
   }
@@ -152,11 +148,14 @@ function emitParams(ctx: EmitContext, params: ParamDef[]) {
     }
     const isOptional = ctx.classDef.isInterface && param.defaultValue;
     ctx.emit(
-      `${param.name}${isOptional ? "?" : ""}: ${ctx.importType(param.type)}`
+      `${param.name}${isOptional ? "?" : ""}: ${ctx.importType(
+        param.type,
+        false
+      )}`
     );
     if (!ctx.classDef.isInterface && param.defaultValue) {
-      // TODO: emit AST
-      ctx.emit(" = {} as any");
+      ctx.emit(" = ");
+      emitAST(ctx, param.defaultValue);
     }
   }
   ctx.emit(")");

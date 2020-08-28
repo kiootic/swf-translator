@@ -5,7 +5,7 @@ import { Scope } from "./code/scope";
 
 export function translateType(scope: Scope, typeNode: Node): TypeRef {
   let typeInstanceNode: Node | null;
-  if (typeNode.findNamedChild("*")) {
+  if (typeNode.findChild(terms.Any)) {
     return { kind: TypeRefKind.Any };
   } else if (typeNode.findNamedChild("void")) {
     return { kind: TypeRefKind.Void };

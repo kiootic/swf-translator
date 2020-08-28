@@ -164,7 +164,7 @@ export class NodeExprSuper extends NodeExpression {
 }
 
 export class NodeExprType extends NodeExpression {
-  constructor(readonly type: TypeRef) {
+  constructor(readonly type: TypeRef, readonly isValue: boolean) {
     super();
   }
 }

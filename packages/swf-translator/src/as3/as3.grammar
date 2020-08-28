@@ -185,6 +185,7 @@ Expression {
   Number |
   String |
   BooleanLiteral |
+  RegExp |
   kw<"null"> |
   kw<"undefined"> |
   kw<"this"> |
@@ -260,7 +261,7 @@ ArgList {
 
 Type {
   kw<"void"> |
-  kw<"*"> |
+  Any { "*" } |
   VectorType { ckw<"Vector"> "." "<" Type ">" } |
   TypeName
 }
@@ -323,6 +324,8 @@ questionOp[name=LogicOp] { "?" }
 
   @precedence { BlockComment, LineComment, divide }
 
+  @precedence { BlockComment, LineComment, RegExp }
+
   identifierChar { std.asciiLetter | $[_$\u{a1}-\u{10ffff}] }
 
   identifier { identifierChar (identifierChar | std.digit)* }
@@ -349,6 +352,8 @@ questionOp[name=LogicOp] { "?" }
   BitOp<expr> { expr }
   CompareOp<expr> { expr }
   UpdateOp<expr> { expr }
+
+  RegExp { "/" (![/\\\n[] | "\\" ![\n] | "[" (![\n\\\]] | "\\" ![\n])* "]")+ ("/" $[gimsuy]*)? }
 
   LessThan[name=CompareOp] { "<" }
 

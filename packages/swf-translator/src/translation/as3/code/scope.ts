@@ -97,6 +97,7 @@ export class Scope {
       case "Function":
         return { kind: TypeRefKind.Global, name };
 
+      case "Math":
       case "Class":
       case "XML":
       case "XMLList":
@@ -127,6 +128,12 @@ export class Scope {
         ]);
         if (names.has(name)) {
           return VariableKind.Class;
+        }
+      }
+      if (scope.methodDef) {
+        const names = new Set([...scope.methodDef.params.map((p) => p.name)]);
+        if (names.has(name)) {
+          return VariableKind.Local;
         }
       }
 

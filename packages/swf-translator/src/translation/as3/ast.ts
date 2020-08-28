@@ -358,6 +358,12 @@ export function translateExpression(
       throw new Error("Cannot parse constant string");
     }
     return new ast.NodeExprConst(value);
+  } else if ((node = nodeExpression.findChild(terms.RegExp))) {
+    const match = /^\/(.+)\/([^\/]*)$/.exec(node.text);
+    if (!match) {
+      throw new Error("Cannot parse constant RegExp");
+    }
+    return new ast.NodeExprConst(new RegExp(match[1], match[2]));
   } else if ((node = nodeExpression.findNamedChild("null"))) {
     return new ast.NodeExprConst(null);
   } else if ((node = nodeExpression.findNamedChild("undefined"))) {
@@ -450,7 +456,7 @@ export function translateExpression(
     if (nodeTypeName) {
       type = translateVarType(scope, nodeTypeName.text);
     } else {
-      type = new ast.NodeExprType(translateType(scope, nodeType));
+      type = new ast.NodeExprType(translateType(scope, nodeType), true);
     }
     const args = translateArgs(scope, nodeArgs);
 
@@ -494,22 +500,44 @@ export function translateExpression(
     }
     return new ast.NodeExprPostfix(nodeOp.text, operand);
   } else if ((node = nodeExpression.findChild(terms.BinaryExpression))) {
-    const nodeOperands = node.findChildren(terms.Expression);
-    if (nodeOperands.length !== 2) {
-      return null;
-    }
-    const nodeOp = node.tree.childAfter(nodeOperands[0].tree.end + 1);
-    if (!nodeOp) {
-      return null;
-    }
+    if (node.findNamedChild("as")) {
+      const nodeOperand = node.findChild(terms.Expression);
+      const nodeType = node.findChild(terms.Type);
+      if (!nodeOperand || !nodeType) {
+        return null;
+      }
 
-    const op = node.sourceText.slice(nodeOp.start, nodeOp.end);
-    const operandA = translateExpression(scope, nodeOperands[0]);
-    const operandB = translateExpression(scope, nodeOperands[1]);
-    if (!operandA || !operandB) {
-      return null;
+      const type = translateType(scope, nodeType);
+      const operand = translateExpression(scope, nodeOperand);
+      if (!operand) {
+        return null;
+      }
+      return new ast.NodeExprBinary(
+        "as",
+        operand,
+        new ast.NodeExprType(type, false)
+      );
+    } else {
+      const nodeOperands = node.findChildren(terms.Expression);
+      if (nodeOperands.length !== 2) {
+        return null;
+      }
+      const nodeOp = node.tree.childAfter(nodeOperands[0].tree.end + 1);
+      if (!nodeOp) {
+        return null;
+      }
+
+      let op = node.sourceText.slice(nodeOp.start, nodeOp.end);
+      if (op === "is") {
+        op = "instanceof";
+      }
+      const operandA = translateExpression(scope, nodeOperands[0]);
+      const operandB = translateExpression(scope, nodeOperands[1]);
+      if (!operandA || !operandB) {
+        return null;
+      }
+      return new ast.NodeExprBinary(op, operandA, operandB);
     }
-    return new ast.NodeExprBinary(op, operandA, operandB);
   } else if ((node = nodeExpression.findChild(terms.ConditionalExpression))) {
     const nodeOperands = node.findChildren(terms.Expression);
     if (nodeOperands.length !== 3) {
@@ -548,15 +576,20 @@ function translateVarType(scope: Scope, name: string): ast.NodeExpression {
   switch (kind) {
     case VariableKind.Intrinsic:
       return new ast.NodeExprProperty(
-        new ast.NodeExprType({
-          kind: TypeRefKind.Class,
-          namespace: "_internal.avm2",
-          name: "Runtime",
-        }),
+        new ast.NodeExprType(
+          {
+            kind: TypeRefKind.Class,
+            namespace: "_internal.avm2",
+            name: "Runtime",
+          },
+          true
+        ),
         name
       );
     case VariableKind.Class:
       return new ast.NodeExprProperty(new ast.NodeExprThis(), name);
+    case VariableKind.Type:
+      return new ast.NodeExprType(scope.resolveType(name), true);
     default:
       return new ast.NodeExprVariable(name);
   }

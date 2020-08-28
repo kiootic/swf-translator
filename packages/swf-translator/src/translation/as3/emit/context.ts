@@ -10,20 +10,20 @@ export class EmitContext {
 
   constructor(readonly classDef: ClassDef) {}
 
-  importType(typeRef: TypeRef): string {
+  importType(typeRef: TypeRef, isValue: boolean): string {
     switch (typeRef.kind) {
       case TypeRefKind.Any:
         return "any";
       case TypeRefKind.Void:
         return "void";
       case TypeRefKind.Object:
-        return "object";
+        return isValue ? "Object" : "object";
       case TypeRefKind.String:
-        return "string";
+        return isValue ? "String" : "string";
       case TypeRefKind.Number:
-        return "number";
+        return isValue ? "Number" : "number";
       case TypeRefKind.Boolean:
-        return "boolean";
+        return isValue ? "Boolean" : "boolean";
 
       case TypeRefKind.Global:
         return typeRef.name;
@@ -36,7 +36,11 @@ export class EmitContext {
           return typeRef.name;
         }
       case TypeRefKind.Array:
-        return `(${this.importType(typeRef.elementType)})[]`;
+        if (isValue) {
+          return `Array<${this.importType(typeRef.elementType, false)}>`;
+        } else {
+          return `(${this.importType(typeRef.elementType, false)})[]`;
+        }
     }
   }
 
@@ -79,7 +83,13 @@ export class EmitContext {
 
     text += "\n\n" + this.content;
 
-    text = format(text, { parser: "typescript" });
+    try {
+      text = format(text, { parser: "typescript" });
+    } catch (err) {
+      console.warn(
+        `cannot format ${this.classDef.namespace}::${this.classDef.name}: ${err}`
+      );
+    }
     return text;
   }
 }
