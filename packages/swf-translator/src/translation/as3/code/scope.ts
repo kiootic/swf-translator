@@ -96,9 +96,9 @@ export class Scope {
 
       case "Error":
       case "Function":
+      case "Math":
         return { kind: TypeRefKind.Global, name };
 
-      case "Math":
       case "Class":
       case "XML":
       case "XMLList":
@@ -150,6 +150,7 @@ export class Scope {
           break;
         case "NaN":
         case "isNaN":
+        case "parseInt":
           kind = VariableKind.Global;
           break;
         default:

@@ -67,6 +67,10 @@ function fixupTypeAnnotations(def: MethodDef | FieldDef) {
         param.type = { kind: TypeRefKind.Any };
       }
     }
+    if (def.returnType.kind === TypeRefKind.Object) {
+      def.returnType = { kind: TypeRefKind.Any };
+    }
+
     def.body?.walk((node) => {
       if (node instanceof ast.NodeStmtVarDecl) {
         for (const binding of node.bindings) {
