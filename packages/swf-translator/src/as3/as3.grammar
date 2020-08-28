@@ -149,7 +149,7 @@ VariableBinding {
 }
 
 ParameterDeclaration {
-  "..."? VariableBinding
+  Rest {"..."}? VariableBinding
 }
 
 ParamList {

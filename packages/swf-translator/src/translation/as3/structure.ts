@@ -237,7 +237,7 @@ function translateParam(classDef: ClassDef, paramNode: Node): ParamDef | null {
     return null;
   }
 
-  const isRest = !!paramNode.findNamedChild("...");
+  const isRest = !!paramNode.findChild(terms.Rest);
   const nameNode = bindingNode.findChild(terms.VariableDefinition);
   if (!nameNode) {
     return null;

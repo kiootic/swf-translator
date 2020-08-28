@@ -13,9 +13,9 @@ export class ClassDef {
 
   constructor(
     readonly scope: Scope,
-    readonly namespace: string,
-    readonly name: string,
-    readonly isInterface: boolean
+    public namespace: string,
+    public name: string,
+    public isInterface: boolean
   ) {}
 }
 
@@ -27,12 +27,12 @@ export enum Visibility {
 
 export class FieldDef {
   constructor(
-    readonly name: string,
-    readonly type: TypeRef,
-    readonly isStatic: boolean,
-    readonly isReadonly: boolean,
-    readonly visibility: Visibility,
-    readonly initializerNode: Node | null
+    public name: string,
+    public type: TypeRef,
+    public isStatic: boolean,
+    public isReadonly: boolean,
+    public visibility: Visibility,
+    public initializerNode: Node | null
   ) {}
 
   initialValue: ast.NodeExpression | null = null;
@@ -47,13 +47,13 @@ export enum MethodKind {
 export class MethodDef {
   constructor(
     readonly scope: Scope,
-    readonly kind: MethodKind,
-    readonly name: string,
-    readonly isStatic: boolean,
-    readonly visibility: Visibility,
+    public kind: MethodKind,
+    public name: string,
+    public isStatic: boolean,
+    public visibility: Visibility,
     readonly params: ParamDef[],
-    readonly returnType: TypeRef,
-    readonly bodyNode: Node | null
+    public returnType: TypeRef,
+    public bodyNode: Node | null
   ) {}
 
   body: ast.NodeBlock | null = null;
@@ -61,10 +61,10 @@ export class MethodDef {
 
 export class ParamDef {
   constructor(
-    readonly name: string,
-    readonly type: TypeRef,
-    readonly initializerNode: Node | null,
-    readonly isRest: boolean
+    public name: string,
+    public type: TypeRef,
+    public initializerNode: Node | null,
+    public isRest: boolean
   ) {}
 
   defaultValue: ast.NodeExpression | null = null;

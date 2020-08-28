@@ -142,12 +142,18 @@ export class Scope {
     if (!kind) {
       switch (name) {
         case "trace":
+        case "int":
+        case "uint":
           kind = VariableKind.Intrinsic;
+          break;
+        case "NaN":
+        case "isNaN":
+          kind = VariableKind.Global;
           break;
         default:
           const type = this.resolveRootType(name);
           if (type) {
-            kind = VariableKind.Global;
+            kind = VariableKind.Type;
           }
           break;
       }
