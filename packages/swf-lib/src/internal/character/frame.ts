@@ -80,6 +80,7 @@ export function executeFrameAction(
 
       if (action.name != null) {
         character.name = action.name;
+        (container as any)[character.name] = character;
       }
 
       if (action.filters != null) {
