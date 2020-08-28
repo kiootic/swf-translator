@@ -194,9 +194,13 @@ export class DisplayObject extends EventDispatcher {
     return rect.intersects(this.__bounds.__rect, obj.__bounds.__rect);
   }
 
-  __onNewFrame() {
+  __onFrameEnter() {
     this.dispatchEvent(new Event(Event.ENTER_FRAME, false));
   }
+
+  __onFrameConstruct() {}
+
+  __onFrameExit() {}
 
   __render(ctx: RenderContext) {
     rect.apply(

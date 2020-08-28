@@ -4,8 +4,9 @@ import { Sprite } from "./Sprite";
 export type MovieClipT<T> = MovieClip & T;
 
 export class MovieClip extends Sprite {
-  #lastFrame: number | null = null;
+  #lastFrame = 1;
   #frameScripts = new Map<number, () => void>();
+  #scriptFrame = 0;
 
   @observable
   currentFrame = 1;
@@ -21,29 +22,33 @@ export class MovieClip extends Sprite {
     return this.__character?.numFrames ?? 1;
   }
 
-  __onNewFrame() {
-    if (this.#lastFrame !== null && this.isPlaying) {
+  __onFrameEnter() {
+    if (this.currentFrame !== this.#lastFrame) {
+      this.__character?.applyTo(this, this.#lastFrame, this.currentFrame);
+      this.#lastFrame = this.currentFrame;
+    }
+
+    super.__onFrameEnter();
+  }
+
+  __onFrameConstruct() {
+    if (this.#scriptFrame !== this.currentFrame) {
+      this.#scriptFrame = this.currentFrame;
+      const frameScript = this.#frameScripts.get(this.#scriptFrame);
+      frameScript?.();
+    }
+    super.__onFrameConstruct();
+  }
+
+  __onFrameExit() {
+    if (this.isPlaying) {
       this.currentFrame++;
       if (this.currentFrame > this.totalFrames || this.currentFrame < 1) {
         this.currentFrame = 1;
       }
     }
 
-    let frameScript: (() => void) | null = null;
-    if (this.currentFrame !== this.#lastFrame) {
-      this.__character?.applyTo(
-        this,
-        this.#lastFrame ?? this.currentFrame,
-        this.currentFrame
-      );
-      this.#lastFrame = this.currentFrame;
-
-      frameScript = this.#frameScripts.get(this.currentFrame) ?? null;
-    }
-
-    super.__onNewFrame();
-
-    frameScript?.();
+    super.__onFrameExit();
   }
 
   addFrameScript(...args: unknown[]) {

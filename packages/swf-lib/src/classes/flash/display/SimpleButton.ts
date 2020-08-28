@@ -66,9 +66,19 @@ export class SimpleButton extends InteractiveObject {
     return this.useHandCursor ? "pointer" : "default";
   }
 
-  __onNewFrame() {
-    this.__activeState?.__onNewFrame();
-    this.hitTestState.__onNewFrame();
+  __onFrameEnter() {
+    this.__activeState?.__onFrameEnter();
+    this.hitTestState.__onFrameEnter();
+  }
+
+  __onFrameConstruct() {
+    this.__activeState?.__onFrameConstruct();
+    this.hitTestState.__onFrameConstruct();
+  }
+
+  __onFrameExit() {
+    this.__activeState?.__onFrameExit();
+    this.hitTestState.__onFrameExit();
   }
 
   __doRender(ctx: RenderContext) {

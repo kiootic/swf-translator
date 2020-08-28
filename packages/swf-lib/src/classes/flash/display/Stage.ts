@@ -53,7 +53,9 @@ export class Stage extends DisplayObjectContainer {
   }
 
   __onFrame = () => {
-    runInAction(() => this.__onNewFrame());
+    runInAction(() => this.__onFrameEnter());
+    runInAction(() => this.__onFrameConstruct());
+    runInAction(() => this.__onFrameExit());
 
     this.__renderer.renderFrame((ctx) => {
       this.__render(ctx);

@@ -89,11 +89,25 @@ export class DisplayObjectContainer extends InteractiveObject {
     return false;
   }
 
-  __onNewFrame() {
-    super.__onNewFrame();
+  __onFrameEnter() {
     for (const child of this.__children) {
-      child.__onNewFrame();
+      child.__onFrameEnter();
     }
+    super.__onFrameEnter();
+  }
+
+  __onFrameConstruct() {
+    for (const child of this.__children) {
+      child.__onFrameConstruct();
+    }
+    super.__onFrameConstruct();
+  }
+
+  __onFrameExit() {
+    for (const child of this.__children) {
+      child.__onFrameExit();
+    }
+    super.__onFrameExit();
   }
 
   __doRender(ctx: RenderContext) {
