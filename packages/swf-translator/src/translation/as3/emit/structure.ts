@@ -29,6 +29,17 @@ export function emitClass(cls: ClassDef): string {
   }
   ctx.emitLine(" {");
 
+  if (cls.isInterface) {
+    const marker = `impl: ${cls.namespace}::${cls.name}`;
+    ctx.emitLine(`static readonly __IMPL = Symbol(${JSON.stringify(marker)});`);
+  } else {
+    for (const i of cls.implementTypes) {
+      ctx.emitLine(
+        `static readonly [${ctx.importType(i, true)}.__IMPL] = true;`
+      );
+    }
+  }
+
   const fields = cls.fields.slice();
   fields.sort((a, b) => a.name.localeCompare(b.name));
   for (const field of fields) {
