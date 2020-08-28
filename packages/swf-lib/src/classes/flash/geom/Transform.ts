@@ -50,6 +50,7 @@ export class Transform {
 
   get colorTransform() {
     this.#colorTransformAtom.reportObserved();
+    this.#colorTransform.__atom.reportObserved();
     return this.#colorTransform;
   }
   set colorTransform(value) {
@@ -59,6 +60,7 @@ export class Transform {
 
   get __worldColorTransform() {
     this.#worldColorTransformAtom.reportObserved();
+    this.#worldColorTransform.__atom.reportObserved();
     return this.#worldColorTransform;
   }
   set __worldColorTransform(value) {

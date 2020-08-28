@@ -1,6 +1,9 @@
 import { vec4 } from "gl-matrix";
+import { createAtom } from "mobx";
 
 export class ColorTransform {
+  __atom = createAtom("ColorTransform");
+
   __mul: vec4;
   __add: vec4;
 
@@ -16,6 +19,16 @@ export class ColorTransform {
   ) {
     this.__mul = vec4.fromValues(redMul, greenMul, blueMul, alphaMul);
     this.__add = vec4.fromValues(redAdd, greenAdd, blueAdd, alphaAdd);
+  }
+
+  set color(value: number) {
+    this.__add[0] = (value >>> 16) & 0xff;
+    this.__add[1] = (value >>> 8) & 0xff;
+    this.__add[2] = (value >>> 0) & 0xff;
+    this.__mul[0] = 0;
+    this.__mul[1] = 0;
+    this.__mul[2] = 0;
+    this.__atom.reportChanged();
   }
 
   concat(transform: ColorTransform) {

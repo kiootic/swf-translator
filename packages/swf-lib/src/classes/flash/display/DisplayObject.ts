@@ -96,6 +96,39 @@ export class DisplayObject extends EventDispatcher {
     });
   }
 
+  get scaleX(): number {
+    return this.transform.matrix.a;
+  }
+  set scaleX(value: number) {
+    runInAction(() => {
+      this.transform.matrix.a = value;
+      this.transform.__reportMatrixUpdated();
+    });
+  }
+
+  get scaleY(): number {
+    return this.transform.matrix.d;
+  }
+  set scaleY(value: number) {
+    runInAction(() => {
+      this.transform.matrix.d = value;
+      this.transform.__reportMatrixUpdated();
+    });
+  }
+
+  get rotation(): number {
+    return (this.transform.matrix.c * 180) / Math.PI;
+  }
+  set rotation(value: number) {
+    runInAction(() => {
+      const rotation = this.rotation;
+      const delta = value - rotation;
+      this.transform.matrix.b += delta;
+      this.transform.matrix.c += delta;
+      this.transform.__reportMatrixUpdated();
+    });
+  }
+
   get width(): number {
     return this.__bounds.__rect[2] * this.transform.matrix.a;
   }
@@ -118,6 +151,26 @@ export class DisplayObject extends EventDispatcher {
     });
   }
 
+  get mouseX(): number {
+    const stage = this.stage;
+    if (!stage) {
+      return 0;
+    }
+    return this.globalToLocal(
+      new Point(stage.__mousePosition[0], stage.__mousePosition[1])
+    ).x;
+  }
+
+  get mouseY(): number {
+    const stage = this.stage;
+    if (!stage) {
+      return 0;
+    }
+    return this.globalToLocal(
+      new Point(stage.__mousePosition[0], stage.__mousePosition[1])
+    ).y;
+  }
+
   globalToLocal(point: Point, __out?: Point): Point {
     const local = __out ?? new Point();
     vec2.transformMat2d(
@@ -130,6 +183,10 @@ export class DisplayObject extends EventDispatcher {
 
   hitTestPoint(x: number, y: number, shapeFlag = false): boolean {
     return rect.contains(this.__bounds.__rect, x, y);
+  }
+
+  hitTestObject(obj: DisplayObject): boolean {
+    return rect.intersects(this.__bounds.__rect, obj.__bounds.__rect);
   }
 
   __onNewFrame() {}

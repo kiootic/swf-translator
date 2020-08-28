@@ -11,8 +11,4 @@ export class MouseEvent extends Event {
   buttonDown = false;
   localX = 0;
   localY = 0;
-
-  constructor() {
-    super();
-  }
 }

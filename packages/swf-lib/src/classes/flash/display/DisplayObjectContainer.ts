@@ -70,6 +70,10 @@ export class DisplayObjectContainer extends InteractiveObject {
     }
   }
 
+  contains(child: DisplayObject) {
+    return this.__children.includes(child);
+  }
+
   hitTestPoint(x: number, y: number, shapeFlag?: boolean) {
     if (!shapeFlag) {
       return super.hitTestPoint(x, y, shapeFlag);

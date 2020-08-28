@@ -1,4 +1,5 @@
 import { runInAction, computed } from "mobx";
+import { vec2 } from "gl-matrix";
 import { DisplayObject } from "./DisplayObject";
 import { DisplayObjectContainer } from "./DisplayObjectContainer";
 import { InteractiveObject } from "./InteractiveObject";
@@ -14,8 +15,12 @@ export class Stage extends DisplayObjectContainer {
   readonly __ticker: Ticker;
   readonly __renderer: Renderer;
 
+  __mousePosition = vec2.create();
   __mouseOn: InteractiveObject | null = null;
   __mouseTrackTarget: InteractiveObject | null = null;
+
+  focus: InteractiveObject | null = null;
+  quality: string = "HIGH";
 
   @computed
   get stage() {
@@ -89,6 +94,7 @@ export class Stage extends DisplayObjectContainer {
     const rect = this.__canvas.canvas.getBoundingClientRect();
     const x = sourceEvent.clientX - rect.left;
     const y = sourceEvent.clientY - rect.top;
+    vec2.set(this.__mousePosition, x, y);
     let target = this.__hitTestObject(x, y);
 
     const dispatchMouseEvent = (type: string, target: DisplayObject | null) => {
@@ -97,8 +103,7 @@ export class Stage extends DisplayObjectContainer {
       }
       const { x: localX, y: localY } = target.globalToLocal(new Point(x, y));
 
-      const event = new MouseEvent();
-      event.type = type;
+      const event = new MouseEvent(type);
       event.buttonDown = sourceEvent.buttons !== 0;
       event.localX = localX;
       event.localY = localY;
