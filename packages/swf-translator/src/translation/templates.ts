@@ -22,6 +22,11 @@ declare module "*.png" {
 import lib from "@swf/lib";
 import bundle from "./bundle";
 
+import * as classes from "./classes";
+export * from "./classes";
+
+lib.__internal.ClassRegistry.instance.addClassRoot(classes);
+
 const builder = new lib.__internal.AssetLibraryBuilder();
 builder.registerBundle(bundle);
 

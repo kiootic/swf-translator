@@ -6,3 +6,4 @@ export * from "./AssetLibrary";
 export * from "./Properties";
 export * from "./AssetBundle";
 export * from "./FontRegistry";
+export * from "./ClassRegistry";
