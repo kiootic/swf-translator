@@ -35,6 +35,6 @@ export function __library(): Promise<lib.__internal.AssetLibrary> {
   return assetLibrary ?? (assetLibrary = builder.instantiate());
 }
 
-export { properties } from "./properties";
+export { properties as __properties } from "./properties";
 `);
 }
