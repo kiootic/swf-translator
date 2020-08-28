@@ -98,6 +98,11 @@ function emitField(ctx: EmitContext, field: FieldDef) {
 }
 
 function emitMethod(ctx: EmitContext, method: MethodDef) {
+  const useArrowFn =
+    method.kind === MethodKind.Method &&
+    !method.isStatic &&
+    method.body &&
+    !ctx.classDef.isInterface;
   emitVisibility(ctx, method.visibility);
   if (method.isStatic) {
     ctx.emit("static ");
@@ -110,10 +115,19 @@ function emitMethod(ctx: EmitContext, method: MethodDef) {
   } else if (method.kind === MethodKind.Setter) {
     ctx.emit("set ");
   }
+  if (useArrowFn) {
+    ctx.emit("readonly ");
+  }
   ctx.emit(method.name);
+  if (useArrowFn) {
+    ctx.emit("= ");
+  }
   emitParams(ctx, method.params);
   if (method.kind !== MethodKind.Setter) {
     ctx.emit(`: ${ctx.importType(method.returnType, false)}`);
+  }
+  if (useArrowFn) {
+    ctx.emit(" => ");
   }
   if (method.body) {
     emitAST(ctx, method.body);
