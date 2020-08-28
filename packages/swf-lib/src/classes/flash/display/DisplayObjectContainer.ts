@@ -90,6 +90,7 @@ export class DisplayObjectContainer extends InteractiveObject {
   }
 
   __onNewFrame() {
+    super.__onNewFrame();
     for (const child of this.__children) {
       child.__onNewFrame();
     }

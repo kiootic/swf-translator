@@ -15,6 +15,7 @@ import { rect } from "../../../internal/math/rect";
 import type { DisplayObjectContainer } from "./DisplayObjectContainer";
 import type { Stage } from "./Stage";
 import { EventDispatcher } from "../events/EventDispatcher";
+import { Event } from "../events/Event";
 import { Transform } from "../geom/Transform";
 import { Rectangle } from "../geom/Rectangle";
 import { Point } from "../geom/Point";
@@ -189,7 +190,9 @@ export class DisplayObject extends EventDispatcher {
     return rect.intersects(this.__bounds.__rect, obj.__bounds.__rect);
   }
 
-  __onNewFrame() {}
+  __onNewFrame() {
+    this.dispatchEvent(new Event(Event.ENTER_FRAME, false));
+  }
 
   __render(ctx: RenderContext) {
     rect.apply(

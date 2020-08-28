@@ -79,6 +79,10 @@ export class EventDispatcher {
 
   dispatchEvent(event: Event) {
     event.target = this;
+    if (!event.bubbles) {
+      event.currentTarget = this;
+      this.#dispatchEvent(event, false);
+    }
 
     const path: EventDispatcher[] = [this];
     let current: EventDispatcher | null = this;
