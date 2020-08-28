@@ -71,10 +71,6 @@ export class Container {
     const segments: TextSegment[] = [];
 
     const beginElement = (element: Element) => {
-      if (element === walker.root) {
-        return;
-      }
-
       const format = currentSegment.format.__clone();
       let text = "";
       switch (element.tagName.toLowerCase()) {
@@ -139,9 +135,6 @@ export class Container {
     };
 
     const endElement = (element: Element) => {
-      if (element === walker.root) {
-        return;
-      }
       segmentStack.pop();
       currentSegment = segmentStack[segmentStack.length - 1];
     };
