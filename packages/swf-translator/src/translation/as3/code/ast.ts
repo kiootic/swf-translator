@@ -11,6 +11,12 @@ export abstract class NodeExpression extends ASTNode {
   readonly isExpression = true;
 }
 
+export class NodeError extends NodeStatement {
+  constructor(readonly error: unknown) {
+    super();
+  }
+}
+
 export class NodeBlock extends NodeStatement {
   constructor(readonly statements: NodeStatement[]) {
     super();

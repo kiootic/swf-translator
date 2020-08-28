@@ -45,9 +45,11 @@ export function translateBlock(scope: Scope, nodeBlock: Node): ast.NodeBlock {
   const blockScope = scope.child();
   const statements: ast.NodeStatement[] = [];
   for (const nodeStatement of nodeBlock.findChildren(terms.Statement)) {
-    const s = translateStatement(blockScope, nodeStatement);
-    if (s) {
+    try {
+      const s = translateStatement(blockScope, nodeStatement);
       statements.push(s);
+    } catch (err) {
+      statements.push(new ast.NodeError(err));
     }
   }
   return new ast.NodeBlock(statements);
@@ -56,30 +58,24 @@ export function translateBlock(scope: Scope, nodeBlock: Node): ast.NodeBlock {
 export function translateStatement(
   scope: Scope,
   nodeStatement: Node
-): ast.NodeStatement | null {
+): ast.NodeStatement {
   let node: Node | null;
   if ((node = nodeStatement.findChild(terms.Block))) {
     return translateBlock(scope, node);
   } else if ((node = nodeStatement.findChild(terms.ExpressionStatement))) {
     const nodeExpression = node.findChild(terms.Expression);
     if (!nodeExpression) {
-      return null;
+      throw new Error("Invalid expression statement");
     }
     const expression = translateExpression(scope, nodeExpression);
-    if (!expression) {
-      return null;
-    }
     return new ast.NodeStmtExpr(expression);
   } else if ((node = nodeStatement.findChild(terms.LabeledStatement))) {
     const nodeLabel = node.findChild(terms.Label);
     const nodeStatement = node.findChild(terms.Statement);
     if (!nodeLabel || !nodeStatement) {
-      return null;
+      throw new Error("Invalid labeled statement");
     }
     const statement = translateStatement(scope, nodeStatement);
-    if (!statement) {
-      return null;
-    }
     return new ast.NodeStmtLabel(nodeLabel.text, statement);
   } else if ((node = nodeStatement.findChild(terms.VariableDeclaration))) {
     const nodeBindings = node.findChildren(terms.VariableBinding);
@@ -87,7 +83,7 @@ export function translateStatement(
     for (const b of nodeBindings) {
       const nodeName = b.findChild(terms.VariableDefinition);
       if (!nodeName) {
-        continue;
+        throw new Error("Invalid variable binding");
       }
 
       let type: TypeRef = { kind: TypeRefKind.Any };
@@ -106,7 +102,7 @@ export function translateStatement(
       scope.declaredVariables.push(nodeName.text);
     }
     if (bindings.length === 0) {
-      return null;
+      throw new Error("No bindings in variable declaration");
     }
     return new ast.NodeStmtVarDecl(bindings);
   } else if ((node = nodeStatement.findChild(terms.DebuggerStatement))) {
@@ -120,12 +116,9 @@ export function translateStatement(
   } else if ((node = nodeStatement.findChild(terms.ThrowStatement))) {
     const nodeExpression = node.findChild(terms.Expression);
     if (!nodeExpression) {
-      return null;
+      throw new Error("Invalid throw statement");
     }
     const expression = translateExpression(scope, nodeExpression);
-    if (!expression) {
-      return null;
-    }
     return new ast.NodeStmtThrow(expression);
   } else if ((node = nodeStatement.findChild(terms.ReturnStatement))) {
     let expression: ast.NodeExpression | null = null;
@@ -138,13 +131,10 @@ export function translateStatement(
     const nodeBlocks = node.findChildren(terms.Block);
     const nodeExceptionVar = node.findChild(terms.VariableDefinition);
     if (nodeBlocks.length !== 2 || !nodeExceptionVar) {
-      return null;
+      throw new Error("Invalid try statement");
     }
     const tryBlock = translateBlock(scope, nodeBlocks[0]);
     const catchBlock = translateBlock(scope, nodeBlocks[1]);
-    if (!tryBlock || !catchBlock) {
-      return null;
-    }
     return new ast.NodeStmtTry(tryBlock, catchBlock, nodeExceptionVar.text);
   } else if ((node = nodeStatement.findChild(terms.SwitchStatement))) {
     const nodeCondition = node
@@ -152,13 +142,10 @@ export function translateStatement(
       ?.findChild(terms.Expression);
     const nodeItems = node.findChildren(terms.SwitchItem);
     if (!nodeCondition) {
-      return null;
+      throw new Error("Invalid switch statement");
     }
 
     const condition = translateExpression(scope, nodeCondition);
-    if (!condition) {
-      return null;
-    }
 
     const switchScope = scope.child();
     const items: ast.SwitchItem[] = [];
@@ -169,7 +156,7 @@ export function translateStatement(
       if (nodeCase) {
         const nodeValue = nodeCase.findChild(terms.Expression);
         if (!nodeValue) {
-          continue;
+          throw new Error("Invalid switch case");
         }
         value = translateExpression(switchScope, nodeValue);
       } else if (nodeDefault) {
@@ -181,9 +168,11 @@ export function translateStatement(
       const nodeStatements = nodeItem.findChildren(terms.Statement);
       const statements: ast.NodeStatement[] = [];
       for (const nodeStatement of nodeStatements) {
-        const s = translateStatement(switchScope, nodeStatement);
-        if (s) {
+        try {
+          const s = translateStatement(switchScope, nodeStatement);
           statements.push(s);
+        } catch (err) {
+          statements.push(new ast.NodeError(err));
         }
       }
 
@@ -197,20 +186,14 @@ export function translateStatement(
       ?.findChild(terms.Expression);
     const nodeStatements = node.findChildren(terms.Statement);
     if (!nodeCondition || nodeStatements.length === 0) {
-      return null;
+      throw new Error("Invalid if statement");
     }
 
     const condition = translateExpression(scope, nodeCondition);
     const trueBody = translateStatement(scope, nodeStatements[0]);
-    if (!condition || !trueBody) {
-      return null;
-    }
     let falseBody: ast.NodeStatement | null = null;
     if (nodeStatements[1]) {
       falseBody = translateStatement(scope, nodeStatements[1]);
-      if (!falseBody) {
-        return null;
-      }
     }
     return new ast.NodeStmtIf(condition, trueBody, falseBody);
   } else if ((node = nodeStatement.findChild(terms.DoStatement))) {
@@ -219,14 +202,11 @@ export function translateStatement(
       ?.findChild(terms.Expression);
     const nodeStatement = node.findChild(terms.Statement);
     if (!nodeCondition || !nodeStatement) {
-      return null;
+      throw new Error("Invalid do statement");
     }
 
     const condition = translateExpression(scope, nodeCondition);
     const body = translateStatement(scope, nodeStatement);
-    if (!condition || !body) {
-      return null;
-    }
     return new ast.NodeStmtDo(condition, body);
   } else if ((node = nodeStatement.findChild(terms.WhileStatement))) {
     const nodeCondition = node
@@ -234,19 +214,16 @@ export function translateStatement(
       ?.findChild(terms.Expression);
     const nodeStatement = node.findChild(terms.Statement);
     if (!nodeCondition || !nodeStatement) {
-      return null;
+      throw new Error("Invalid while statement");
     }
 
     const condition = translateExpression(scope, nodeCondition);
     const body = translateStatement(scope, nodeStatement);
-    if (!condition || !body) {
-      return null;
-    }
     return new ast.NodeStmtWhile(condition, body);
   } else if ((node = nodeStatement.findChild(terms.ForStatement))) {
     const nodeStatement = node.findChild(terms.Statement);
     if (!nodeStatement) {
-      return null;
+      throw new Error("Invalid for statement");
     }
 
     let nodeSpec: Node | null;
@@ -261,7 +238,7 @@ export function translateStatement(
         .findChild(terms.ForNext)
         ?.findChild(terms.Expression);
       if (!nodeInitializer) {
-        return null;
+        throw new Error("Invalid for loop spec");
       }
 
       let initializer: ast.ASTNode | null = null;
@@ -290,13 +267,10 @@ export function translateStatement(
       const nodeVarDecl = nodeSpec.findChild(terms.VariableDefinition);
       const nodeVarRef = nodeSpec.findChild(terms.VariableName);
       if (!nodeList) {
-        return null;
+        throw new Error("Invalid for-in loop spec");
       }
 
       const listValue = translateExpression(forScope, nodeList);
-      if (!listValue) {
-        return null;
-      }
 
       let variable: ast.ASTNode;
       if (nodeVarDecl) {
@@ -309,25 +283,18 @@ export function translateStatement(
         ]);
         forScope.declaredVariables.push(nodeVarDecl.text);
       } else if (nodeVarRef) {
-        const refExpr = translateExpression(forScope, nodeSpec);
-        if (!refExpr) {
-          return null;
-        }
-        variable = refExpr;
+        variable = translateExpression(forScope, nodeSpec);
       } else {
-        return null;
+        throw new Error("Invalid for-in variable spec");
       }
 
       factory = (body) =>
         new ast.NodeStmtForIn(variable, listValue, isEach ? "of" : "in", body);
     } else {
-      return null;
+      throw new Error("Invalid for statement spec");
     }
 
     const body = translateStatement(forScope, nodeStatement);
-    if (!body) {
-      return null;
-    }
 
     return factory(body);
   }
@@ -338,7 +305,7 @@ export function translateStatement(
 export function translateExpression(
   scope: Scope,
   nodeExpression: Node
-): ast.NodeExpression | null {
+): ast.NodeExpression {
   let node: Node | null;
   if ((node = nodeExpression.findChild(terms.Number))) {
     const value = JSON5.parse(node.text);
@@ -375,7 +342,7 @@ export function translateExpression(
   } else if ((node = nodeExpression.findChild(terms.ParenthesizedExpression))) {
     const nodeExpr = node.findChild(terms.Expression);
     if (!nodeExpr) {
-      return null;
+      throw new Error("Invalid parenthesized expression");
     }
 
     return translateExpression(scope, nodeExpr);
@@ -387,9 +354,7 @@ export function translateExpression(
     const items: ast.NodeExpression[] = [];
     for (const nodeItem of nodeItems) {
       const e = translateExpression(scope, nodeItem);
-      if (e) {
-        items.push(e);
-      }
+      items.push(e);
     }
     return new ast.NodeExprLiteralArray(items);
   } else if ((node = nodeExpression.findChild(terms.ObjectExpression))) {
@@ -398,12 +363,9 @@ export function translateExpression(
     for (const nodeProperty of nodeProperties) {
       const nodeValue = nodeProperty.findChild(terms.Expression);
       if (!nodeValue) {
-        continue;
+        throw new Error("Invalid object expression value");
       }
       const value = translateExpression(scope, nodeValue);
-      if (!value) {
-        continue;
-      }
 
       let keyNode: Node | null;
       let key: ast.NodeExpression;
@@ -414,7 +376,7 @@ export function translateExpression(
       } else if ((keyNode = nodeProperty.findChild(terms.Number))) {
         key = new ast.NodeExprConst(JSON.parse(keyNode.text));
       } else {
-        continue;
+        throw new Error("Invalid object expression key");
       }
 
       entries.push({ key, value });
@@ -424,31 +386,25 @@ export function translateExpression(
     const nodeTarget = node.findChild(terms.Expression);
     const nodePath = node.findChild(terms.MemberPath);
     if (!nodeTarget || !nodePath) {
-      return null;
+      throw new Error("Invalid member expression");
     }
 
     const target = translateExpression(scope, nodeTarget);
-    if (!target) {
-      return null;
-    }
 
     let nodePathInstance: Node | null;
     if ((nodePathInstance = nodePath.findChild(terms.PropertyName))) {
       return new ast.NodeExprProperty(target, nodePathInstance.text);
     } else if ((nodePathInstance = nodePath.findChild(terms.Expression))) {
       const indexer = translateExpression(scope, nodePathInstance);
-      if (!indexer) {
-        return null;
-      }
       return new ast.NodeExprIndexer(target, indexer);
     } else {
-      return null;
+      throw new Error("Invalid member expression indexer");
     }
   } else if ((node = nodeExpression.findChild(terms.NewExpression))) {
     const nodeType = node.findChild(terms.Type);
     const nodeArgs = node.findChild(terms.ArgList);
     if (!nodeType || !nodeArgs) {
-      return null;
+      throw new Error("Invalid new expression");
     }
 
     let nodeTypeName = nodeType.findChild(terms.TypeName);
@@ -465,13 +421,10 @@ export function translateExpression(
     const nodeFn = node.findChild(terms.Expression);
     const nodeArgs = node.findChild(terms.ArgList);
     if (!nodeFn || !nodeArgs) {
-      return null;
+      throw new Error("Invalid call expression");
     }
 
     const fn = translateExpression(scope, nodeFn);
-    if (!fn) {
-      return null;
-    }
     const args = translateArgs(scope, nodeArgs);
 
     return new ast.NodeExprCall(fn, args);
@@ -479,39 +432,30 @@ export function translateExpression(
     const nodeOp = node.findChild(terms.UnaryOp);
     const nodeOperand = node.findChild(terms.Expression);
     if (!nodeOp || !nodeOperand) {
-      return null;
+      throw new Error("Invalid unary expression");
     }
 
     const operand = translateExpression(scope, nodeOperand);
-    if (!operand) {
-      return null;
-    }
     return new ast.NodeExprUnary(nodeOp.text, operand);
   } else if ((node = nodeExpression.findChild(terms.PostfixExpression))) {
     const nodeOp = node.findChild(terms.PostfixOp);
     const nodeOperand = node.findChild(terms.Expression);
     if (!nodeOp || !nodeOperand) {
-      return null;
+      throw new Error("Invalid postfix expression");
     }
 
     const operand = translateExpression(scope, nodeOperand);
-    if (!operand) {
-      return null;
-    }
     return new ast.NodeExprPostfix(nodeOp.text, operand);
   } else if ((node = nodeExpression.findChild(terms.BinaryExpression))) {
     if (node.findNamedChild("as")) {
       const nodeOperand = node.findChild(terms.Expression);
       const nodeType = node.findChild(terms.Type);
       if (!nodeOperand || !nodeType) {
-        return null;
+        throw new Error("Invalid as expression");
       }
 
       const type = translateType(scope, nodeType);
       const operand = translateExpression(scope, nodeOperand);
-      if (!operand) {
-        return null;
-      }
       return new ast.NodeExprBinary(
         "as",
         operand,
@@ -520,50 +464,41 @@ export function translateExpression(
     } else {
       const nodeOperands = node.findChildren(terms.Expression);
       if (nodeOperands.length !== 2) {
-        return null;
+        throw new Error("Invalid binary expression");
       }
-      const nodeOp = node.tree.childAfter(nodeOperands[0].tree.end + 1);
+      const nodeOp = node.children.find((n) => n.type.id !== terms.Expression);
       if (!nodeOp) {
-        return null;
+        throw new Error("Invalid binary expression operator");
       }
 
-      let op = node.sourceText.slice(nodeOp.start, nodeOp.end);
+      let op = nodeOp.text;
       if (op === "is") {
         op = "instanceof";
       }
       const operandA = translateExpression(scope, nodeOperands[0]);
       const operandB = translateExpression(scope, nodeOperands[1]);
-      if (!operandA || !operandB) {
-        return null;
-      }
       return new ast.NodeExprBinary(op, operandA, operandB);
     }
   } else if ((node = nodeExpression.findChild(terms.ConditionalExpression))) {
     const nodeOperands = node.findChildren(terms.Expression);
     if (nodeOperands.length !== 3) {
-      return null;
+      throw new Error("Invalid ternary expression");
     }
 
     const condition = translateExpression(scope, nodeOperands[0]);
     const trueValue = translateExpression(scope, nodeOperands[1]);
     const falseValue = translateExpression(scope, nodeOperands[2]);
-    if (!condition || !trueValue || !falseValue) {
-      return null;
-    }
     return new ast.NodeExprTernary(condition, trueValue, falseValue);
   } else if ((node = nodeExpression.findChild(terms.AssignmentExpression))) {
     const nodeValue = node.findChild(terms.Expression);
     const nodeOp = node.findChild(terms.AssignmentOp);
     if (!nodeValue || !nodeOp) {
-      return null;
+      throw new Error("Invalid assignment expression");
     }
 
     const op = nodeOp.text;
     const target = translateExpression(scope, node);
     const value = translateExpression(scope, nodeValue);
-    if (!target || !value) {
-      return null;
-    }
 
     return new ast.NodeExprAssignment(op, target, value);
   }

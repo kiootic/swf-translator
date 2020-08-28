@@ -2,7 +2,9 @@ import { EmitContext } from "./context";
 import * as ast from "../code/ast";
 
 export function emitAST(ctx: EmitContext, node: ast.ASTNode) {
-  if (node instanceof ast.NodeBlock) {
+  if (node instanceof ast.NodeError) {
+    ctx.emitLine(`{ /* ERROR: ${node.error} */ }`);
+  } else if (node instanceof ast.NodeBlock) {
     ctx.emitLine("{");
     for (const s of node.statements) {
       emitAST(ctx, s);
@@ -15,19 +17,7 @@ export function emitAST(ctx: EmitContext, node: ast.ASTNode) {
     ctx.emit(`${node.label}: `);
     emitAST(ctx, node.statement);
   } else if (node instanceof ast.NodeStmtVarDecl) {
-    ctx.emit("let ");
-    for (let i = 0; i < node.bindings.length; i++) {
-      const binding = node.bindings[i];
-      if (i !== 0) {
-        ctx.emitLine(", ");
-      }
-      ctx.emit(`${binding.name}: ${ctx.importType(binding.type, false)}`);
-      if (binding.initialValue) {
-        ctx.emit(" = ");
-        emitAST(ctx, binding.initialValue);
-      }
-    }
-    ctx.emitLine(";");
+    emitVarDecl(ctx, node, true, true);
   } else if (node instanceof ast.NodeStmtDebugger) {
     ctx.emitLine("debugger;");
   } else if (node instanceof ast.NodeStmtContinue) {
@@ -89,14 +79,12 @@ export function emitAST(ctx: EmitContext, node: ast.ASTNode) {
     emitAST(ctx, node.body);
   } else if (node instanceof ast.NodeStmtFor) {
     ctx.emit("for (");
-    if (node.initializer) {
+    if (node.initializer instanceof ast.NodeStmtVarDecl) {
+      emitVarDecl(ctx, node.initializer, false, true);
+    } else if (node.initializer) {
       emitAST(ctx, node.initializer);
-      if (!(node.initializer instanceof ast.NodeStatement)) {
-        ctx.emit("; ");
-      }
-    } else {
-      ctx.emit("; ");
     }
+    ctx.emit("; ");
     if (node.condition) {
       emitAST(ctx, node.condition);
     }
@@ -108,7 +96,11 @@ export function emitAST(ctx: EmitContext, node: ast.ASTNode) {
     emitAST(ctx, node.body);
   } else if (node instanceof ast.NodeStmtForIn) {
     ctx.emit("for (");
-    emitAST(ctx, node.variable);
+    if (node.variable instanceof ast.NodeStmtVarDecl) {
+      emitVarDecl(ctx, node.variable, false, false);
+    } else if (node.variable) {
+      emitAST(ctx, node.variable);
+    }
     ctx.emit(` ${node.type} `);
     emitAST(ctx, node.value);
     ctx.emit(")");
@@ -224,5 +216,31 @@ export function emitAST(ctx: EmitContext, node: ast.ASTNode) {
     ctx.emit(")");
   } else {
     throw new Error("Unexpected AST node");
+  }
+}
+
+function emitVarDecl(
+  ctx: EmitContext,
+  node: ast.NodeStmtVarDecl,
+  semi: boolean,
+  withType: boolean
+) {
+  ctx.emit("let ");
+  for (let i = 0; i < node.bindings.length; i++) {
+    const binding = node.bindings[i];
+    if (i !== 0) {
+      ctx.emitLine(", ");
+    }
+    ctx.emit(binding.name);
+    if (withType) {
+      ctx.emit(`: ${ctx.importType(binding.type, false)}`);
+    }
+    if (binding.initialValue) {
+      ctx.emit(" = ");
+      emitAST(ctx, binding.initialValue);
+    }
+  }
+  if (semi) {
+    ctx.emitLine(";");
   }
 }
