@@ -72,7 +72,7 @@ export class EventDispatcher {
       listeners = this.#bubbleListeners;
     }
 
-    for (const { listener } of this.#bubbleListeners.get(event.type) || []) {
+    for (const { listener } of listeners.get(event.type) || []) {
       listener(event);
     }
   };
@@ -82,6 +82,7 @@ export class EventDispatcher {
     if (!event.bubbles) {
       event.currentTarget = this;
       this.#dispatchEvent(event, false);
+      return;
     }
 
     const path: EventDispatcher[] = [this];
