@@ -7,6 +7,7 @@ export enum VariableKind {
   Global = "global",
   Type = "type",
   Class = "class",
+  Instance = "instance",
   Local = "local",
 }
 
@@ -122,12 +123,13 @@ export class Scope {
         break;
       }
       if (scope.classDef) {
-        const names = new Set([
-          ...scope.classDef.methods.map((m) => m.name),
-          ...scope.classDef.fields.map((m) => m.name),
+        const names = new Map<string, boolean>([
+          ...scope.classDef.methods.map((m) => [m.name, m.isStatic] as const),
+          ...scope.classDef.fields.map((m) => [m.name, m.isStatic] as const),
         ]);
-        if (names.has(name)) {
-          return VariableKind.Class;
+        const isStatic = names.get(name);
+        if (isStatic != null) {
+          return isStatic ? VariableKind.Class : VariableKind.Instance;
         }
       }
       if (scope.methodDef) {
@@ -159,8 +161,8 @@ export class Scope {
       }
     }
     if (!kind) {
-      // Assume class variables
-      return VariableKind.Class;
+      // Assume instance variables
+      return VariableKind.Instance;
     }
     return kind;
   }

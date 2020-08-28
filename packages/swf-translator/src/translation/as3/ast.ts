@@ -521,6 +521,16 @@ function translateVarType(scope: Scope, name: string): ast.NodeExpression {
         name
       );
     case VariableKind.Class:
+      if (!scope.classDef) {
+        throw new Error("No class for static variables");
+      }
+      const type: TypeRef = {
+        kind: TypeRefKind.Class,
+        namespace: scope.classDef.namespace,
+        name: scope.classDef.name,
+      };
+      return new ast.NodeExprProperty(new ast.NodeExprType(type, true), name);
+    case VariableKind.Instance:
       return new ast.NodeExprProperty(new ast.NodeExprThis(), name);
     case VariableKind.Type:
       return new ast.NodeExprType(scope.resolveType(name), true);
