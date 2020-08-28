@@ -11,10 +11,16 @@ import { RenderContext } from "../../../internal/render/RenderContext";
 import { MouseEvent } from "../events";
 
 export class SimpleButton extends InteractiveObject {
+  static __character?: ButtonInstance;
+
   declare __character: ButtonInstance | null;
 
   constructor() {
     super();
+
+    this.__character =
+      (this.constructor as typeof SimpleButton).__character ?? null;
+    this.__character?.applyTo(this);
 
     this.addEventListener(MouseEvent.MOUSE_OVER, this.#handleMouseEvent);
     this.addEventListener(MouseEvent.MOUSE_OUT, this.#handleMouseEvent);

@@ -25,6 +25,7 @@ import { Texture } from "../../internal/render/Texture";
 import { AssetBundle } from "./AssetBundle";
 import { FontRegistry } from "./FontRegistry";
 import { SimpleButton } from "../flash/display";
+import { ClassRegistry } from "./ClassRegistry";
 
 export interface AssetLibrary {
   resolveImage(id: number): Texture;
@@ -42,6 +43,7 @@ export class AssetLibraryBuilder {
   private readonly editTexts = new Map<number, EditTextCharacter>();
   private readonly morphShapes = new Map<number, MorphShapeCharacter>();
   private readonly buttons = new Map<number, ButtonCharacter>();
+  private readonly linkages = new Map<number, string>();
 
   registerImage(id: number, char: ImageCharacter) {
     this.images.set(id, char);
@@ -75,6 +77,10 @@ export class AssetLibraryBuilder {
     this.buttons.set(id, char);
   }
 
+  registerLinkage(id: number, className: string) {
+    this.linkages.set(id, className);
+  }
+
   registerBundle(bundle: AssetBundle) {
     for (const [id, char] of Object.entries(bundle.images)) {
       this.registerImage(Number(id), char);
@@ -99,6 +105,9 @@ export class AssetLibraryBuilder {
     }
     for (const [id, char] of Object.entries(bundle.buttons)) {
       this.registerButton(Number(id), char);
+    }
+    for (const [id, className] of Object.entries(bundle.linkages)) {
+      this.registerLinkage(Number(id), className);
     }
   }
 
@@ -148,6 +157,15 @@ export class AssetLibraryBuilder {
       library.buttons.set(id, new ButtonInstance(id, button, library));
     }
 
+    for (const [id, className] of this.linkages) {
+      const classFn = ClassRegistry.instance.classes.get(className);
+      if (!classFn) {
+        throw new Error(`Linked class ${className} not found`);
+      }
+      library.linkedClasses.set(id, classFn);
+    }
+
+    library.linkCharacters();
     return library;
   }
 }
@@ -161,6 +179,7 @@ class InstantiatedLibrary implements AssetLibrary {
   readonly staticTexts = new Map<number, StaticTextInstance>();
   readonly editTexts = new Map<number, EditTextInstance>();
   readonly buttons = new Map<number, ButtonInstance>();
+  readonly linkedClasses = new Map<number, Function>();
 
   resolveImage(id: number): Texture {
     const instance = this.images.get(id);
@@ -180,56 +199,38 @@ class InstantiatedLibrary implements AssetLibrary {
     return instance;
   }
 
+  linkCharacters() {
+    type Class = new () => DisplayObject;
+    const link = <T>(
+      characters: Map<number, T>,
+      defaultClassFactory: (char: T) => Class
+    ) => {
+      for (const [id, char] of characters) {
+        let classFn = this.linkedClasses.get(id);
+        if (!classFn) {
+          const className = `Character${id}`;
+          classFn = class extends defaultClassFactory(char) {};
+          Object.defineProperty(classFn, "name", { value: className });
+          this.linkedClasses.set(id, classFn);
+        }
+        Object.assign(classFn, { __character: char });
+      }
+    };
+
+    link(this.shapes, () => Shape);
+    link(this.morphShapes, () => MorphShape);
+    link(this.sprites, (s) => (s.numFrames > 1 ? MovieClip : Sprite));
+    link(this.staticTexts, () => StaticText);
+    link(this.editTexts, () => TextField);
+    link(this.buttons, () => SimpleButton);
+  }
+
   instantiateCharacter(id: number): DisplayObject {
-    const shapeInstance = this.shapes.get(id);
-    if (shapeInstance) {
-      const shape = new Shape();
-      shapeInstance.applyTo(shape);
-      shape.__character = shapeInstance;
-      return shape;
+    const classFn = this.linkedClasses.get(id) as new () => DisplayObject;
+    if (!classFn) {
+      throw new Error(`Character ${id} not found`);
     }
 
-    const morphShapeInstance = this.morphShapes.get(id);
-    if (morphShapeInstance) {
-      const morphShape = new MorphShape();
-      morphShapeInstance.applyTo(morphShape);
-      morphShape.__character = morphShapeInstance;
-      return morphShape;
-    }
-
-    const staticTextInstance = this.staticTexts.get(id);
-    if (staticTextInstance) {
-      const staticText = new StaticText();
-      staticTextInstance.applyTo(staticText);
-      staticText.__character = staticTextInstance;
-      return staticText;
-    }
-
-    const editTextInstance = this.editTexts.get(id);
-    if (editTextInstance) {
-      const textField = new TextField();
-      editTextInstance.applyTo(textField);
-      textField.__character = editTextInstance;
-      return textField;
-    }
-
-    const buttonInstance = this.buttons.get(id);
-    if (buttonInstance) {
-      const button = new SimpleButton();
-      buttonInstance.applyTo(button);
-      button.__character = buttonInstance;
-      return button;
-    }
-
-    const spriteInstance = this.sprites.get(id);
-    if (spriteInstance) {
-      const sprite =
-        spriteInstance.numFrames > 1 ? new MovieClip() : new Sprite();
-      spriteInstance.applyTo(sprite, 1, 1);
-      sprite.__character = spriteInstance;
-      return sprite;
-    }
-
-    throw new Error(`Character ${id} not found`);
+    return new classFn();
   }
 }

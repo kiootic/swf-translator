@@ -8,8 +8,18 @@ import { TextFieldType } from "./TextFieldType";
 import { rect } from "../../../internal/math/rect";
 
 export class TextField extends InteractiveObject {
+  static __character?: EditTextInstance;
+
   declare __character: EditTextInstance | null;
   declare __renderObjects: RenderObjectSprite[];
+
+  constructor() {
+    super();
+
+    this.__character =
+      (this.constructor as typeof TextField).__character ?? null;
+    this.__character?.applyTo(this);
+  }
 
   readonly __container = new Container();
 

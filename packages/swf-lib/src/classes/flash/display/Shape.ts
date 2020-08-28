@@ -5,8 +5,17 @@ import { ShapeInstance } from "../../../internal/character/ShapeInstance";
 import { RenderObjectSprite } from "../../../internal/render/objects/RenderObjectSprite";
 
 export class Shape extends DisplayObject {
+  static __character?: ShapeInstance;
+
   declare __character: ShapeInstance | null;
   declare __renderObjects: RenderObjectSprite[];
+
+  constructor() {
+    super();
+
+    this.__character = (this.constructor as typeof Shape).__character ?? null;
+    this.__character?.applyTo(this);
+  }
 
   #updateRenderMatrix = autorun(() => {
     const matrix = this.transform.__worldMatrix.__value;

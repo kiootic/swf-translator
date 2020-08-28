@@ -16,4 +16,5 @@ export interface AssetBundle {
   editTexts: Record<string | number, EditTextCharacter>;
   sprites: Record<string | number, SpriteCharacter>;
   buttons: Record<string | number, ButtonCharacter>;
+  linkages: Record<string | number, string>;
 }

@@ -5,8 +5,18 @@ import { MorphShapeInstance } from "../../../internal/character/MorphShapeInstan
 import { RenderObjectSprite } from "../../../internal/render/objects/RenderObjectSprite";
 
 export class MorphShape extends DisplayObject {
+  static __character?: MorphShapeInstance;
+
   declare __character: MorphShapeInstance | null;
   declare __renderObjects: RenderObjectSprite[];
+
+  constructor() {
+    super();
+
+    this.__character =
+      (this.constructor as typeof MorphShape).__character ?? null;
+    this.__character?.applyTo(this);
+  }
 
   @observable
   __ratio = 0;

@@ -5,8 +5,18 @@ import { StaticTextInstance } from "../../../internal/character/StaticTextInstan
 import { RenderObjectSprite } from "../../../internal/render/objects/RenderObjectSprite";
 
 export class StaticText extends DisplayObject {
+  static __character?: StaticTextInstance;
+
   declare __character: StaticTextInstance | null;
   declare __renderObjects: RenderObjectSprite[];
+
+  constructor() {
+    super();
+
+    this.__character =
+      (this.constructor as typeof StaticText).__character ?? null;
+    this.__character?.applyTo(this);
+  }
 
   #updateRenderMatrix = autorun(() => {
     const matrix = this.transform.__worldMatrix.__value;
