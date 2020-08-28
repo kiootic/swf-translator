@@ -6,6 +6,7 @@ import { terms } from "../../as3/parse";
 import { TypeRef, TypeRefKind } from "./code/type-ref";
 import { translateType } from "./type";
 import { AS3Context } from "./context";
+import { MethodDef, ClassDef } from "./code/structure";
 
 export function translateAST(ctx: AS3Context) {
   for (const classDef of ctx.classes.values()) {
@@ -36,6 +37,7 @@ export function translateAST(ctx: AS3Context) {
       }
       if (method.bodyNode) {
         method.body = translateBlock(method.scope, method.bodyNode);
+        fixupMethodBody(classDef, method, method.body);
       }
     }
   }
@@ -536,4 +538,30 @@ function translateArgs(scope: Scope, nodeArgs: Node): ast.NodeExpression[] {
     }
   }
   return exprs;
+}
+
+function fixupMethodBody(
+  classDef: ClassDef,
+  method: MethodDef,
+  body: ast.NodeBlock
+) {
+  let superCall: ast.NodeStatement | null = null;
+  for (const statement of body.statements) {
+    if (
+      statement instanceof ast.NodeStmtExpr &&
+      statement.expression instanceof ast.NodeExprCall &&
+      statement.expression.fn instanceof ast.NodeExprSuper
+    ) {
+      superCall = statement;
+      break;
+    }
+  }
+  if (!superCall) {
+    return;
+  }
+  const i = body.statements.indexOf(superCall);
+  body.statements.splice(i, 1);
+  if (classDef.extendType) {
+    body.statements.splice(0, 0, superCall);
+  }
 }
