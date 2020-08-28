@@ -146,7 +146,8 @@ function fixupCast(body: ast.NodeBlock) {
       node instanceof ast.NodeExprCall &&
       node.fn instanceof ast.NodeExprType &&
       node.args.length === 1 &&
-      node.fn.type.kind === TypeRefKind.Class
+      node.fn.type.kind === TypeRefKind.Class &&
+      /^[A-Z]/.test(node.fn.type.name)
     ) {
       return new ast.NodeExprBinary("as", node.args[0], node.fn);
     }
