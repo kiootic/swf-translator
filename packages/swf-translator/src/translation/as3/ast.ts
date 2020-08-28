@@ -42,11 +42,10 @@ export function translateAST(ctx: AS3Context) {
 }
 
 export function translateBlock(scope: Scope, nodeBlock: Node): ast.NodeBlock {
-  const blockScope = scope.child();
   const statements: ast.NodeStatement[] = [];
   for (const nodeStatement of nodeBlock.findChildren(terms.Statement)) {
     try {
-      const s = translateStatement(blockScope, nodeStatement);
+      const s = translateStatement(scope, nodeStatement);
       statements.push(s);
     } catch (err) {
       statements.push(new ast.NodeError(err));
@@ -147,7 +146,6 @@ export function translateStatement(
 
     const condition = translateExpression(scope, nodeCondition);
 
-    const switchScope = scope.child();
     const items: ast.SwitchItem[] = [];
     for (const nodeItem of nodeItems) {
       let nodeCase = nodeItem.findChild(terms.CaseLabel);
@@ -158,7 +156,7 @@ export function translateStatement(
         if (!nodeValue) {
           throw new Error("Invalid switch case");
         }
-        value = translateExpression(switchScope, nodeValue);
+        value = translateExpression(scope, nodeValue);
       } else if (nodeDefault) {
         value = null;
       } else {
@@ -169,7 +167,7 @@ export function translateStatement(
       const statements: ast.NodeStatement[] = [];
       for (const nodeStatement of nodeStatements) {
         try {
-          const s = translateStatement(switchScope, nodeStatement);
+          const s = translateStatement(scope, nodeStatement);
           statements.push(s);
         } catch (err) {
           statements.push(new ast.NodeError(err));
@@ -227,7 +225,6 @@ export function translateStatement(
     }
 
     let nodeSpec: Node | null;
-    const forScope = scope.child();
     let factory: (body: ast.NodeStatement) => ast.NodeStatement;
     if ((nodeSpec = node.findChild(terms.ForSpec))) {
       const nodeInitializer = nodeSpec.findChild(terms.ForInitializer);
@@ -248,16 +245,15 @@ export function translateStatement(
           terms.VariableDeclaration
         ))
       ) {
-        initializer = translateStatement(forScope, nodeInitializer);
+        initializer = translateStatement(scope, nodeInitializer);
       } else if (
         (nodeInitializerBody = nodeInitializer.findChild(terms.Expression))
       ) {
-        initializer = translateExpression(forScope, nodeInitializerBody);
+        initializer = translateExpression(scope, nodeInitializerBody);
       }
       const condition =
-        (nodeCondition && translateExpression(forScope, nodeCondition)) ?? null;
-      const next =
-        (nodeNext && translateExpression(forScope, nodeNext)) ?? null;
+        (nodeCondition && translateExpression(scope, nodeCondition)) ?? null;
+      const next = (nodeNext && translateExpression(scope, nodeNext)) ?? null;
 
       factory = (body) =>
         new ast.NodeStmtFor(initializer, condition, next, body);
@@ -270,7 +266,7 @@ export function translateStatement(
         throw new Error("Invalid for-in loop spec");
       }
 
-      const listValue = translateExpression(forScope, nodeList);
+      const listValue = translateExpression(scope, nodeList);
 
       let variable: ast.ASTNode;
       if (nodeVarDecl) {
@@ -281,9 +277,9 @@ export function translateStatement(
             initialValue: null,
           },
         ]);
-        forScope.declaredVariables.push(nodeVarDecl.text);
+        scope.declaredVariables.push(nodeVarDecl.text);
       } else if (nodeVarRef) {
-        variable = translateExpression(forScope, nodeSpec);
+        variable = translateExpression(scope, nodeSpec);
       } else {
         throw new Error("Invalid for-in variable spec");
       }
@@ -294,7 +290,7 @@ export function translateStatement(
       throw new Error("Invalid for statement spec");
     }
 
-    const body = translateStatement(forScope, nodeStatement);
+    const body = translateStatement(scope, nodeStatement);
 
     return factory(body);
   }

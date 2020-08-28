@@ -225,7 +225,7 @@ function emitVarDecl(
   semi: boolean,
   withType: boolean
 ) {
-  ctx.emit("let ");
+  ctx.emit("var ");
   for (let i = 0; i < node.bindings.length; i++) {
     const binding = node.bindings[i];
     if (i !== 0) {
