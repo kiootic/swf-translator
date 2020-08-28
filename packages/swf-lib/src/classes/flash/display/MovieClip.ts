@@ -4,7 +4,7 @@ import { Sprite } from "./Sprite";
 export type MovieClipT<T> = MovieClip & T;
 
 export class MovieClip extends Sprite {
-  #lastFrame = 1;
+  #lastFrame: number | null = null;
   #frameScripts = new Map<number, () => void>();
 
   @observable
@@ -22,21 +22,28 @@ export class MovieClip extends Sprite {
   }
 
   __onNewFrame() {
-    if (this.isPlaying) {
+    if (this.#lastFrame !== null && this.isPlaying) {
       this.currentFrame++;
       if (this.currentFrame > this.totalFrames || this.currentFrame < 1) {
         this.currentFrame = 1;
       }
     }
 
+    let frameScript: (() => void) | null = null;
     if (this.currentFrame !== this.#lastFrame) {
-      this.__character?.applyTo(this, this.#lastFrame, this.currentFrame);
+      this.__character?.applyTo(
+        this,
+        this.#lastFrame ?? this.currentFrame,
+        this.currentFrame
+      );
       this.#lastFrame = this.currentFrame;
 
-      this.#frameScripts.get(this.currentFrame)?.();
+      frameScript = this.#frameScripts.get(this.currentFrame) ?? null;
     }
 
     super.__onNewFrame();
+
+    frameScript?.();
   }
 
   addFrameScript(...args: unknown[]) {
