@@ -118,14 +118,18 @@ export class DisplayObject extends EventDispatcher {
   }
 
   get rotation(): number {
-    return (this.transform.matrix.c * 180) / Math.PI;
+    const angle = Math.atan2(this.transform.matrix.b, this.transform.matrix.d);
+    return (angle * 180) / Math.PI;
   }
   set rotation(value: number) {
     runInAction(() => {
       const rotation = this.rotation;
-      const delta = value - rotation;
-      this.transform.matrix.b += delta;
-      this.transform.matrix.c += delta;
+      const delta = ((value - rotation) / 180) * Math.PI;
+      mat2d.rotate(
+        this.transform.matrix.__value,
+        this.transform.matrix.__value,
+        delta
+      );
       this.transform.__reportMatrixUpdated();
     });
   }
