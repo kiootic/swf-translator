@@ -55,17 +55,29 @@ export class MovieClip extends Sprite {
     }
   }
 
-  gotoAndPlay(frame: unknown) {
-    const frameNumber = Number(frame);
+  #resolveFrame = (frameId: unknown): number | null => {
+    const frameNumber = Number(frameId);
     if (!isNaN(frameNumber)) {
+      return frameNumber;
+    }
+    const frame = this.__character?.frames?.find((f) => f.label === frameId);
+    if (frame) {
+      return frame.frame;
+    }
+    return null;
+  };
+
+  gotoAndPlay(frame: unknown) {
+    const frameNumber = this.#resolveFrame(frame);
+    if (frameNumber) {
       this.currentFrame = frameNumber;
     }
     this.isPlaying = true;
   }
 
   gotoAndStop(frame: unknown) {
-    const frameNumber = Number(frame);
-    if (!isNaN(frameNumber)) {
+    const frameNumber = this.#resolveFrame(frame);
+    if (frameNumber) {
       this.currentFrame = frameNumber;
     }
     this.isPlaying = false;

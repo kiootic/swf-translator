@@ -11,6 +11,8 @@ import { PlaceObject2Tag } from "../../format/tags/place-object-2";
 import { PlaceObject3Tag } from "../../format/tags/place-object-3";
 import { RemoveObject2Tag } from "../../format/tags/remove-object-2";
 import { ShowFrameTag } from "../../format/tags/show-frame";
+import { FrameLabelTag } from "../../format/tags/frame-label";
+import { DefineSceneAndFrameLabelDataTag } from "../../format/tags/define-scene-and-frame-label-data";
 
 export async function translateSprites(ctx: OutputContext, swf: SWFFile) {
   const sprites: Record<number, unknown> = {};
@@ -78,6 +80,19 @@ function processTags(tags: Tag[]): SpriteFrame[] {
     } else if (tag instanceof ShowFrameTag) {
       frame = { frame: frames.length + 1, actions: [] };
       frames.push(frame);
+    } else if (tag instanceof FrameLabelTag) {
+      frame.label = tag.name;
+    }
+  }
+
+  for (const tag of tags) {
+    if (tag instanceof DefineSceneAndFrameLabelDataTag) {
+      for (const { frame, label } of tag.frameLabels) {
+        const f = frames.find((f) => f.frame === frame + 1);
+        if (f) {
+          f.label = label;
+        }
+      }
     }
   }
 

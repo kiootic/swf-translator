@@ -8,6 +8,7 @@ export interface SpriteCharacter {
 
 export interface SpriteFrame {
   frame: number;
+  label?: string;
   actions: FrameAction[];
 }
 
