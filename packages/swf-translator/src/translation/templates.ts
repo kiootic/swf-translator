@@ -20,7 +20,7 @@ declare module "*.png" {
   ctx.file("index.ts").content = fileContent(`
 
 import lib from "@swf/lib";
-import bundle from "./bundle";
+import bundle from "./characters";
 
 import * as classes from "./classes";
 export * from "./classes";

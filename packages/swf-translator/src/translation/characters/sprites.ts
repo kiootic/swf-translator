@@ -1,11 +1,9 @@
-import JSON5 from "json5";
 import { OutputContext } from "../../output";
 import { SWFFile } from "../../format/swf";
 import { DefineSpriteTag } from "../../format/tags/define-sprite";
 import { filter } from "../../models/filter";
 import { matrix, colorTransform } from "../../models/primitives";
 import { Sprite, SpriteFrame, FrameActionKind } from "../../models/sprite";
-import { VariableDeclarationKind } from "ts-morph";
 import { Tag } from "../../format/tag";
 import { PlaceObject2Tag } from "../../format/tags/place-object-2";
 import { PlaceObject3Tag } from "../../format/tags/place-object-3";
@@ -24,33 +22,16 @@ export async function translateSprites(ctx: OutputContext, swf: SWFFile) {
   sprites[0] = translateDocumentSprite(swf);
 
   for (const [characterId, sprite] of Object.entries(sprites)) {
-    const char = ctx.file("characters", `${characterId}.ts`);
-    char.tsSource.addImportDeclaration({
-      defaultImport: "lib",
-      moduleSpecifier: "@swf/lib",
-    });
-    char.tsSource.addVariableStatement({
-      declarationKind: VariableDeclarationKind.Const,
-      declarations: [
-        {
-          name: `character`,
-          type: "lib.__internal.character.SpriteCharacter",
-          initializer: JSON5.stringify(sprite, null, 4),
-        },
-      ],
-    });
-    char.tsSource.addExportAssignment({
-      expression: "character",
-      isExportEquals: false,
-    });
+    const char = ctx.file("characters", `${characterId}.json`);
+    char.content = Buffer.from(JSON.stringify(sprite, null, 4));
 
     const index = ctx.file("characters", `index.ts`);
     index.tsSource.addImportDeclaration({
       defaultImport: `character${characterId}`,
-      moduleSpecifier: `./${characterId}`,
+      moduleSpecifier: `./${characterId}.json`,
     });
     index.tsSource.addStatements(
-      `bundle.sprites[${characterId}] = character${characterId};`
+      `bundle.sprites[${characterId}] = character${characterId} as any;`
     );
   }
   return sprites;

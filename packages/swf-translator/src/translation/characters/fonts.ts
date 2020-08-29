@@ -1,5 +1,3 @@
-import JSON5 from "json5";
-import { VariableDeclarationKind } from "ts-morph";
 import { SWFFile } from "../../format/swf";
 import { OutputContext } from "../../output";
 import { DefineFont3Tag } from "../../format/tags/define-font-3";
@@ -16,33 +14,16 @@ export async function translateFonts(ctx: OutputContext, swf: SWFFile) {
       continue;
     }
 
-    const char = ctx.file("characters", `${tag.characterId}.ts`);
-    char.tsSource.addImportDeclaration({
-      defaultImport: "lib",
-      moduleSpecifier: "@swf/lib",
-    });
-    char.tsSource.addVariableStatement({
-      declarationKind: VariableDeclarationKind.Const,
-      declarations: [
-        {
-          name: `character`,
-          type: "lib.__internal.character.FontCharacter",
-          initializer: JSON5.stringify(font, null, 4),
-        },
-      ],
-    });
-    char.tsSource.addExportAssignment({
-      expression: "character",
-      isExportEquals: false,
-    });
+    const char = ctx.file("characters", `${tag.characterId}.json`);
+    char.content = Buffer.from(JSON.stringify(font, null, 4));
 
     const index = ctx.file("characters", `index.ts`);
     index.tsSource.addImportDeclaration({
       defaultImport: `character${tag.characterId}`,
-      moduleSpecifier: `./${tag.characterId}`,
+      moduleSpecifier: `./${tag.characterId}.json`,
     });
     index.tsSource.addStatements(
-      `bundle.fonts[${tag.characterId}] = character${tag.characterId};`
+      `bundle.fonts[${tag.characterId}] = character${tag.characterId} as any;`
     );
 
     fonts[tag.characterId] = font;
