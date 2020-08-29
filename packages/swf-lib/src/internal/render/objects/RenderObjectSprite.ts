@@ -33,7 +33,10 @@ export class RenderObjectSprite implements RenderObject {
     rect.apply(bounds, this.def.bounds, this.renderMatrix);
   }
 
-  hitTest(x: number, y: number): boolean {
+  hitTest(x: number, y: number, exact: boolean): boolean {
+    if (!exact) {
+      return rect.contains(this.def.bounds, x, y);
+    }
     // https://stackoverflow.com/a/2049593
     const sign = (ax: number, ay: number, bx: number, by: number) => {
       return (x - bx) * (ay - by) - (ax - bx) * (y - by);

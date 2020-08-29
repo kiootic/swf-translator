@@ -71,9 +71,10 @@ export class Stage extends DisplayObjectContainer {
       }
 
       const children = target.__children;
+      let hitSelf = false;
       for (let i = children.length - 1; i >= 0; i--) {
         const child = children[i];
-        if (!(child instanceof InteractiveObject)) {
+        if (!child.visible) {
           continue;
         }
 
@@ -82,12 +83,16 @@ export class Stage extends DisplayObjectContainer {
           continue;
         }
 
-        const hit = hitTest(child);
-        if (hit) {
-          return hit;
+        if (child instanceof InteractiveObject) {
+          const hit = hitTest(child);
+          if (hit) {
+            return hit;
+          }
+        } else {
+          hitSelf = true;
         }
       }
-      return null;
+      return hitSelf ? target : null;
     };
     return hitTest(this);
   }
@@ -105,7 +110,7 @@ export class Stage extends DisplayObjectContainer {
       }
       const { x: localX, y: localY } = target.globalToLocal(new Point(x, y));
 
-      const event = new MouseEvent(type);
+      const event = new MouseEvent(type, true, false);
       event.buttonDown = sourceEvent.buttons !== 0;
       event.localX = localX;
       event.localY = localY;

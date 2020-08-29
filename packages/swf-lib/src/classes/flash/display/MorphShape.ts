@@ -42,9 +42,8 @@ export class MorphShape extends DisplayObject {
     if (!super.hitTestPoint(x, y, shapeFlag)) {
       return false;
     }
-    if (shapeFlag && this.__renderObjects.every((obj) => !obj.hitTest(x, y))) {
-      return false;
-    }
-    return true;
+    return this.__renderObjects.some((obj) =>
+      obj.hitTest(x, y, shapeFlag ?? false)
+    );
   }
 }
