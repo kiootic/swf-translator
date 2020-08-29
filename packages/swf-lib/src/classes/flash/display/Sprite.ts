@@ -16,7 +16,7 @@ export class Sprite extends DisplayObjectContainer {
 
   buttonMode = false;
 
-  get __cursor() {
-    return this.buttonMode ? "pointer" : super.__cursor;
+  get __isPointerCursor() {
+    return this.buttonMode || super.__isPointerCursor;
   }
 }

@@ -62,8 +62,8 @@ export class SimpleButton extends InteractiveObject {
   @observable
   useHandCursor = true;
 
-  get __cursor() {
-    return this.useHandCursor ? "pointer" : super.__cursor;
+  get __isPointerCursor() {
+    return this.useHandCursor || super.__isPointerCursor;
   }
 
   __onFrameEnter() {

@@ -5,8 +5,8 @@ export abstract class InteractiveObject extends DisplayObject {
     super();
   }
 
-  get __cursor(): string {
-    return "default";
+  get __isPointerCursor(): boolean {
+    return this.parent ? this.parent.__isPointerCursor : false;
   }
 
   tabEnabled = false;
