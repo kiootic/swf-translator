@@ -310,4 +310,13 @@ export class DisplayObject extends EventDispatcher {
   __copyParent = autorun(() => {
     this.__setEventParent(this.parent);
   });
+
+  __dispatchStageEvents = reaction(
+    () => this.stage,
+    (stage) => {
+      if (stage) {
+        this.dispatchEvent(new Event(Event.ADDED_TO_STAGE, false, false));
+      }
+    }
+  );
 }

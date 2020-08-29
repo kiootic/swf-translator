@@ -22,6 +22,14 @@ export class Stage extends DisplayObjectContainer {
   focus: InteractiveObject | null = null;
   quality: string = "HIGH";
 
+  get loaderInfo() {
+    return {
+      bytesTotal: 100,
+      bytesLoaded: 100,
+      url: window.location.href,
+    };
+  }
+
   @computed
   get stage() {
     return this;
