@@ -63,7 +63,7 @@ export class SimpleButton extends InteractiveObject {
   useHandCursor = true;
 
   get __cursor() {
-    return this.useHandCursor ? "pointer" : "default";
+    return this.useHandCursor ? "pointer" : super.__cursor;
   }
 
   __onFrameEnter() {
