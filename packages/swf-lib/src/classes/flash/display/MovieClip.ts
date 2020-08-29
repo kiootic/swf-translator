@@ -22,21 +22,28 @@ export class MovieClip extends Sprite {
     return this.__character?.numFrames ?? 1;
   }
 
-  __onFrameEnter() {
-    if (this.currentFrame !== this.#lastFrame) {
-      this.__character?.applyTo(this, this.#lastFrame, this.currentFrame);
+  #constructFrame = () => {
+    if (this.#lastFrame !== this.currentFrame) {
       this.#lastFrame = this.currentFrame;
+      this.__character?.applyTo(this, this.#lastFrame, this.currentFrame);
     }
+  };
 
-    super.__onFrameEnter();
-  }
-
-  __onFrameConstruct() {
+  #runFrameScript = () => {
     if (this.#scriptFrame !== this.currentFrame) {
       this.#scriptFrame = this.currentFrame;
       const frameScript = this.#frameScripts.get(this.#scriptFrame);
       frameScript?.();
     }
+  };
+
+  __onFrameEnter() {
+    this.#constructFrame();
+    super.__onFrameEnter();
+  }
+
+  __onFrameConstruct() {
+    this.#runFrameScript();
     super.__onFrameConstruct();
   }
 
@@ -78,6 +85,8 @@ export class MovieClip extends Sprite {
       this.currentFrame = frameNumber;
     }
     this.isPlaying = true;
+    this.#constructFrame();
+    this.#runFrameScript();
   }
 
   gotoAndStop(frame: unknown) {
@@ -86,6 +95,8 @@ export class MovieClip extends Sprite {
       this.currentFrame = frameNumber;
     }
     this.isPlaying = false;
+    this.#constructFrame();
+    this.#runFrameScript();
   }
 
   play() {
