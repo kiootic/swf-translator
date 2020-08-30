@@ -23,6 +23,12 @@ import { BitmapFilter } from "../filters/BitmapFilter";
 
 const tmpBounds = rect.create();
 
+interface CharacterInit {
+  parent: DisplayObjectContainer;
+  index: number;
+}
+let charInit: CharacterInit | null = null;
+
 export class DisplayObject extends EventDispatcher {
   __character: CharacterInstance | null = null;
   __depth: number = -1;
@@ -35,9 +41,19 @@ export class DisplayObject extends EventDispatcher {
   #needReRender = false;
   #renderTarget: RenderTarget | null = null;
 
+  static __initChar<T>(char: CharacterInit, fn: () => T): T {
+    charInit = char;
+    return fn();
+  }
+
   constructor() {
     super();
     this.transform = new Transform();
+
+    if (charInit) {
+      charInit.parent.addChildAt(this, charInit.index);
+      charInit = null;
+    }
   }
 
   readonly transform: Transform;

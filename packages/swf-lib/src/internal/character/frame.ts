@@ -36,9 +36,15 @@ export function executeFrameAction(
         }
 
         if (!character) {
-          character = library.instantiateCharacter(action.characterId);
-          character.__depth = action.depth;
-          container.addChildAt(character, index);
+          const { characterId, depth } = action;
+          character = DisplayObject.__initChar(
+            { parent: container, index },
+            () => {
+              const c = library.instantiateCharacter(characterId);
+              c.__depth = depth;
+              return c;
+            }
+          );
         }
       } else {
         character = children.find((o) => o.__depth === action.depth);
