@@ -6,9 +6,9 @@ import { RenderContext } from "../../../internal/render/RenderContext";
 export class BlurFilter extends BitmapFilter {
   private filter = new RenderBlurFilter();
 
-  blurX = 0;
-  blurY = 0;
-  quality = 1;
+  constructor(public blurX = 4.0, public blurY = 4.0, public quality = 1) {
+    super();
+  }
 
   get __padX() {
     this.syncValues();

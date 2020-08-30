@@ -6,8 +6,15 @@ export class Point {
   get x() {
     return this.__value[0];
   }
+  set x(value: number) {
+    this.__value[0] = value;
+  }
+
   get y() {
     return this.__value[1];
+  }
+  set y(value: number) {
+    this.__value[1] = value;
   }
 
   constructor(x = 0, y = 0) {

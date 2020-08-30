@@ -34,7 +34,10 @@ export class DisplayObjectContainer extends InteractiveObject {
     return child;
   }
 
-  @action
+  getChildByName(name: string) {
+    return this.__children.find((c) => c.name === name) ?? null;
+  }
+
   getChildAt(index: number) {
     return this.__children[index] ?? null;
   }
