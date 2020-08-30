@@ -8,7 +8,10 @@ import { Properties } from "../../__internal/Properties";
 import { Canvas } from "../../../internal/render/Canvas";
 import { Ticker } from "../../../internal/render/Ticker";
 import { Renderer } from "../../../internal/render/Renderer";
-import { MouseEvent } from "../events";
+import { Event } from "../events/Event";
+import { MouseEvent } from "../events/MouseEvent";
+import { KeyboardEvent } from "../events/KeyboardEvent";
+import { Keyboard } from "../ui";
 
 export class Stage extends DisplayObjectContainer {
   readonly __canvas = new Canvas();
@@ -58,6 +61,9 @@ export class Stage extends DisplayObjectContainer {
     this.__canvas.canvas.addEventListener("mouseup", this.#handleMouseEvent);
     this.__canvas.canvas.addEventListener("mouseleave", this.#handleMouseEvent);
     this.__canvas.canvas.addEventListener("click", this.#handleMouseEvent);
+    this.__canvas.canvas.addEventListener("keydown", this.#handleKeyboardEvent);
+    this.__canvas.canvas.addEventListener("keyup", this.#handleKeyboardEvent);
+    this.__canvas.canvas.addEventListener("blur", this.#handleFocusEvent);
   }
 
   __onFrame = () => {
@@ -163,5 +169,38 @@ export class Stage extends DisplayObjectContainer {
     } else {
       this.__canvas.cursor = "default";
     }
+  };
+
+  #handleKeyboardEvent = (sourceEvent: globalThis.KeyboardEvent) => {
+    const keyCode = Keyboard.codeMap[sourceEvent.code];
+    if (!keyCode) {
+      return;
+    }
+
+    let event: KeyboardEvent;
+    switch (sourceEvent.type) {
+      case "keydown":
+        event = new KeyboardEvent(KeyboardEvent.KEY_DOWN, true, false);
+        break;
+      case "keyup":
+        event = new KeyboardEvent(KeyboardEvent.KEY_UP, true, false);
+        break;
+      default:
+        return;
+    }
+    event.keyCode = keyCode;
+    (this.focus ?? this).dispatchEvent(event);
+  };
+
+  #handleFocusEvent = (sourceEvent: globalThis.FocusEvent) => {
+    let event: Event;
+    switch (sourceEvent.type) {
+      case "blur":
+        event = new Event(Event.DEACTIVATE, true, false);
+        break;
+      default:
+        return;
+    }
+    this.dispatchEvent(event);
   };
 }

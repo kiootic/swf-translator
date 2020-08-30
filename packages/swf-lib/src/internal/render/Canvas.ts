@@ -2,6 +2,11 @@ export class Canvas {
   readonly canvas = document.createElement("canvas");
   #cursor = "";
 
+  constructor() {
+    this.canvas.tabIndex = 0;
+    this.canvas.style.setProperty("outline", "none", "important");
+  }
+
   get width(): number {
     return this.canvas.width;
   }
