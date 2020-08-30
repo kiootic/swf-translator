@@ -23,16 +23,17 @@ import { BitmapFilter } from "../filters/BitmapFilter";
 
 const tmpBounds = rect.create();
 
-interface CharacterInit {
-  parent: DisplayObjectContainer;
-  index: number;
+interface CharacterInit<T> {
+  fn: (char: T) => void;
 }
-let charInit: CharacterInit | null = null;
+let charInit: CharacterInit<any> | null = null;
 
 export class DisplayObject extends EventDispatcher {
   __character: CharacterInstance | null = null;
   __depth: number = -1;
   __clipDepth: number = -1;
+
+  @observable.shallow
   readonly __renderObjects: RenderObject[] = [];
 
   #bounds = new Rectangle();
@@ -41,8 +42,8 @@ export class DisplayObject extends EventDispatcher {
   #needReRender = false;
   #renderTarget: RenderTarget | null = null;
 
-  static __initChar<T>(char: CharacterInit, fn: () => T): T {
-    charInit = char;
+  static __initChar<T>(fn: () => T, init: (char: T) => void): T {
+    charInit = { fn: init };
     return fn();
   }
 
@@ -51,7 +52,7 @@ export class DisplayObject extends EventDispatcher {
     this.transform = new Transform();
 
     if (charInit) {
-      charInit.parent.addChildAt(this, charInit.index);
+      charInit.fn(this);
       charInit = null;
     }
   }

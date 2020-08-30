@@ -8,6 +8,7 @@ import { DropShadowFilter } from "../../classes/flash/filters/DropShadowFilter";
 import {
   FrameAction,
   FrameActionKind,
+  FrameActionPlaceObject,
 } from "../../classes/__internal/character/Sprite";
 import { FilterID } from "../../classes/__internal/character/filter";
 import { AssetLibrary } from "../../classes/__internal/AssetLibrary";
@@ -35,115 +36,25 @@ export function executeFrameAction(
           }
         }
 
-        if (!character) {
+        if (character) {
+          setupCharacter(container, character, action, frame);
+        } else {
           const { characterId, depth } = action;
-          character = DisplayObject.__initChar(
-            { parent: container, index },
-            () => {
-              const c = library.instantiateCharacter(characterId);
-              c.__depth = depth;
-              return c;
+          DisplayObject.__initChar(
+            () => library.instantiateCharacter(characterId),
+            (char) => {
+              container.addChildAt(char, index);
+              char.__depth = depth;
+              setupCharacter(container, char, action, frame);
             }
           );
         }
       } else {
         character = children.find((o) => o.__depth === action.depth);
-      }
-
-      if (!character) {
-        break;
-      }
-
-      if (action.clipDepth != null) {
-        character.__clipDepth = action.clipDepth;
-      }
-
-      if (action.matrix != null) {
-        mat2d.copy(character.transform.matrix.__value, action.matrix);
-        character.transform.matrix.__value[4] /= 20;
-        character.transform.matrix.__value[5] /= 20;
-        character.transform.__reportMatrixUpdated();
-      } else if (frame === 1) {
-        mat2d.identity(character.transform.matrix.__value);
-        character.transform.__reportMatrixUpdated();
-      }
-
-      if (action.colorTransform != null) {
-        vec4.copy(
-          character.transform.colorTransform.__mul,
-          action.colorTransform.slice(0, 4) as vec4
-        );
-        vec4.copy(
-          character.transform.colorTransform.__add,
-          action.colorTransform.slice(4, 8) as vec4
-        );
-        character.transform.__reportColorTransformUpdated();
-      } else if (frame === 1) {
-        vec4.set(character.transform.colorTransform.__mul, 1, 1, 1, 1);
-        vec4.set(character.transform.colorTransform.__add, 0, 0, 0, 0);
-        character.transform.__reportColorTransformUpdated();
-      }
-
-      if (action.name != null) {
-        character.name = action.name;
-        (container as any)[character.name] = character;
-      }
-
-      if (action.filters != null) {
-        const filters: BitmapFilter[] = [];
-        for (const f of action.filters) {
-          switch (f.id) {
-            case FilterID.Blur: {
-              const filter = new BlurFilter();
-              filter.blurX = f.blurX;
-              filter.blurY = f.blurY;
-              filter.quality = f.passes;
-
-              filters.push(filter);
-              break;
-            }
-            case FilterID.DropShadow: {
-              const filter = new DropShadowFilter();
-              filter.color = f.color;
-              filter.blurX = f.blurX;
-              filter.blurY = f.blurY;
-              filter.angle = (f.angle * 180) / Math.PI;
-              filter.distance = f.distance;
-              filter.strength = f.strength;
-              filter.inner = f.inner;
-              filter.knockout = f.knockout;
-              filter.quality = f.passes;
-
-              filters.push(filter);
-              break;
-            }
-          }
-        }
-        character.filters = filters;
-      } else if (frame === 1) {
-        character.filters = [];
-      }
-
-      if (action.cacheAsBitmap != null) {
-        character.cacheAsBitmap = action.cacheAsBitmap;
-      } else if (frame === 1) {
-        character.cacheAsBitmap = false;
-      }
-
-      if (action.visible != null) {
-        character.visible = action.visible;
-      } else if (frame === 1) {
-        character.visible = true;
-      }
-
-      if (action.ratio != null) {
-        if (character instanceof MorphShape) {
-          character.__ratio = action.ratio;
-          character.__character?.applyTo(character);
+        if (character) {
+          setupCharacter(container, character, action, frame);
         }
       }
-      // TODO: blendMode
-
       break;
     }
 
@@ -157,4 +68,101 @@ export function executeFrameAction(
       break;
     }
   }
+}
+
+function setupCharacter(
+  container: DisplayObjectContainer,
+  character: DisplayObject,
+  action: FrameActionPlaceObject,
+  frame: number
+) {
+  if (action.clipDepth != null) {
+    character.__clipDepth = action.clipDepth;
+  }
+
+  if (action.matrix != null) {
+    mat2d.copy(character.transform.matrix.__value, action.matrix);
+    character.transform.matrix.__value[4] /= 20;
+    character.transform.matrix.__value[5] /= 20;
+    character.transform.__reportMatrixUpdated();
+  } else if (frame === 1) {
+    mat2d.identity(character.transform.matrix.__value);
+    character.transform.__reportMatrixUpdated();
+  }
+
+  if (action.colorTransform != null) {
+    vec4.copy(
+      character.transform.colorTransform.__mul,
+      action.colorTransform.slice(0, 4) as vec4
+    );
+    vec4.copy(
+      character.transform.colorTransform.__add,
+      action.colorTransform.slice(4, 8) as vec4
+    );
+    character.transform.__reportColorTransformUpdated();
+  } else if (frame === 1) {
+    vec4.set(character.transform.colorTransform.__mul, 1, 1, 1, 1);
+    vec4.set(character.transform.colorTransform.__add, 0, 0, 0, 0);
+    character.transform.__reportColorTransformUpdated();
+  }
+
+  if (action.name != null) {
+    character.name = action.name;
+    (container as any)[character.name] = character;
+  }
+
+  if (action.filters != null) {
+    const filters: BitmapFilter[] = [];
+    for (const f of action.filters) {
+      switch (f.id) {
+        case FilterID.Blur: {
+          const filter = new BlurFilter();
+          filter.blurX = f.blurX;
+          filter.blurY = f.blurY;
+          filter.quality = f.passes;
+
+          filters.push(filter);
+          break;
+        }
+        case FilterID.DropShadow: {
+          const filter = new DropShadowFilter();
+          filter.color = f.color;
+          filter.blurX = f.blurX;
+          filter.blurY = f.blurY;
+          filter.angle = (f.angle * 180) / Math.PI;
+          filter.distance = f.distance;
+          filter.strength = f.strength;
+          filter.inner = f.inner;
+          filter.knockout = f.knockout;
+          filter.quality = f.passes;
+
+          filters.push(filter);
+          break;
+        }
+      }
+    }
+    character.filters = filters;
+  } else if (frame === 1) {
+    character.filters = [];
+  }
+
+  if (action.cacheAsBitmap != null) {
+    character.cacheAsBitmap = action.cacheAsBitmap;
+  } else if (frame === 1) {
+    character.cacheAsBitmap = false;
+  }
+
+  if (action.visible != null) {
+    character.visible = action.visible;
+  } else if (frame === 1) {
+    character.visible = true;
+  }
+
+  if (action.ratio != null) {
+    if (character instanceof MorphShape) {
+      character.__ratio = action.ratio;
+      character.__character?.applyTo(character);
+    }
+  }
+  // TODO: blendMode
 }
