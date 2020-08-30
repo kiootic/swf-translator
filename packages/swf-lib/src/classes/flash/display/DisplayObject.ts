@@ -207,7 +207,13 @@ export class DisplayObject extends EventDispatcher {
   }
 
   hitTestObject(obj: DisplayObject): boolean {
-    return rect.intersects(this.__bounds.__rect, obj.__bounds.__rect);
+    rect.apply(
+      tmpBounds,
+      obj.__bounds.__rect,
+      obj.transform.__worldMatrixInverted
+    );
+    rect.apply(tmpBounds, tmpBounds, this.transform.__worldMatrix.__value);
+    return rect.intersects(this.__bounds.__rect, tmpBounds);
   }
 
   __onFrameEnter() {
