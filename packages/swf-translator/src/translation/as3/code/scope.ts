@@ -122,6 +122,12 @@ export class Scope {
         kind = VariableKind.Local;
         break;
       }
+      if (scope.methodDef) {
+        const names = new Set([...scope.methodDef.params.map((p) => p.name)]);
+        if (names.has(name)) {
+          return VariableKind.Local;
+        }
+      }
       if (scope.classDef) {
         const names = new Map<string, boolean>([
           ...scope.classDef.methods.map((m) => [m.name, m.isStatic] as const),
@@ -130,12 +136,6 @@ export class Scope {
         const isStatic = names.get(name);
         if (isStatic != null) {
           return isStatic ? VariableKind.Class : VariableKind.Instance;
-        }
-      }
-      if (scope.methodDef) {
-        const names = new Set([...scope.methodDef.params.map((p) => p.name)]);
-        if (names.has(name)) {
-          return VariableKind.Local;
         }
       }
 
