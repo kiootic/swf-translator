@@ -15,14 +15,17 @@ export class ShapeInstance implements CharacterInstance {
 
   constructor(readonly id: number, def: ShapeCharacter, lib: AssetLibrary) {
     this.sprites = def.contours.map((c) => makeShapeRenderObject(c, lib));
-    this.bounds = rect.scale(rect.create(), def.bounds, 1 / 20);
+    this.bounds = rect.create();
+    for (const def of this.sprites) {
+      rect.union(this.bounds, this.bounds, def.bounds);
+    }
   }
 
   applyTo(container: Shape) {
+    const objects: RenderObjectSprite[] = [];
     for (const s of this.sprites) {
-      container.__renderObjects.push(new RenderObjectSprite(s));
+      objects.push(new RenderObjectSprite(s));
     }
-    rect.copy(container.__bounds.__rect, this.bounds);
-    container.__reportBoundsChanged();
+    container.__node.setRenderObjects(objects, this.bounds);
   }
 }

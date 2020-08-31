@@ -1,27 +1,17 @@
-import {
-  observable,
-  runInAction,
-  createAtom,
-  autorun,
-  reaction,
-  computed,
-} from "mobx";
-import { mat2d, vec4, mat3, vec2 } from "gl-matrix";
+import { mat2d, vec2 } from "gl-matrix";
 import { CharacterInstance } from "../../../internal/character/CharacterInstance";
-import { RenderObject } from "../../../internal/render/RenderObject";
-import { RenderContext } from "../../../internal/render/RenderContext";
-import { RenderTarget } from "../../../internal/render/RenderTarget";
 import { rect } from "../../../internal/math/rect";
 import type { DisplayObjectContainer } from "./DisplayObjectContainer";
 import type { Stage } from "./Stage";
 import { EventDispatcher } from "../events/EventDispatcher";
 import { Event } from "../events/Event";
 import { Transform } from "../geom/Transform";
-import { Rectangle } from "../geom/Rectangle";
 import { Point } from "../geom/Point";
 import { BitmapFilter } from "../filters/BitmapFilter";
+import { SceneNode } from "../../../internal/render/SceneNode";
 
-const tmpBounds = rect.create();
+const tmpRect = rect.create();
+const tmpVec2 = vec2.create();
 
 interface CharacterInit<T> {
   fn: (char: T) => void;
@@ -33,14 +23,7 @@ export class DisplayObject extends EventDispatcher {
   __depth: number = -1;
   __clipDepth: number = -1;
 
-  @observable.shallow
-  readonly __renderObjects: RenderObject[] = [];
-
-  #bounds = new Rectangle();
-  #boundsAtom = createAtom("bounds");
-
-  #needReRender = false;
-  #renderTarget: RenderTarget | null = null;
+  readonly __node = new SceneNode();
 
   static __initChar<T>(fn: () => T, init: (char: T) => void): T {
     charInit = { fn: init };
@@ -50,6 +33,7 @@ export class DisplayObject extends EventDispatcher {
   constructor() {
     super();
     this.transform = new Transform();
+    this.transform.__setNode(this.__node);
 
     if (charInit) {
       charInit.fn(this);
@@ -59,118 +43,140 @@ export class DisplayObject extends EventDispatcher {
 
   readonly transform: Transform;
 
-  get __bounds() {
-    this.#boundsAtom.reportObserved();
-    return this.#bounds;
-  }
-  set __bounds(value) {
-    this.#bounds = value;
-    this.#boundsAtom.reportChanged();
-  }
-
   name: string = "";
 
-  @observable
-  visible = true;
+  get visible() {
+    return this.__node.visible;
+  }
+  set visible(value) {
+    this.__node.visible = value;
+  }
 
-  @observable
-  parent: DisplayObjectContainer | null = null;
+  private __parent: DisplayObjectContainer | null = null;
 
-  @computed
+  get parent() {
+    return this.__parent;
+  }
+  set parent(value) {
+    const oldStage = this.stage;
+    this.__parent = value;
+    const newStage = this.stage;
+
+    if (newStage && newStage !== oldStage) {
+      this.__onAddToStage();
+    }
+    this.__setEventParent(this.parent);
+  }
+
   get stage(): Stage | null {
     return this.parent?.stage ?? null;
   }
 
-  @observable
-  __cacheAsBitmap: boolean = false;
+  private __filters: BitmapFilter[] = [];
 
-  @observable
-  filters: BitmapFilter[] = [];
+  get filters() {
+    return this.__filters;
+  }
+
+  set filters(value) {
+    this.__filters = value;
+    this.__node.filters = value.map((f) => f.__filter);
+    this.__node.markRenderDirty();
+  }
 
   get cacheAsBitmap() {
-    return this.__cacheAsBitmap || this.filters.length > 0;
+    return this.__node.cacheAsBitmap || this.__node.filters.length > 0;
   }
   set cacheAsBitmap(value) {
-    this.__cacheAsBitmap = value;
+    this.__node.cacheAsBitmap = value;
   }
 
   get x(): number {
-    return this.transform.matrix.tx;
+    return this.__node.transformLocal[4];
   }
   set x(value: number) {
-    runInAction(() => {
-      this.transform.matrix.tx = value;
-      this.transform.__reportMatrixUpdated();
-    });
+    if (this.__node.transformLocal[4] !== value) {
+      this.__node.transformLocal[4] = value;
+      this.__node.markTransformDirty();
+    }
   }
 
   get y(): number {
-    return this.transform.matrix.ty;
+    return this.__node.transformLocal[5];
   }
   set y(value: number) {
-    runInAction(() => {
-      this.transform.matrix.ty = value;
-      this.transform.__reportMatrixUpdated();
-    });
+    if (this.__node.transformLocal[5] !== value) {
+      this.__node.transformLocal[5] = value;
+      this.__node.markTransformDirty();
+    }
   }
 
   get scaleX(): number {
-    return this.transform.matrix.a;
+    return this.__node.transformLocal[0];
   }
   set scaleX(value: number) {
-    runInAction(() => {
-      this.transform.matrix.a = value;
-      this.transform.__reportMatrixUpdated();
-    });
+    if (this.__node.transformLocal[0] !== value) {
+      this.__node.transformLocal[0] = value;
+      this.__node.markTransformDirty();
+    }
   }
 
   get scaleY(): number {
-    return this.transform.matrix.d;
+    return this.__node.transformLocal[3];
   }
   set scaleY(value: number) {
-    runInAction(() => {
-      this.transform.matrix.d = value;
-      this.transform.__reportMatrixUpdated();
-    });
+    if (this.__node.transformLocal[3] !== value) {
+      this.__node.transformLocal[3] = value;
+      this.__node.markTransformDirty();
+    }
   }
 
   get rotation(): number {
-    const angle = Math.atan2(this.transform.matrix.b, this.transform.matrix.d);
+    const angle = Math.atan2(
+      this.__node.transformLocal[1],
+      this.__node.transformLocal[3]
+    );
     return (angle * 180) / Math.PI;
   }
   set rotation(value: number) {
-    runInAction(() => {
-      const rotation = this.rotation;
-      const delta = ((value - rotation) / 180) * Math.PI;
+    const rotation = this.rotation;
+    const delta = ((value - rotation) / 180) * Math.PI;
+    if (delta !== 0) {
       mat2d.rotate(
-        this.transform.matrix.__value,
-        this.transform.matrix.__value,
+        this.__node.transformLocal,
+        this.__node.transformLocal,
         delta
       );
-      this.transform.__reportMatrixUpdated();
-    });
+      this.__node.markTransformDirty();
+    }
   }
 
   get width(): number {
-    return this.__bounds.__rect[2] * this.transform.matrix.a;
+    this.__node.ensureLocalBounds();
+    return this.__node.boundsLocal[2] * this.__node.transformLocal[0];
   }
   set width(value: number) {
-    runInAction(() => {
-      this.transform.matrix.a =
-        this.__bounds.__rect[2] === 0 ? 1 : value / this.__bounds.__rect[2];
-      this.transform.__reportMatrixUpdated();
-    });
+    this.__node.ensureLocalBounds();
+    const scaleX =
+      this.__node.boundsLocal[2] === 0 ? 1 : value / this.__node.boundsLocal[2];
+    if (this.__node.transformLocal[0] !== scaleX) {
+      this.__node.transformLocal[0] = scaleX;
+      this.__node.markTransformDirty();
+    }
   }
 
   get height(): number {
-    return this.__bounds.__rect[3] * this.transform.matrix.d;
+    this.__node.ensureLocalBounds();
+    return this.__node.boundsLocal[3] * this.__node.transformLocal[3];
   }
   set height(value: number) {
-    runInAction(() => {
-      this.transform.matrix.d =
-        this.__bounds.__rect[3] === 0 ? 1 : value / this.__bounds.__rect[3];
-      this.transform.__reportMatrixUpdated();
-    });
+    this.__node.ensureLocalBounds();
+    const scaleY =
+      this.__node.boundsLocal[3] === 0 ? 1 : value / this.__node.boundsLocal[3];
+    if (this.__node.transformLocal[3] !== scaleY) {
+      this.__node.transformLocal[3] = scaleY;
+      this.__node.markTransformDirty();
+    }
   }
 
   get mouseX(): number {
@@ -178,9 +184,8 @@ export class DisplayObject extends EventDispatcher {
     if (!stage) {
       return 0;
     }
-    return this.globalToLocal(
-      new Point(stage.__mousePosition[0], stage.__mousePosition[1])
-    ).x;
+    this.__globalToLocal(stage.__mousePosition, tmpVec2, true);
+    return tmpVec2[0];
   }
 
   get mouseY(): number {
@@ -188,33 +193,41 @@ export class DisplayObject extends EventDispatcher {
     if (!stage) {
       return 0;
     }
-    return this.globalToLocal(
-      new Point(stage.__mousePosition[0], stage.__mousePosition[1])
-    ).y;
+    this.__globalToLocal(stage.__mousePosition, tmpVec2, true);
+    return tmpVec2[1];
   }
 
-  globalToLocal(point: Point, __out?: Point): Point {
-    const local = __out ?? new Point();
-    vec2.transformMat2d(
-      local.__value,
-      point.__value,
-      this.transform.__worldMatrixInverted
-    );
+  __globalToLocal(pt: vec2, out: vec2, ensure: boolean) {
+    if (ensure) {
+      this.__node.ensureWorldTransform();
+    }
+    vec2.transformMat2d(out, pt, this.__node.transformWorldInvert);
+  }
+
+  globalToLocal(point: Point): Point {
+    const local = new Point();
+    this.__globalToLocal(point.__value, local.__value, true);
     return local;
   }
 
   hitTestPoint(x: number, y: number, shapeFlag = false): boolean {
-    return rect.contains(this.__bounds.__rect, x, y);
+    this.__node.ensureWorldTransform();
+    vec2.transformMat2d(tmpVec2, [x, y], this.__node.transformWorld);
+    return this.__node.hitTest(tmpVec2, shapeFlag);
   }
 
   hitTestObject(obj: DisplayObject): boolean {
+    obj.__node.ensureWorldTransform();
+    obj.__node.ensureLocalBounds();
+    this.__node.ensureWorldTransform();
+    this.__node.ensureLocalBounds();
     rect.apply(
-      tmpBounds,
-      obj.__bounds.__rect,
-      obj.transform.__worldMatrixInverted
+      tmpRect,
+      obj.__node.boundsLocal,
+      obj.__node.transformWorldInvert
     );
-    rect.apply(tmpBounds, tmpBounds, this.transform.__worldMatrix.__value);
-    return rect.intersects(this.__bounds.__rect, tmpBounds);
+    rect.apply(tmpRect, tmpRect, this.__node.transformWorld);
+    return rect.intersects(tmpRect, this.__node.boundsLocal);
   }
 
   __onFrameEnter() {
@@ -225,121 +238,7 @@ export class DisplayObject extends EventDispatcher {
 
   __onFrameExit() {}
 
-  __render(ctx: RenderContext) {
-    rect.apply(
-      tmpBounds,
-      this.#bounds.__rect,
-      this.transform.__worldMatrix.__value
-    );
-
-    if (!this.visible || !rect.intersects(tmpBounds, ctx.bounds)) {
-      return;
-    }
-
-    const [x, y, width, height] = this.#bounds.__rect;
-    if (this.cacheAsBitmap && width > 0 && height > 0) {
-      let target = this.#renderTarget;
-      if (!target) {
-        target = new RenderTarget();
-        this.#renderTarget = target;
-        this.#needReRender = true;
-      }
-
-      let padX = 4,
-        padY = 4;
-      for (const filter of this.filters) {
-        padX = Math.max(padX, filter.__padX);
-        padY = Math.max(padY, filter.__padY);
-      }
-      const scaleX = Math.abs(this.transform.__worldMatrix.a);
-      const scaleY = Math.abs(this.transform.__worldMatrix.d);
-      if (
-        target.resize(ctx.gl, this.#bounds.__rect, padX, padY, scaleX, scaleY)
-      ) {
-        this.#needReRender = true;
-      }
-
-      if (this.#needReRender) {
-        ctx.renderer.renderToTarget(target, (ctx) => {
-          this.__doRender(ctx);
-        });
-        for (const filter of this.filters) {
-          filter.__apply(target, ctx);
-        }
-        this.#needReRender = false;
-      }
-
-      mat2d.translate(
-        target.renderMatrix,
-        this.transform.__worldMatrix.__value,
-        [x, y]
-      );
-      target.renderMatrix[4] = Math.floor(target.renderMatrix[4]);
-      target.renderMatrix[5] = Math.floor(target.renderMatrix[5]);
-      vec4.copy(target.colorMul, this.transform.__worldColorTransform.__mul);
-      vec4.copy(target.colorAdd, this.transform.__worldColorTransform.__add);
-      target.renderTo(ctx);
-
-      return;
-    } else if (this.#renderTarget) {
-      this.#renderTarget.delete();
-      this.#renderTarget = null;
-    }
-
-    this.__doRender(ctx);
+  __onAddToStage() {
+    this.dispatchEvent(new Event(Event.ADDED_TO_STAGE, false, false));
   }
-
-  __doRender(ctx: RenderContext) {
-    for (const o of this.__renderObjects) {
-      ctx.render(o);
-    }
-  }
-
-  __reportBoundsChanged() {
-    this.#boundsAtom.reportChanged();
-  }
-
-  __reportDirty() {
-    runInAction(() => {
-      let obj: DisplayObject | null = this.parent;
-      while (obj) {
-        if (obj.cacheAsBitmap) {
-          obj.#needReRender = true;
-          break;
-        }
-        obj = obj.parent;
-      }
-    });
-  }
-
-  __filterMarkReRender = reaction(
-    () => this.filters,
-    () => {
-      if (this.cacheAsBitmap) {
-        this.#needReRender = true;
-      }
-    }
-  );
-
-  __cleanupRenderTarget = autorun(() => {
-    if (!this.parent) {
-      if (this.#renderTarget) {
-        this.#renderTarget.delete();
-        this.#renderTarget = null;
-      }
-    }
-  });
-
-  __copyParent = autorun(() => {
-    this.__setEventParent(this.parent);
-  });
-
-  __dispatchStageEvents = reaction(
-    () => this.stage,
-    (stage) => {
-      if (stage) {
-        this.dispatchEvent(new Event(Event.ADDED_TO_STAGE, false, false));
-      }
-    }
-  );
 }

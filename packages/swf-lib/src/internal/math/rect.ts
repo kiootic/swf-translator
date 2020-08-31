@@ -1,13 +1,13 @@
 import { mat2d, vec2 } from "gl-matrix";
 
-export type rect = [number, number, number, number];
+export type rect = Float32Array;
 
 export const rect = {
   create(): rect {
-    return [0, 0, 0, 0];
+    return Float32Array.of(0, 0, 0, 0);
   },
   fromValues(x: number, y: number, width: number, height: number): rect {
-    return [x, y, width, height];
+    return Float32Array.of(x, y, width, height);
   },
   copy(out: rect, rect: rect) {
     out[0] = rect[0];

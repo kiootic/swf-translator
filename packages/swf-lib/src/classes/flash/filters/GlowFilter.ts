@@ -1,44 +1,72 @@
 import { BitmapFilter } from "./BitmapFilter";
 import { DropShadowFilter as RenderDropShadowFilter } from "../../../internal/render/filters/DropShadowFilter";
-import { RenderTarget } from "../../../internal/render/RenderTarget";
-import { RenderContext } from "../../../internal/render/RenderContext";
 
 export class GlowFilter extends BitmapFilter {
-  private filter = new RenderDropShadowFilter();
+  readonly __filter = new RenderDropShadowFilter();
+
+  alpha: number;
+  inner: boolean;
+
+  get color() {
+    return this.__filter.color;
+  }
+  set color(value) {
+    this.__filter.color = value;
+  }
+
+  get blurX() {
+    return this.__filter.blurX;
+  }
+  set blurX(value) {
+    this.__filter.blurX = value;
+  }
+
+  get blurY() {
+    return this.__filter.blurY;
+  }
+  set blurY(value) {
+    this.__filter.blurY = value;
+  }
+
+  get quality() {
+    return this.__filter.passes;
+  }
+  set quality(value) {
+    this.__filter.passes = value;
+  }
+
+  get strength() {
+    return this.__filter.strength;
+  }
+  set strength(value) {
+    this.__filter.strength = value;
+  }
+
+  get knockout() {
+    return this.__filter.knockout;
+  }
+  set knockout(value) {
+    this.__filter.knockout = value;
+  }
 
   constructor(
-    public color = 0xff0000,
-    public alpha = 1.0,
-    public blurX = 6.0,
-    public blurY = 6.0,
-    public strength = 2,
-    public quality = 1,
-    public inner = false,
-    public knockout = false
+    color = 0xff0000,
+    alpha = 1.0,
+    blurX = 6.0,
+    blurY = 6.0,
+    strength = 2,
+    quality = 1,
+    inner = false,
+    knockout = false
   ) {
     super();
-  }
-
-  get __padX() {
-    this.syncValues();
-    return this.filter.padX;
-  }
-  get __padY() {
-    this.syncValues();
-    return this.filter.padY;
-  }
-
-  private syncValues() {
-    this.filter.color = this.color;
-    this.filter.blurX = this.blurX;
-    this.filter.blurY = this.blurY;
-    this.filter.passes = this.quality;
-    this.filter.strength = this.strength;
-    this.filter.knockout = this.knockout;
-  }
-
-  __apply(target: RenderTarget, ctx: RenderContext) {
-    this.syncValues();
-    ctx.renderer.applyFilter(target, this.filter);
+    this.color = color;
+    this.alpha = alpha;
+    this.blurX = blurX;
+    this.blurY = blurY;
+    this.strength = strength;
+    this.quality = quality;
+    this.inner = inner;
+    this.knockout = knockout;
   }
 }

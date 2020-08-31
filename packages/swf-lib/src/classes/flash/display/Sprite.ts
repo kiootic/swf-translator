@@ -1,6 +1,5 @@
 import { DisplayObjectContainer } from "./DisplayObjectContainer";
 import { SpriteInstance } from "../../../internal/character/SpriteInstance";
-import { observable } from "mobx";
 
 export class Sprite extends DisplayObjectContainer {
   static __character?: SpriteInstance;

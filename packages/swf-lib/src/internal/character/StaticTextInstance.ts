@@ -21,7 +21,11 @@ export class StaticTextInstance implements CharacterInstance {
     text: StaticTextCharacter,
     lib: AssetLibrary
   ) {
-    this.bounds = rect.scale(rect.create(), text.bounds, 1 / 20);
+    this.bounds = rect.scale(
+      rect.create(),
+      rect.fromValues(...text.bounds),
+      1 / 20
+    );
 
     const matrix = mat2d.fromValues(...text.matrix);
     matrix[4] /= 20;
@@ -104,10 +108,10 @@ export class StaticTextInstance implements CharacterInstance {
   }
 
   applyTo(staticText: StaticText) {
+    const objects: RenderObjectSprite[] = [];
     for (const s of this.sprites) {
-      staticText.__renderObjects.push(new RenderObjectSprite(s));
+      objects.push(new RenderObjectSprite(s));
     }
-    rect.copy(staticText.__bounds.__rect, this.bounds);
-    staticText.__reportBoundsChanged();
+    staticText.__node.setRenderObjects(objects, this.bounds);
   }
 }

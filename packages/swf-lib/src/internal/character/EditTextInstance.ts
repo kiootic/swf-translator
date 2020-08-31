@@ -8,6 +8,7 @@ import { Rectangle } from "../../classes/flash/geom";
 
 export class EditTextInstance implements CharacterInstance {
   readonly def: EditTextCharacter;
+  readonly layoutBounds: rect;
 
   constructor(
     readonly id: number,
@@ -16,13 +17,17 @@ export class EditTextInstance implements CharacterInstance {
   ) {
     this.def = {
       ...text,
-      bounds: rect.scale(rect.create(), text.bounds, 1 / 20),
       fontHeight: text.fontHeight && text.fontHeight / 20,
       leftMargin: text.leftMargin && text.leftMargin / 20,
       rightMargin: text.rightMargin && text.rightMargin / 20,
       indent: text.indent && text.indent / 20,
       leading: text.leading && text.leading / 20,
     };
+    this.layoutBounds = rect.scale(
+      rect.create(),
+      rect.fromValues(...text.bounds),
+      1 / 20
+    );
   }
 
   applyTo(textField: TextField) {
@@ -32,7 +37,7 @@ export class EditTextInstance implements CharacterInstance {
       ? TextFieldType.DYNAMIC
       : TextFieldType.INPUT;
     textField.selectable = !this.def.noSelect;
-    textField.__bounds = new Rectangle(...this.def.bounds);
+    rect.copy(textField.__container.layoutBounds, this.layoutBounds);
 
     switch (this.def.align) {
       case 0:

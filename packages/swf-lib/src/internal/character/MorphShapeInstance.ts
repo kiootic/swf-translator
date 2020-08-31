@@ -23,10 +23,12 @@ export class MorphShapeInstance implements CharacterInstance {
     lib: AssetLibrary
   ) {
     for (const [ratio, shape] of def.frames) {
-      this.frames.set(ratio, {
-        sprites: shape.contours.map((c) => makeShapeRenderObject(c, lib)),
-        bounds: rect.scale(rect.create(), shape.bounds, 1 / 20),
-      });
+      const sprites = shape.contours.map((c) => makeShapeRenderObject(c, lib));
+      const bounds = rect.create();
+      for (const def of sprites) {
+        rect.union(bounds, bounds, def.bounds);
+      }
+      this.frames.set(ratio, { sprites, bounds });
     }
   }
 
@@ -39,12 +41,10 @@ export class MorphShapeInstance implements CharacterInstance {
       return;
     }
 
-    container.__renderObjects = [];
+    const objects: RenderObjectSprite[] = [];
     for (const s of frame.sprites) {
-      container.__renderObjects.push(new RenderObjectSprite(s));
+      objects.push(new RenderObjectSprite(s));
     }
-    rect.copy(container.__bounds.__rect, frame.bounds);
-    container.__reportBoundsChanged();
-    container.__dirtyRender = true;
+    container.__node.setRenderObjects(objects, frame.bounds);
   }
 }

@@ -1,17 +1,14 @@
-import { observable } from "mobx";
 import { Sprite } from "./Sprite";
 
 export type MovieClipT<T> = MovieClip & T;
 
 export class MovieClip extends Sprite {
-  #lastFrame = 1;
-  #frameScripts = new Map<number, () => void>();
-  #scriptFrame = 0;
+  __lastFrame = 1;
+  __frameScripts = new Map<number, () => void>();
+  __scriptFrame = 0;
 
-  @observable
   currentFrame = 1;
 
-  @observable
   isPlaying = true;
 
   constructor() {
@@ -22,28 +19,28 @@ export class MovieClip extends Sprite {
     return this.__character?.numFrames ?? 1;
   }
 
-  #constructFrame = () => {
-    if (this.#lastFrame !== this.currentFrame) {
-      this.#lastFrame = this.currentFrame;
-      this.__character?.applyTo(this, this.#lastFrame, this.currentFrame);
+  __constructFrame() {
+    if (this.__lastFrame !== this.currentFrame) {
+      this.__character?.applyTo(this, this.__lastFrame, this.currentFrame);
+      this.__lastFrame = this.currentFrame;
     }
-  };
+  }
 
-  #runFrameScript = () => {
-    if (this.#scriptFrame !== this.currentFrame) {
-      this.#scriptFrame = this.currentFrame;
-      const frameScript = this.#frameScripts.get(this.#scriptFrame);
+  __runFrameScript() {
+    if (this.__scriptFrame !== this.currentFrame) {
+      this.__scriptFrame = this.currentFrame;
+      const frameScript = this.__frameScripts.get(this.__scriptFrame);
       frameScript?.();
     }
-  };
+  }
 
   __onFrameEnter() {
-    this.#constructFrame();
+    this.__constructFrame();
     super.__onFrameEnter();
   }
 
   __onFrameConstruct() {
-    this.#runFrameScript();
+    this.__runFrameScript();
     super.__onFrameConstruct();
   }
 
@@ -60,14 +57,14 @@ export class MovieClip extends Sprite {
 
   addFrameScript(...args: unknown[]) {
     for (let i = 0; i < args.length; i += 2) {
-      this.#frameScripts.set(
+      this.__frameScripts.set(
         (args[i] as number) + 1,
         args[i + 1] as () => void
       );
     }
   }
 
-  #resolveFrame = (frameId: unknown): number | null => {
+  __resolveFrame(frameId: unknown): number | null {
     const frameNumber = Number(frameId);
     if (!isNaN(frameNumber)) {
       return frameNumber;
@@ -77,26 +74,26 @@ export class MovieClip extends Sprite {
       return frame.frame;
     }
     return null;
-  };
+  }
 
   gotoAndPlay(frame: unknown) {
-    const frameNumber = this.#resolveFrame(frame);
+    const frameNumber = this.__resolveFrame(frame);
     if (frameNumber) {
       this.currentFrame = frameNumber;
     }
     this.isPlaying = true;
-    this.#constructFrame();
-    this.#runFrameScript();
+    this.__constructFrame();
+    this.__runFrameScript();
   }
 
   gotoAndStop(frame: unknown) {
-    const frameNumber = this.#resolveFrame(frame);
+    const frameNumber = this.__resolveFrame(frame);
     if (frameNumber) {
       this.currentFrame = frameNumber;
     }
     this.isPlaying = false;
-    this.#constructFrame();
-    this.#runFrameScript();
+    this.__constructFrame();
+    this.__runFrameScript();
   }
 
   play() {

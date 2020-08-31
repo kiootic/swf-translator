@@ -1,17 +1,12 @@
-import { mat2d, vec4 } from "gl-matrix";
-import { autorun, observable, runInAction } from "mobx";
 import { Container } from "../../__internal/text/Container";
 import { InteractiveObject } from "../display/InteractiveObject";
 import { EditTextInstance } from "../../../internal/character/EditTextInstance";
-import { RenderObjectSprite } from "../../../internal/render/objects/RenderObjectSprite";
 import { TextFieldType } from "./TextFieldType";
-import { rect } from "../../../internal/math/rect";
 
 export class TextField extends InteractiveObject {
   static __character?: EditTextInstance;
 
   declare __character: EditTextInstance | null;
-  declare __renderObjects: RenderObjectSprite[];
 
   constructor() {
     super();
@@ -21,15 +16,10 @@ export class TextField extends InteractiveObject {
     this.__character?.applyTo(this);
   }
 
-  readonly __container = new Container();
+  readonly __container = new Container(this.__node);
 
-  @observable
-  __dirtyRender = false;
-
-  @observable
   type: TextFieldType = TextFieldType.DYNAMIC;
 
-  @observable
   selectable = true;
 
   get wordWrap() {
@@ -64,35 +54,13 @@ export class TextField extends InteractiveObject {
     return this.__container.text;
   }
   set text(value) {
-    this.__container.setText(value);
+    this.__container.text = value;
   }
 
   get htmlText() {
     return this.__container.htmlText;
   }
   set htmlText(value) {
-    this.__container.setHTMLText(value);
+    this.__container.htmlText = value;
   }
-
-  #copyBounds = autorun(() => {
-    this.__container.bounds = rect.copy(rect.create(), this.__bounds.__rect);
-  });
-
-  #copyRenderObjects = autorun(() => {
-    this.__renderObjects = this.__container.renderObjects;
-    this.__dirtyRender = true;
-  });
-
-  #updateRenderMatrix = autorun(() => {
-    if (this.__dirtyRender) {
-      this.__dirtyRender = false;
-    }
-    const matrix = this.transform.__worldMatrix.__value;
-    const colorTransform = this.transform.__worldColorTransform;
-    for (const obj of this.__renderObjects) {
-      mat2d.copy(obj.renderMatrix, matrix);
-      vec4.copy(obj.colorMul, colorTransform.__mul);
-      vec4.copy(obj.colorAdd, colorTransform.__add);
-    }
-  });
 }

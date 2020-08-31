@@ -1,4 +1,3 @@
-import { runInAction, computed } from "mobx";
 import { vec2 } from "gl-matrix";
 import { DisplayObject } from "./DisplayObject";
 import { DisplayObjectContainer } from "./DisplayObjectContainer";
@@ -33,7 +32,6 @@ export class Stage extends DisplayObjectContainer {
     };
   }
 
-  @computed
   get stage() {
     return this;
   }
@@ -67,18 +65,21 @@ export class Stage extends DisplayObjectContainer {
   }
 
   __onFrame = () => {
-    runInAction(() => this.__onFrameEnter());
-    runInAction(() => this.__onFrameConstruct());
-    runInAction(() => this.__onFrameExit());
+    this.__onFrameEnter();
+    this.__onFrameConstruct();
+    this.__onFrameExit();
 
+    this.__node.updateWorldTransform();
+    this.__node.updateWorldColorTransform();
     this.__renderer.renderFrame((ctx) => {
-      this.__render(ctx);
+      this.__node.render(ctx);
     });
   };
 
   __hitTestObject(x: number, y: number): InteractiveObject | null {
-    const globalPoint = new Point(x, y);
-    const childPoint = new Point();
+    const pt = vec2.fromValues(x, y);
+    this.__node.updateWorldTransform();
+
     const hitTest = (target: InteractiveObject): InteractiveObject | null => {
       if (!(target instanceof DisplayObjectContainer)) {
         return target;
@@ -92,8 +93,7 @@ export class Stage extends DisplayObjectContainer {
           continue;
         }
 
-        child.globalToLocal(globalPoint, childPoint);
-        if (!child.hitTestPoint(childPoint.x, childPoint.y)) {
+        if (!child.__node.hitTest(pt, false)) {
           continue;
         }
 

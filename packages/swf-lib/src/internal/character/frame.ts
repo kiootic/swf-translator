@@ -81,29 +81,29 @@ function setupCharacter(
   }
 
   if (action.matrix != null) {
-    mat2d.copy(character.transform.matrix.__value, action.matrix);
-    character.transform.matrix.__value[4] /= 20;
-    character.transform.matrix.__value[5] /= 20;
-    character.transform.__reportMatrixUpdated();
+    mat2d.copy(character.__node.transformLocal, action.matrix);
+    character.__node.transformLocal[4] /= 20;
+    character.__node.transformLocal[5] /= 20;
+    character.__node.markTransformDirty();
   } else if (frame === 1) {
     mat2d.identity(character.transform.matrix.__value);
-    character.transform.__reportMatrixUpdated();
+    character.__node.markTransformDirty();
   }
 
   if (action.colorTransform != null) {
     vec4.copy(
-      character.transform.colorTransform.__mul,
+      character.__node.colorTransformLocalMul,
       action.colorTransform.slice(0, 4) as vec4
     );
     vec4.copy(
-      character.transform.colorTransform.__add,
+      character.__node.colorTransformLocalAdd,
       action.colorTransform.slice(4, 8) as vec4
     );
-    character.transform.__reportColorTransformUpdated();
+    character.__node.markColorTransformDirty();
   } else if (frame === 1) {
-    vec4.set(character.transform.colorTransform.__mul, 1, 1, 1, 1);
-    vec4.set(character.transform.colorTransform.__add, 0, 0, 0, 0);
-    character.transform.__reportColorTransformUpdated();
+    vec4.set(character.__node.colorTransformLocalMul, 1, 1, 1, 1);
+    vec4.set(character.__node.colorTransformLocalAdd, 0, 0, 0, 0);
+    character.__node.markColorTransformDirty();
   }
 
   if (action.name != null) {

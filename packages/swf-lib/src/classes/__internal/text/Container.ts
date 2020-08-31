@@ -1,62 +1,54 @@
-import { action, autorun, computed, observable } from "mobx";
 import { TextFormat } from "../../flash/text/TextFormat";
 import { TextFormatAlign } from "../../flash/text";
-import { RenderObjectSprite } from "../../../internal/render/objects/RenderObjectSprite";
 import { TextSegment } from "./TextSegment";
 import { layout } from "./layout";
 import { rect } from "../../../internal/math/rect";
+import { SceneNode } from "../../../internal/render/SceneNode";
 
 const htmlParser = new DOMParser();
 
 export class Container {
-  @observable.shallow
   segments: TextSegment[] = [];
 
-  @observable
   readonly htmlRoot = htmlParser.parseFromString("<root />", "text/xml")
     .documentElement;
 
-  @observable
   defaultTextFormat = new TextFormat();
 
-  @observable
   wordWrap = false;
 
-  @observable
   multiline = false;
 
-  @observable.ref
-  bounds: rect = rect.create();
+  readonly layoutBounds = rect.create();
 
-  @observable.ref
-  textBounds: rect = rect.create();
+  constructor(readonly node: SceneNode) {}
 
-  @observable.ref
-  renderObjects: RenderObjectSprite[] = [];
+  private __text = "";
 
-  @computed
-  get text(): string {
-    return this.segments.map((s) => s.text).join("");
+  get text() {
+    return this.__text;
+  }
+  set text(value) {
+    if (this.__text !== value) {
+      this.htmlRoot.textContent = value;
+      this.parseHTML();
+    }
   }
 
-  @computed
-  get htmlText(): string {
-    return this.htmlRoot.innerHTML;
+  private __htmlText = "";
+
+  get htmlText() {
+    return this.__htmlText;
+  }
+  set htmlText(value) {
+    if (this.__htmlText !== value) {
+      try {
+        this.htmlRoot.innerHTML = value;
+      } catch {}
+      this.parseHTML();
+    }
   }
 
-  setText(text: string) {
-    this.htmlRoot.textContent = text;
-    this.parseHTML();
-  }
-
-  setHTMLText(html: string) {
-    try {
-      this.htmlRoot.innerHTML = html;
-    } catch {}
-    this.parseHTML();
-  }
-
-  @action
   parseHTML() {
     const walker = this.htmlRoot.ownerDocument.createTreeWalker(
       this.htmlRoot,
@@ -175,16 +167,18 @@ export class Container {
     }
 
     this.segments = segments.filter((s) => s.text.length > 0);
+    this.__text = this.htmlRoot.textContent ?? "";
+    this.__htmlText = this.htmlRoot.innerHTML;
+    this.layout();
   }
 
-  #layout = autorun(() => {
+  layout() {
     const result = layout(
       this.segments,
-      this.bounds,
+      this.layoutBounds,
       this.wordWrap,
       this.multiline
     );
-    this.textBounds = result.bounds;
-    this.renderObjects = result.renderObjects;
-  });
+    this.node.setRenderObjects(result.renderObjects, this.layoutBounds);
+  }
 }

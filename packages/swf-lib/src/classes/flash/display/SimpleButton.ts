@@ -1,13 +1,9 @@
-import { autorun, observable, computed, reaction, runInAction } from "mobx";
 import { DisplayObject } from "./DisplayObject";
 import { InteractiveObject } from "./InteractiveObject";
-import { Transform } from "../geom/Transform";
 import {
   ButtonInstance,
   ButtonState,
 } from "../../../internal/character/ButtonInstance";
-import { rect } from "../../../internal/math/rect";
-import { RenderContext } from "../../../internal/render/RenderContext";
 import { MouseEvent } from "../events";
 
 export class SimpleButton extends InteractiveObject {
@@ -18,9 +14,14 @@ export class SimpleButton extends InteractiveObject {
   constructor() {
     super();
 
+    for (const obj of this.__states) {
+      obj.__node.setParent(this.__node, this.__node.children.length);
+    }
+
     this.__character =
       (this.constructor as typeof SimpleButton).__character ?? null;
     this.__character?.applyTo(this);
+    this.__node.buttonState = this.__state;
 
     this.addEventListener(MouseEvent.MOUSE_OVER, this.#handleMouseEvent);
     this.addEventListener(MouseEvent.MOUSE_OUT, this.#handleMouseEvent);
@@ -29,10 +30,14 @@ export class SimpleButton extends InteractiveObject {
     this.addEventListener(MouseEvent.MOUSE_MOVE, this.#handleMouseEvent);
   }
 
-  @observable
-  __state = ButtonState.Up;
+  private __state = ButtonState.Up;
+  private __states = [
+    new DisplayObject(),
+    new DisplayObject(),
+    new DisplayObject(),
+    new DisplayObject(),
+  ];
 
-  @computed
   get __activeState() {
     switch (this.__state) {
       case ButtonState.Up:
@@ -44,22 +49,44 @@ export class SimpleButton extends InteractiveObject {
     }
   }
 
-  @observable
-  upState = new DisplayObject();
+  get upState() {
+    return this.__states[ButtonState.Up];
+  }
+  set upState(value) {
+    this.__states[ButtonState.Up].__node.setParent(null, 0);
+    this.__states[ButtonState.Up] = value;
+    value.__node.setParent(this.__node, ButtonState.Up);
+  }
 
-  @observable
-  overState = new DisplayObject();
+  get overState() {
+    return this.__states[ButtonState.Over];
+  }
+  set overState(value) {
+    this.__states[ButtonState.Over].__node.setParent(null, 0);
+    this.__states[ButtonState.Over] = value;
+    value.__node.setParent(this.__node, ButtonState.Over);
+  }
 
-  @observable
-  downState = new DisplayObject();
+  get downState() {
+    return this.__states[ButtonState.Down];
+  }
+  set downState(value) {
+    this.__states[ButtonState.Down].__node.setParent(null, 0);
+    this.__states[ButtonState.Down] = value;
+    value.__node.setParent(this.__node, ButtonState.Down);
+  }
 
-  @observable
-  hitTestState = new DisplayObject();
+  get hitTestState() {
+    return this.__states[ButtonState.HitTest];
+  }
+  set hitTestState(value) {
+    this.__states[ButtonState.HitTest].__node.setParent(null, 0);
+    this.__states[ButtonState.HitTest] = value;
+    value.__node.setParent(this.__node, ButtonState.HitTest);
+  }
 
-  @observable
   trackAsMenu = false;
 
-  @observable
   useHandCursor = true;
 
   get __isPointerCursor() {
@@ -81,52 +108,6 @@ export class SimpleButton extends InteractiveObject {
     this.hitTestState.__onFrameExit();
   }
 
-  __doRender(ctx: RenderContext) {
-    super.__doRender(ctx);
-    this.__activeState?.__render(ctx);
-  }
-
-  hitTestPoint(x: number, y: number): boolean {
-    return this.hitTestState.hitTestPoint(x, y, true);
-  }
-
-  #activateState = reaction(
-    () => this.__state,
-    (state) => {
-      if (!this.__character) {
-        return;
-      }
-      this.__character.instantiateState(this, state);
-    }
-  );
-
-  #updateStateTransform = autorun(() => {
-    let transform = this.transform;
-    if (this.cacheAsBitmap) {
-      transform = new Transform();
-    }
-    if (this.upState.transform.__update(transform)) {
-      this.upState.__reportDirty();
-    }
-    if (this.overState.transform.__update(transform)) {
-      this.overState.__reportDirty();
-    }
-    if (this.downState.transform.__update(transform)) {
-      this.downState.__reportDirty();
-    }
-    this.hitTestState.transform.__update(this.transform);
-  });
-
-  #copyBounds = autorun(() => {
-    let bounds = this.__activeState?.__bounds.__rect ?? this.__bounds.__rect;
-
-    const changed = !rect.equals(bounds, this.__bounds.__rect);
-    rect.copy(this.__bounds.__rect, bounds);
-    if (changed) {
-      this.__reportBoundsChanged();
-    }
-  });
-
   #handleMouseEvent = (event: MouseEvent) => {
     let newState: ButtonState = this.__state;
     let isMouseDown = event.type !== MouseEvent.MOUSE_OUT && event.buttonDown;
@@ -141,7 +122,11 @@ export class SimpleButton extends InteractiveObject {
       newState = ButtonState.Over;
     }
 
-    runInAction(() => (this.__state = newState));
+    if (this.__state !== newState) {
+      this.__state = newState;
+      this.__node.buttonState = newState;
+      this.__character?.instantiateState(this, newState);
+    }
 
     const stage = this.stage;
     if (!this.trackAsMenu && stage) {

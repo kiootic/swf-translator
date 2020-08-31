@@ -1,13 +1,5 @@
-import { RenderTarget } from "../../../internal/render/RenderTarget";
-import { RenderContext } from "../../../internal/render/RenderContext";
+import { Filter } from "../../../internal/render/Filter";
 
-export class BitmapFilter {
-  get __padX() {
-    return 0;
-  }
-  get __padY() {
-    return 0;
-  }
-
-  __apply(target: RenderTarget, ctx: RenderContext) {}
+export abstract class BitmapFilter {
+  abstract readonly __filter: Filter;
 }
