@@ -17,6 +17,7 @@ export interface DeferredRender {
 export class RenderContext {
   readonly renders: DeferredRender[] = [];
   readonly transformStack: Transform[] = [];
+  readonly projection: mat2d;
 
   get transform(): Transform {
     return this.transformStack[this.transformStack.length - 1];
@@ -28,6 +29,13 @@ export class RenderContext {
       colorMul: vec4.set(vec4.create(), 1, 1, 1, 1),
       colorAdd: vec4.set(vec4.create(), 0, 0, 0, 0),
     });
+
+    this.projection = mat2d.create();
+    this.projection[0] = 2 / bounds[2];
+    this.projection[3] = -2 / bounds[3];
+    this.projection[4] = -1;
+    this.projection[5] = 1;
+    mat2d.translate(this.projection, this.projection, [bounds[0], bounds[1]]);
   }
 
   pushTransform(view: mat2d, colorMul: vec4, colorAdd: vec4) {
@@ -52,6 +60,7 @@ export class RenderContext {
   popTransform() {
     const transform = this.transformStack.pop()!;
     vec4.scale(transform.colorAdd, transform.colorAdd, 1 / 0xff);
+    mat2d.multiply(transform.view, this.projection, transform.view);
   }
 
   renderObject(object: RenderObject) {

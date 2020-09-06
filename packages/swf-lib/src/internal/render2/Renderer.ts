@@ -15,8 +15,6 @@ const vertexLimit = 0x10000;
 export class Renderer {
   readonly glState: GLState;
 
-  private readonly projectionMatrix: mat3;
-
   private readonly textureMap = new Map<unknown, Texture>();
 
   private readonly indices = Buffer.index(
@@ -77,11 +75,6 @@ export class Renderer {
       premultipliedAlpha: false,
     });
 
-    this.projectionMatrix = mat3.projection(
-      mat3.create(),
-      canvas.width,
-      canvas.height
-    );
     this.renderProgram = new Program(
       renderVertexShader,
       renderFragmentShader(this.glState.maxTextures)
@@ -152,11 +145,6 @@ export class Renderer {
         this.glState,
         "uTextures[0]",
         this.textureUnits
-      );
-      this.renderProgram.uniform(
-        this.glState,
-        "uProjectionMatrix",
-        this.projectionMatrix
       );
       this.glState.useProgram(this.renderProgram.program);
       this.glState.bindVertexArray(this.renderVertexArray.vertexArray);

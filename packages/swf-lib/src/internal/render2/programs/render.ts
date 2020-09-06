@@ -7,8 +7,6 @@ layout(location=2) in vec4 aColorMul;
 layout(location=3) in vec4 aColorAdd;
 layout(location=4) in uint aMode;
 
-uniform mat3 uProjectionMatrix;
-
 out vec2 vTextureCoords;
 out vec4 vColor;
 out vec4 vColorMul;
@@ -18,7 +16,7 @@ flat out uint vMode;
 void main(void) {
     vec2 pos = aVertex.xy;
     vec2 uv = aVertex.zw;
-    gl_Position = vec4((uProjectionMatrix * vec3(pos, 1.0)).xy, 0.0, 1.0);
+    gl_Position = vec4(pos, 0.0, 1.0);
 
     vTextureCoords = uv;
     vColor = aColor;
