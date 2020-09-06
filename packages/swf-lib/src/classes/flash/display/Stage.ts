@@ -76,8 +76,6 @@ export class Stage extends DisplayObjectContainer {
     this.__onFrameConstruct();
     this.__onFrameExit();
 
-    this.__node.updateWorldTransform();
-    this.__node.updateWorldColorTransform();
     this.__renderer.renderFrame(this.__node);
   };
 

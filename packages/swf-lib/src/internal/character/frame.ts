@@ -99,11 +99,9 @@ function setupCharacter(
       character.__node.colorTransformLocalAdd,
       action.colorTransform.slice(4, 8) as vec4
     );
-    character.__node.markColorTransformDirty();
   } else if (frame === 1) {
     vec4.set(character.__node.colorTransformLocalMul, 1, 1, 1, 1);
     vec4.set(character.__node.colorTransformLocalAdd, 0, 0, 0, 0);
-    character.__node.markColorTransformDirty();
   }
 
   if (action.name != null) {

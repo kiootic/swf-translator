@@ -189,29 +189,29 @@ export class Renderer {
         this.indices.data[numIndex + i] = render.object.indices[i] + numVertex;
       }
 
-      const transform = render.transform;
+      const { view, colorMul, colorAdd } = render.transform;
       const uv = render.object.uvMatrix;
       for (let i = 0; i < objectNumVertex; i++) {
         const x = render.object.vertices[i * 2];
         const y = render.object.vertices[i * 2 + 1];
         this.vertices.data[(numVertex + i) * 4 + 0] =
-          transform[0] * x + transform[2] * y + transform[4];
+          view[0] * x + view[2] * y + view[4];
         this.vertices.data[(numVertex + i) * 4 + 1] =
-          transform[1] * x + transform[3] * y + transform[5];
+          view[1] * x + view[3] * y + view[5];
         this.vertices.data[(numVertex + i) * 4 + 2] =
           uv[0] * x + uv[2] * y + uv[4];
         this.vertices.data[(numVertex + i) * 4 + 3] =
           uv[1] * x + uv[3] * y + uv[5];
 
-        this.colorMul.data[(numVertex + i) * 4 + 0] = render.colorMul[0];
-        this.colorMul.data[(numVertex + i) * 4 + 1] = render.colorMul[1];
-        this.colorMul.data[(numVertex + i) * 4 + 2] = render.colorMul[2];
-        this.colorMul.data[(numVertex + i) * 4 + 3] = render.colorMul[3];
+        this.colorMul.data[(numVertex + i) * 4 + 0] = colorMul[0];
+        this.colorMul.data[(numVertex + i) * 4 + 1] = colorMul[1];
+        this.colorMul.data[(numVertex + i) * 4 + 2] = colorMul[2];
+        this.colorMul.data[(numVertex + i) * 4 + 3] = colorMul[3];
 
-        this.colorAdd.data[(numVertex + i) * 4 + 0] = render.colorAdd[0] / 0xff;
-        this.colorAdd.data[(numVertex + i) * 4 + 1] = render.colorAdd[1] / 0xff;
-        this.colorAdd.data[(numVertex + i) * 4 + 2] = render.colorAdd[2] / 0xff;
-        this.colorAdd.data[(numVertex + i) * 4 + 3] = render.colorAdd[3] / 0xff;
+        this.colorAdd.data[(numVertex + i) * 4 + 0] = colorAdd[0];
+        this.colorAdd.data[(numVertex + i) * 4 + 1] = colorAdd[1];
+        this.colorAdd.data[(numVertex + i) * 4 + 2] = colorAdd[2];
+        this.colorAdd.data[(numVertex + i) * 4 + 3] = colorAdd[3];
       }
 
       this.colors.data.set(render.object.colors, numVertex);

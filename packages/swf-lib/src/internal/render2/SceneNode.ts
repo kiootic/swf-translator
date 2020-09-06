@@ -7,10 +7,9 @@ import { RenderContext } from "./RenderContext";
 const enum Flags {
   DirtyBounds = 1,
   DirtyTransform = 2,
-  DirtyColorTransform = 4,
-  DirtyRender = 8,
+  DirtyRender = 4,
 
-  DirtyAll = 15,
+  DirtyAll = 7,
 }
 
 const tmpRect = rect.create();
@@ -38,8 +37,6 @@ export class SceneNode {
   readonly boundsWorld = rect.create();
   readonly transformWorld = mat2d.identity(mat2d.create());
   readonly transformWorldInvert = mat2d.identity(mat2d.create());
-  readonly colorTransformWorldMul = vec4.fromValues(1, 1, 1, 1);
-  readonly colorTransformWorldAdd = vec4.fromValues(0, 0, 0, 0);
 
   markRenderDirty() {
     let node: SceneNode | null = this;
@@ -117,46 +114,6 @@ export class SceneNode {
     }
   }
 
-  markColorTransformDirty() {
-    this.flags |= Flags.DirtyColorTransform;
-    this.markRenderDirty();
-  }
-
-  ensureWorldColorTransform() {
-    let node: SceneNode | null = this;
-    while (node && (node.flags & Flags.DirtyColorTransform) === 0) {
-      node = node.parent;
-    }
-    if (!node) {
-      return;
-    }
-
-    node.updateWorldColorTransform();
-  }
-
-  updateWorldColorTransform() {
-    const nodes: SceneNode[] = [this];
-    let node: SceneNode | undefined;
-    while ((node = nodes.pop())) {
-      if (!node.parent) {
-        vec4.copy(node.colorTransformWorldAdd, node.colorTransformLocalAdd);
-        vec4.copy(node.colorTransformWorldMul, node.colorTransformLocalMul);
-      } else {
-        multiplyColorTransform(
-          node.colorTransformWorldMul,
-          node.colorTransformWorldAdd,
-          node.parent.colorTransformWorldMul,
-          node.parent.colorTransformWorldAdd,
-          node.colorTransformLocalMul,
-          node.colorTransformLocalAdd
-        );
-      }
-
-      node.flags &= ~Flags.DirtyColorTransform;
-      nodes.push(...node.children);
-    }
-  }
-
   setParent(parent: SceneNode | null, index: number) {
     if (this.parent === parent) {
       if (parent) {
@@ -182,7 +139,6 @@ export class SceneNode {
     }
 
     this.markTransformDirty();
-    this.markColorTransformDirty();
   }
 
   setRenderObjects(objects: RenderObject[], intrinsicBounds: rect) {
@@ -194,32 +150,35 @@ export class SceneNode {
   }
 
   render(ctx: RenderContext) {
-    if (!this.visible || !rect.intersects(this.boundsWorld, ctx.bounds)) {
-      return;
-    }
-
+    this.ensureLocalBounds();
     this.doRender(ctx);
   }
 
-  doRender(ctx: RenderContext) {
-    this.flags &= ~Flags.DirtyRender;
+  private doRender(ctx: RenderContext) {
+    ctx.pushTransform(
+      this.transformLocal,
+      this.colorTransformLocalMul,
+      this.colorTransformLocalAdd
+    );
 
-    for (const o of this.renderObjects) {
-      ctx.renderObject(
-        this.transformWorld,
-        this.colorTransformWorldMul,
-        this.colorTransformWorldAdd,
-        o
-      );
-    }
+    rect.apply(tmpRect, this.boundsLocal, ctx.transform.view);
+    if (this.visible && rect.intersects(tmpRect, ctx.bounds)) {
+      this.flags &= ~Flags.DirtyRender;
 
-    if (this.buttonState >= 0) {
-      this.children[this.buttonState].render(ctx);
-    } else {
-      for (const child of this.children) {
-        child.render(ctx);
+      for (const o of this.renderObjects) {
+        ctx.renderObject(o);
+      }
+
+      if (this.buttonState >= 0) {
+        this.children[this.buttonState].render(ctx);
+      } else {
+        for (const child of this.children) {
+          child.doRender(ctx);
+        }
       }
     }
+
+    ctx.popTransform();
   }
 
   hitTest(pt: vec2, exact: boolean): boolean {

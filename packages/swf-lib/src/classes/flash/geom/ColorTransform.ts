@@ -40,6 +40,5 @@ export class ColorTransform {
     this.__mul[0] = 0;
     this.__mul[1] = 0;
     this.__mul[2] = 0;
-    this.__node?.markColorTransformDirty();
   }
 }
