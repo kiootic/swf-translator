@@ -1,0 +1,256 @@
+import { mat2d, vec2, vec4 } from "gl-matrix";
+import { RenderObject } from "./RenderObject";
+import { rect } from "../math/rect";
+import { multiplyColorTransform } from "../math/color";
+import { RenderContext } from "./RenderContext";
+
+const enum Flags {
+  DirtyBounds = 1,
+  DirtyTransform = 2,
+  DirtyColorTransform = 4,
+  DirtyRender = 8,
+
+  DirtyAll = 15,
+}
+
+const tmpRect = rect.create();
+const tmpVec2 = vec2.create();
+
+export class SceneNode {
+  flags: number = Flags.DirtyAll;
+
+  parent: SceneNode | null = null;
+  mask: SceneNode | null = null;
+  children: SceneNode[] = [];
+
+  visible = true;
+  buttonState = -1;
+  renderObjects: RenderObject[] = [];
+  readonly boundsIntrinsic = rect.create();
+
+  cacheAsBitmap = false;
+
+  readonly transformLocal = mat2d.identity(mat2d.create());
+  readonly colorTransformLocalMul = vec4.fromValues(1, 1, 1, 1);
+  readonly colorTransformLocalAdd = vec4.fromValues(0, 0, 0, 0);
+
+  readonly boundsLocal = rect.create();
+  readonly boundsWorld = rect.create();
+  readonly transformWorld = mat2d.identity(mat2d.create());
+  readonly transformWorldInvert = mat2d.identity(mat2d.create());
+  readonly colorTransformWorldMul = vec4.fromValues(1, 1, 1, 1);
+  readonly colorTransformWorldAdd = vec4.fromValues(0, 0, 0, 0);
+
+  markRenderDirty() {
+    let node: SceneNode | null = this;
+    while (node) {
+      if ((node.flags & Flags.DirtyRender) !== 0) {
+        break;
+      }
+      node.flags |= Flags.DirtyRender;
+      node = node.parent;
+    }
+  }
+
+  markBoundsDirty() {
+    let node: SceneNode | null = this;
+    while (node) {
+      if ((node.flags & Flags.DirtyBounds) !== 0) {
+        break;
+      }
+      node.flags |= Flags.DirtyBounds;
+      node = node.parent;
+    }
+  }
+
+  ensureLocalBounds() {
+    if ((this.flags & Flags.DirtyBounds) === 0) {
+      return;
+    }
+
+    rect.copy(this.boundsLocal, this.boundsIntrinsic);
+    for (const child of this.children) {
+      child.ensureLocalBounds();
+      rect.apply(tmpRect, child.boundsLocal, child.transformLocal);
+      rect.union(this.boundsLocal, this.boundsLocal, tmpRect);
+    }
+
+    this.flags &= ~Flags.DirtyBounds;
+  }
+
+  markTransformDirty() {
+    this.parent?.markBoundsDirty();
+    this.flags |= Flags.DirtyTransform;
+    this.markRenderDirty();
+  }
+
+  ensureWorldTransform() {
+    let node: SceneNode | null = this;
+    while (node && (node.flags & Flags.DirtyTransform) === 0) {
+      node = node.parent;
+    }
+    if (!node) {
+      return;
+    }
+    node.updateWorldTransform();
+  }
+
+  updateWorldTransform() {
+    const nodes: SceneNode[] = [this];
+    let node: SceneNode | undefined;
+    while ((node = nodes.pop())) {
+      if (!node.parent) {
+        mat2d.copy(node.transformWorld, node.transformLocal);
+      } else {
+        mat2d.multiply(
+          node.transformWorld,
+          node.parent.transformWorld,
+          node.transformLocal
+        );
+      }
+      mat2d.invert(node.transformWorldInvert, node.transformWorld);
+      node.ensureLocalBounds();
+      rect.apply(node.boundsWorld, node.boundsLocal, node.transformWorld);
+
+      node.flags &= ~Flags.DirtyTransform;
+      nodes.push(...node.children);
+    }
+  }
+
+  markColorTransformDirty() {
+    this.flags |= Flags.DirtyColorTransform;
+    this.markRenderDirty();
+  }
+
+  ensureWorldColorTransform() {
+    let node: SceneNode | null = this;
+    while (node && (node.flags & Flags.DirtyColorTransform) === 0) {
+      node = node.parent;
+    }
+    if (!node) {
+      return;
+    }
+
+    node.updateWorldColorTransform();
+  }
+
+  updateWorldColorTransform() {
+    const nodes: SceneNode[] = [this];
+    let node: SceneNode | undefined;
+    while ((node = nodes.pop())) {
+      if (!node.parent) {
+        vec4.copy(node.colorTransformWorldAdd, node.colorTransformLocalAdd);
+        vec4.copy(node.colorTransformWorldMul, node.colorTransformLocalMul);
+      } else {
+        multiplyColorTransform(
+          node.colorTransformWorldMul,
+          node.colorTransformWorldAdd,
+          node.parent.colorTransformWorldMul,
+          node.parent.colorTransformWorldAdd,
+          node.colorTransformLocalMul,
+          node.colorTransformLocalAdd
+        );
+      }
+
+      node.flags &= ~Flags.DirtyColorTransform;
+      nodes.push(...node.children);
+    }
+  }
+
+  setParent(parent: SceneNode | null, index: number) {
+    if (this.parent === parent) {
+      if (parent) {
+        const i = parent.children.indexOf(this);
+        parent.children.splice(i, 1);
+        parent.children.splice(index, 0, this);
+      }
+      this.markRenderDirty();
+      return;
+    }
+
+    if (this.parent) {
+      const i = this.parent.children.indexOf(this);
+      this.parent.children.splice(i, 1);
+      this.parent.markBoundsDirty();
+    }
+
+    this.parent = parent;
+
+    if (this.parent) {
+      this.parent.children.splice(index, 0, this);
+      this.parent.markBoundsDirty();
+    }
+
+    this.markTransformDirty();
+    this.markColorTransformDirty();
+  }
+
+  setRenderObjects(objects: RenderObject[], intrinsicBounds: rect) {
+    this.renderObjects = objects;
+
+    rect.copy(this.boundsIntrinsic, intrinsicBounds);
+    this.markBoundsDirty();
+    this.markRenderDirty();
+  }
+
+  render(ctx: RenderContext) {
+    if (!this.visible || !rect.intersects(this.boundsWorld, ctx.bounds)) {
+      return;
+    }
+
+    this.doRender(ctx);
+  }
+
+  doRender(ctx: RenderContext) {
+    this.flags &= ~Flags.DirtyRender;
+
+    for (const o of this.renderObjects) {
+      ctx.renderObject(
+        this.transformWorld,
+        this.colorTransformWorldMul,
+        this.colorTransformWorldAdd,
+        o
+      );
+    }
+
+    if (this.buttonState >= 0) {
+      this.children[this.buttonState].render(ctx);
+    } else {
+      for (const child of this.children) {
+        child.render(ctx);
+      }
+    }
+  }
+
+  hitTest(pt: vec2, exact: boolean): boolean {
+    if (this.buttonState >= 0) {
+      return this.children[3].hitTest(pt, true);
+    }
+
+    if (!exact) {
+      this.ensureLocalBounds();
+      vec2.transformMat2d(tmpVec2, pt, this.transformWorldInvert);
+      return rect.contains(this.boundsLocal, tmpVec2[0], tmpVec2[1]);
+    }
+
+    const nodes: SceneNode[] = [this];
+    let node: SceneNode | undefined;
+    while ((node = nodes.pop())) {
+      if (node.renderObjects.length > 0) {
+        vec2.transformMat2d(tmpVec2, pt, node.transformWorldInvert);
+        if (
+          node.renderObjects.some((obj) =>
+            obj.hitTest(tmpVec2[0], tmpVec2[1], exact)
+          )
+        ) {
+          return true;
+        }
+      }
+
+      for (const child of node.children) {
+        nodes.push(child);
+      }
+    }
+    return false;
+  }
+}

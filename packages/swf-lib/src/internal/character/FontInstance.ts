@@ -1,11 +1,16 @@
+import { mat2d } from "gl-matrix";
+import { makeShapeRenderObject } from "./shapes";
 import { CharacterInstance } from "./CharacterInstance";
 import { FontCharacter, FontLayout } from "../../classes/__internal/character";
 import type { AssetLibrary } from "../../classes/__internal";
-import { makeShapeRenderObject, joinSpriteShapes } from "./shapes";
-import { SpriteDef } from "../render/objects/RenderObjectSprite";
+import { RenderObject } from "../render2/RenderObject";
+
+export interface FontGlyph {
+  renderObjects: RenderObject[];
+}
 
 export class FontInstance implements CharacterInstance {
-  readonly glyphSprites: SpriteDef[];
+  readonly glyphs: FontGlyph[];
   readonly charMap = new Map<string, number>();
   readonly layout?: FontLayout;
 
@@ -14,11 +19,18 @@ export class FontInstance implements CharacterInstance {
     readonly font: FontCharacter,
     lib: AssetLibrary
   ) {
-    this.glyphSprites = font.glyphs.map((glyph) => {
-      const sprites = glyph.shape.contours.map((c) =>
+    this.glyphs = font.glyphs.map((glyph) => {
+      const renderObjects = glyph.shape.contours.map((c) =>
         makeShapeRenderObject(c, lib)
       );
-      return joinSpriteShapes(sprites);
+      return {
+        renderObjects: RenderObject.merge(
+          renderObjects.map((renderObject) => ({
+            renderObject,
+            transform: mat2d.identity(mat2d.create()),
+          }))
+        ),
+      };
     });
     for (let i = 0; i < font.glyphs.length; i++) {
       const char = font.glyphs[i].char;

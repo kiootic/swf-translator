@@ -4,16 +4,18 @@ import { DisplayObjectContainer } from "./DisplayObjectContainer";
 import { InteractiveObject } from "./InteractiveObject";
 import { Point } from "../geom/Point";
 import { Properties } from "../../__internal/Properties";
-import { Canvas } from "../../../internal/render/Canvas";
-import { Ticker } from "../../../internal/render/Ticker";
-import { Renderer } from "../../../internal/render/Renderer";
+import { Canvas } from "../../../internal/render2/Canvas";
+import { Renderer } from "../../../internal/render2/Renderer";
+import { Ticker } from "../../../internal/Ticker";
 import { Event } from "../events/Event";
 import { MouseEvent } from "../events/MouseEvent";
 import { KeyboardEvent } from "../events/KeyboardEvent";
 import { Keyboard } from "../ui";
 
+const tmpVec2 = vec2.create();
+
 export class Stage extends DisplayObjectContainer {
-  readonly __canvas = new Canvas();
+  readonly __canvas: Canvas;
   readonly __ticker: Ticker;
   readonly __renderer: Renderer;
 
@@ -38,30 +40,35 @@ export class Stage extends DisplayObjectContainer {
 
   constructor(properties?: Properties) {
     super();
-    this.__renderer = new Renderer(this.__canvas);
 
-    let tickFPS = 60;
+    let fps = 60;
+    let backgroundColor = 0x000000;
+    let width = 600;
+    let height = 400;
     if (properties) {
-      const { width, height, backgroundColor, fps } = properties;
-      this.__renderer.backgroundColor = backgroundColor;
-      this.__canvas.width = width / 20;
-      this.__canvas.height = height / 20;
-      tickFPS = fps;
+      ({ width, height, backgroundColor, fps } = properties);
+      width /= 20;
+      height /= 20;
     }
 
-    this.__ticker = new Ticker(tickFPS);
+    this.__canvas = new Canvas(width, height);
+    this.__renderer = new Renderer(this.__canvas);
+    this.__renderer.backgroundColor = backgroundColor;
+
+    this.__ticker = new Ticker(fps);
     this.__ticker.onFrame.subscribe(this.__onFrame);
     this.__ticker.begin();
 
-    this.__canvas.canvas.addEventListener("mouseenter", this.#handleMouseEvent);
-    this.__canvas.canvas.addEventListener("mousemove", this.#handleMouseEvent);
-    this.__canvas.canvas.addEventListener("mousedown", this.#handleMouseEvent);
-    this.__canvas.canvas.addEventListener("mouseup", this.#handleMouseEvent);
-    this.__canvas.canvas.addEventListener("mouseleave", this.#handleMouseEvent);
-    this.__canvas.canvas.addEventListener("click", this.#handleMouseEvent);
-    this.__canvas.canvas.addEventListener("keydown", this.#handleKeyboardEvent);
-    this.__canvas.canvas.addEventListener("keyup", this.#handleKeyboardEvent);
-    this.__canvas.canvas.addEventListener("blur", this.#handleFocusEvent);
+    const canvas = this.__canvas.element;
+    canvas.addEventListener("mouseenter", this.#handleMouseEvent);
+    canvas.addEventListener("mousemove", this.#handleMouseEvent);
+    canvas.addEventListener("mousedown", this.#handleMouseEvent);
+    canvas.addEventListener("mouseup", this.#handleMouseEvent);
+    canvas.addEventListener("mouseleave", this.#handleMouseEvent);
+    canvas.addEventListener("click", this.#handleMouseEvent);
+    canvas.addEventListener("keydown", this.#handleKeyboardEvent);
+    canvas.addEventListener("keyup", this.#handleKeyboardEvent);
+    canvas.addEventListener("blur", this.#handleFocusEvent);
   }
 
   __onFrame = () => {
@@ -71,13 +78,10 @@ export class Stage extends DisplayObjectContainer {
 
     this.__node.updateWorldTransform();
     this.__node.updateWorldColorTransform();
-    this.__renderer.renderFrame((ctx) => {
-      this.__node.render(ctx);
-    });
+    this.__renderer.renderFrame(this.__node);
   };
 
-  __hitTestObject(x: number, y: number): InteractiveObject | null {
-    const pt = vec2.fromValues(x, y);
+  __hitTestObject(pt: vec2): InteractiveObject | null {
     this.__node.updateWorldTransform();
 
     const hitTest = (target: InteractiveObject): InteractiveObject | null => {
@@ -112,22 +116,23 @@ export class Stage extends DisplayObjectContainer {
   }
 
   #handleMouseEvent = (sourceEvent: globalThis.MouseEvent) => {
-    const rect = this.__canvas.canvas.getBoundingClientRect();
-    const x = sourceEvent.clientX - rect.left;
-    const y = sourceEvent.clientY - rect.top;
-    vec2.set(this.__mousePosition, x, y);
-    let target = this.__hitTestObject(x, y);
+    this.__canvas.resolveCoords(
+      this.__mousePosition,
+      sourceEvent.clientX,
+      sourceEvent.clientY
+    );
+    let target = this.__hitTestObject(this.__mousePosition);
 
     const dispatchMouseEvent = (type: string, target: DisplayObject | null) => {
       if (!target) {
         return;
       }
-      const { x: localX, y: localY } = target.globalToLocal(new Point(x, y));
+      target.__globalToLocal(tmpVec2, this.__mousePosition, false);
 
       const event = new MouseEvent(type, true, false);
       event.buttonDown = sourceEvent.buttons !== 0;
-      event.localX = localX;
-      event.localY = localY;
+      event.localX = tmpVec2[0];
+      event.localY = tmpVec2[1];
       target.dispatchEvent(event);
     };
 

@@ -1,5 +1,5 @@
 import { mat2d } from "gl-matrix";
-import { SceneNode } from "../../../internal/render/SceneNode";
+import { SceneNode } from "../../../internal/render2/SceneNode";
 
 export class Matrix {
   __node: SceneNode | null = null;

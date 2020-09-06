@@ -75,7 +75,7 @@ void main(void) {
         }
     }
 
-    gl_FragColor = (tex * vColorTint * vec4(vColorMul.rgb, 1.0) + vColorAdd * tex.a) * vColorMul.a;
+    gl_FragColor = (tex * vec4(vColorMul.rgb, 1.0) + vColorAdd * tex.a) * vColorMul.a;
 }
 `,
   {

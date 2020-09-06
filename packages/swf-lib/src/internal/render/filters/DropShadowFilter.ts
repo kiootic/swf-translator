@@ -30,7 +30,7 @@ export class DropShadowFilter implements Filter {
     const quality = Math.max(1, Math.ceil(Math.max(radiusX, radiusY) / 16) * 4);
     const uDeltaX = vec2.fromValues(radiusX / quality / ctx.width, 0);
     const uDeltaY = vec2.fromValues(0, radiusY / quality / ctx.height);
-    const color = preMultiplyAlpha(vec4.create(), this.color);
+    const color = vec4.create(); // preMultiplyAlpha(vec4.create(), this.color);
     vec4.scale(color, color, this.strength);
     const offset = vec2.fromValues(this.distance, 0);
     vec2.rotate(offset, offset, [0, 0], (this.angle * Math.PI) / 180);

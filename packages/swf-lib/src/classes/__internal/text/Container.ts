@@ -3,7 +3,7 @@ import { TextFormatAlign } from "../../flash/text";
 import { TextSegment } from "./TextSegment";
 import { layout } from "./layout";
 import { rect } from "../../../internal/math/rect";
-import { SceneNode } from "../../../internal/render/SceneNode";
+import { SceneNode } from "../../../internal/render2/SceneNode";
 
 const htmlParser = new DOMParser();
 

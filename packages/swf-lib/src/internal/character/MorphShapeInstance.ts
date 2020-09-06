@@ -3,14 +3,11 @@ import type { AssetLibrary } from "../../classes/__internal/AssetLibrary";
 import { MorphShapeCharacter } from "../../classes/__internal/character/MorphShape";
 import { CharacterInstance } from "./CharacterInstance";
 import { makeShapeRenderObject } from "./shapes";
-import {
-  SpriteDef,
-  RenderObjectSprite,
-} from "../render/objects/RenderObjectSprite";
+import { RenderObject } from "../render2/RenderObject";
 import { rect } from "../math/rect";
 
 interface MorphShapeFrame {
-  sprites: SpriteDef[];
+  renderObjects: RenderObject[];
   bounds: rect;
 }
 
@@ -23,12 +20,14 @@ export class MorphShapeInstance implements CharacterInstance {
     lib: AssetLibrary
   ) {
     for (const [ratio, shape] of def.frames) {
-      const sprites = shape.contours.map((c) => makeShapeRenderObject(c, lib));
+      const renderObjects = shape.contours.map((c) =>
+        makeShapeRenderObject(c, lib)
+      );
       const bounds = rect.create();
-      for (const def of sprites) {
+      for (const def of renderObjects) {
         rect.union(bounds, bounds, def.bounds);
       }
-      this.frames.set(ratio, { sprites, bounds });
+      this.frames.set(ratio, { renderObjects, bounds });
     }
   }
 
@@ -41,10 +40,6 @@ export class MorphShapeInstance implements CharacterInstance {
       return;
     }
 
-    const objects: RenderObjectSprite[] = [];
-    for (const s of frame.sprites) {
-      objects.push(new RenderObjectSprite(s));
-    }
-    container.__node.setRenderObjects(objects, frame.bounds);
+    container.__node.setRenderObjects(frame.renderObjects, frame.bounds);
   }
 }

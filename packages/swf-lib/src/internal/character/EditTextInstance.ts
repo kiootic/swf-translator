@@ -4,7 +4,6 @@ import { rect } from "../math/rect";
 import { CharacterInstance } from "./CharacterInstance";
 import { TextFieldType, TextFormatAlign } from "../../classes/flash/text";
 import { AssetLibrary } from "../../classes/__internal";
-import { Rectangle } from "../../classes/flash/geom";
 
 export class EditTextInstance implements CharacterInstance {
   readonly def: EditTextCharacter;

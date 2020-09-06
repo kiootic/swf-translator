@@ -1,10 +1,7 @@
 import { vec2, mat2d, vec4 } from "gl-matrix";
 import { TextFormat, TextFormatAlign } from "../../flash/text";
 import { Texture } from "../../../internal/render/Texture";
-import {
-  RenderObjectSprite,
-  SpriteDef,
-} from "../../../internal/render/objects/RenderObjectSprite";
+import { RenderObject } from "../../../internal/render2/RenderObject";
 import { preMultiplyAlpha } from "../../../internal/math/color";
 import { rect } from "../../../internal/math/rect";
 import { FontRegistry } from "../FontRegistry";
@@ -13,11 +10,11 @@ import { TextSegment } from "./TextSegment";
 
 export interface LayoutResult {
   bounds: rect;
-  renderObjects: RenderObjectSprite[];
+  renderObjects: RenderObject[];
 }
 
 interface Glyph {
-  sprite: SpriteDef;
+  renderObjects: RenderObject[];
   color: number;
   align: TextFormatAlign;
   size: number;
@@ -41,7 +38,7 @@ export function layout(
   const lines = splitLines(segments, bounds, wrap, multiline);
 
   const resultBounds = rect.create();
-  const resultObjects: RenderObjectSprite[] = [];
+  const resultObjects: RenderObject[] = [];
   let y = 0;
   for (const line of lines) {
     const lineResult = layoutLine(line, y, bounds);
@@ -60,19 +57,7 @@ function fontSize(format: TextFormat) {
 
 function placeholderGlyph(format: TextFormat): Glyph {
   return {
-    sprite: {
-      vertices: new Float32Array(),
-      uvMatrix: mat2d.create(),
-      texture: Texture.WHITE,
-      color: null,
-      fillMode: FillStyleKind.SolidColor,
-      bounds: rect.fromValues(
-        0,
-        -fontSize(format),
-        fontSize(format),
-        fontSize(format)
-      ),
-    },
+    renderObjects: [],
     color: format.color,
     align: format.align,
     size: fontSize(format),
@@ -98,7 +83,7 @@ function resolveGlyph(format: TextFormat, char: string): Glyph {
   }
 
   return {
-    sprite: font.glyphSprites[index],
+    renderObjects: font.glyphs[index].renderObjects,
     color: format.color,
     align: format.align,
     size: fontSize(format),
@@ -171,45 +156,13 @@ function layoutLine(line: Line, y: number, bounds: rect): LayoutResult {
       break;
   }
 
-  interface GlyphSprite {
-    vertices: Float32Array;
-    bounds: rect;
+  interface GlyphInstance {
+    renderObject: RenderObject;
+    color: number;
+    transform: mat2d;
   }
 
-  const objects: RenderObjectSprite[] = [];
-  const sprites: GlyphSprite[] = [];
-  let numVertices = 0;
-  let color = 0xffffffff;
-  const flush = () => {
-    if (sprites.length === 0) {
-      return;
-    }
-
-    const vertices = new Float32Array(numVertices);
-    const spriteBounds = rect.create();
-    let i = 0;
-    for (const vs of sprites) {
-      const { vertices: glyphVertices, bounds: glyphBounds } = vs;
-      for (let j = 0; j < glyphVertices.length / 2; j++) {
-        vertices[i * 2 + 0] = glyphVertices[j * 2 + 0];
-        vertices[i * 2 + 1] = glyphVertices[j * 2 + 1];
-        i++;
-      }
-      rect.union(spriteBounds, spriteBounds, glyphBounds);
-    }
-
-    const def: SpriteDef = {
-      vertices,
-      uvMatrix: mat2d.identity(mat2d.create()),
-      texture: Texture.WHITE,
-      color: preMultiplyAlpha(vec4.create(), color),
-      fillMode: FillStyleKind.SolidColor,
-      bounds: spriteBounds,
-    };
-    objects.push(new RenderObjectSprite(def));
-    sprites.length = 0;
-    numVertices = 0;
-  };
+  const instances: GlyphInstance[] = [];
 
   let baseline = 0;
   let leading = 0;
@@ -223,41 +176,26 @@ function layoutLine(line: Line, y: number, bounds: rect): LayoutResult {
     );
   }
 
-  const matrix = mat2d.create();
   const v = vec2.create();
-  for (const glyph of line.glyphs) {
-    if (glyph.color !== color) {
-      flush();
-      color = glyph.color;
+  for (const g of line.glyphs) {
+    const transform = mat2d.create();
+    mat2d.fromTranslation(transform, [x, y + baseline]);
+    mat2d.scale(transform, transform, [g.size / 1024, g.size / 1024]);
+
+    const color = preMultiplyAlpha(g.color);
+
+    for (const renderObject of g.renderObjects) {
+      instances.push({
+        renderObject,
+        color,
+        transform,
+      });
     }
-
-    const glyphBounds = rect.create();
-    rect.scale(glyphBounds, glyph.sprite.bounds, glyph.size / 1024);
-    rect.translate(glyphBounds, glyphBounds, [x, y + baseline]);
-
-    mat2d.fromTranslation(matrix, [x, y + baseline]);
-    mat2d.scale(matrix, matrix, [glyph.size / 1024, glyph.size / 1024]);
-
-    const vertices = new Float32Array(glyph.sprite.vertices.length);
-    for (let i = 0; i < vertices.length / 2; i++) {
-      vec2.set(
-        v,
-        glyph.sprite.vertices[i * 2 + 0],
-        glyph.sprite.vertices[i * 2 + 1]
-      );
-      vec2.transformMat2d(v, v, matrix);
-      vertices[i * 2 + 0] = v[0];
-      vertices[i * 2 + 1] = v[1];
-    }
-    sprites.push({ vertices, bounds: glyphBounds });
-    numVertices += vertices.length;
-
-    x += glyph.advance + spacing;
+    x += g.advance + spacing;
   }
-  flush();
 
   return {
     bounds: rect.fromValues(0, y, x, y + leading),
-    renderObjects: objects,
+    renderObjects: RenderObject.merge(instances),
   };
 }

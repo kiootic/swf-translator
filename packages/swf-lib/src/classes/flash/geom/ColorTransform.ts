@@ -1,5 +1,5 @@
 import { vec4 } from "gl-matrix";
-import { SceneNode } from "../../../internal/render/SceneNode";
+import { SceneNode } from "../../../internal/render2/SceneNode";
 
 export class ColorTransform {
   __node: SceneNode | null = null;

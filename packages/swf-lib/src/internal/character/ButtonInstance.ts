@@ -1,4 +1,3 @@
-import { mat2d, vec4 } from "gl-matrix";
 import { SimpleButton } from "../../classes/flash/display/SimpleButton";
 import { Sprite } from "../../classes/flash/display/Sprite";
 import {

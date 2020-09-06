@@ -1,6 +1,5 @@
 import { mat2d, vec4 } from "gl-matrix";
-import { SpriteDef } from "../render/objects/RenderObjectSprite";
-import { Texture } from "../render/Texture";
+import { RenderObject } from "../render2/RenderObject";
 import type { AssetLibrary } from "../../classes/__internal/AssetLibrary";
 import { ShapeContour } from "../../classes/__internal/character/Shape";
 import { FillStyleKind } from "../../classes/__internal/character/styles";
@@ -11,19 +10,17 @@ import { preMultiplyAlpha } from "../math/color";
 export function makeShapeRenderObject(
   contour: ShapeContour,
   lib: AssetLibrary
-): SpriteDef {
-  const vertices = new Float32Array(contour.indices.length * 2);
+): RenderObject {
+  const vertices = new Float32Array(contour.vertices).map((v) => v / 20);
+  const indices = new Uint16Array(contour.indices);
+
   let minX = Infinity,
     minY = Infinity,
     maxX = -Infinity,
     maxY = -Infinity;
-  for (let i = 0; i < contour.indices.length; i++) {
-    const index = contour.indices[i];
-
-    const x = contour.vertices[index * 2 + 0] / 20;
-    const y = contour.vertices[index * 2 + 1] / 20;
-    vertices[i * 2 + 0] = x;
-    vertices[i * 2 + 1] = y;
+  for (let i = 0; i < contour.vertices.length; i += 2) {
+    const x = vertices[i + 0];
+    const y = vertices[i + 1];
 
     minX = Math.min(minX, x);
     minY = Math.min(minY, y);
@@ -32,17 +29,17 @@ export function makeShapeRenderObject(
   }
   const bounds = rect.fromValues(minX, minY, maxX - minX, maxY - minY);
 
-  let texture = Texture.WHITE;
-  let color: vec4 | null = null;
+  let texture = null;
+  let color: number = 0xffffffff;
   const uvMatrix = mat2d.identity(mat2d.create());
   switch (contour.fill.kind) {
     case FillStyleKind.SolidColor:
-      color = preMultiplyAlpha(vec4.create(), contour.fill.color);
+      color = preMultiplyAlpha(contour.fill.color);
       break;
 
     case FillStyleKind.LinearGradient:
     case FillStyleKind.RadicalGradient:
-      texture = new Texture(makeGradientTexture(contour.fill.gradient));
+      texture = makeGradientTexture(contour.fill.gradient);
 
       mat2d.set(uvMatrix, ...contour.fill.matrix);
       convertMatrix(uvMatrix, 32768, 32768, 0.5);
@@ -56,14 +53,18 @@ export function makeShapeRenderObject(
       break;
   }
 
-  return {
+  const colors = new Uint32Array(vertices.length / 2);
+  colors.fill(color);
+
+  return new RenderObject(
     vertices,
-    bounds,
+    colors,
+    indices,
     uvMatrix,
     texture,
-    color,
-    fillMode: contour.fill.kind,
-  };
+    contour.fill.kind,
+    bounds
+  );
 }
 
 // https://github.com/ruffle-rs/ruffle/blob/09ca11f788ef5c5efa45a40d96e3cbe5be9e940b/render/common_tess/src/lib.rs#L344
@@ -77,29 +78,4 @@ function convertMatrix(
   mat2d.scale(mat, mat, [20 / width, 20 / height]);
   mat[4] = mat[4] / width + offset;
   mat[5] = mat[5] / height + offset;
-}
-
-export function joinSpriteShapes(defs: SpriteDef[]): SpriteDef {
-  let dataLength = 0;
-  const bounds = rect.create();
-  for (const s of defs) {
-    dataLength += s.vertices.length;
-    rect.union(bounds, bounds, s.bounds);
-  }
-
-  const def: SpriteDef = {
-    vertices: new Float32Array(dataLength),
-    bounds,
-    uvMatrix: mat2d.identity(mat2d.create()),
-    texture: Texture.WHITE,
-    color: null,
-    fillMode: FillStyleKind.SolidColor,
-  };
-
-  let i = 0;
-  for (const s of defs) {
-    def.vertices.set(s.vertices, i);
-    i += s.vertices.length;
-  }
-  return def;
 }

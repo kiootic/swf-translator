@@ -8,7 +8,7 @@ import { Event } from "../events/Event";
 import { Transform } from "../geom/Transform";
 import { Point } from "../geom/Point";
 import { BitmapFilter } from "../filters/BitmapFilter";
-import { SceneNode } from "../../../internal/render/SceneNode";
+import { SceneNode } from "../../../internal/render2/SceneNode";
 
 const tmpRect = rect.create();
 const tmpVec2 = vec2.create();
@@ -80,12 +80,12 @@ export class DisplayObject extends EventDispatcher {
 
   set filters(value) {
     this.__filters = value;
-    this.__node.filters = value.map((f) => f.__filter);
+    // this.__node.filters = value.map((f) => f.__filter);
     this.__node.markRenderDirty();
   }
 
   get cacheAsBitmap() {
-    return this.__node.cacheAsBitmap || this.__node.filters.length > 0;
+    return this.__node.cacheAsBitmap; // || this.__node.filters.length > 0;
   }
   set cacheAsBitmap(value) {
     this.__node.cacheAsBitmap = value;
@@ -184,7 +184,7 @@ export class DisplayObject extends EventDispatcher {
     if (!stage) {
       return 0;
     }
-    this.__globalToLocal(stage.__mousePosition, tmpVec2, true);
+    this.__globalToLocal(tmpVec2, stage.__mousePosition, true);
     return tmpVec2[0];
   }
 
@@ -193,11 +193,11 @@ export class DisplayObject extends EventDispatcher {
     if (!stage) {
       return 0;
     }
-    this.__globalToLocal(stage.__mousePosition, tmpVec2, true);
+    this.__globalToLocal(tmpVec2, stage.__mousePosition, true);
     return tmpVec2[1];
   }
 
-  __globalToLocal(pt: vec2, out: vec2, ensure: boolean) {
+  __globalToLocal(out: vec2, pt: vec2, ensure: boolean) {
     if (ensure) {
       this.__node.ensureWorldTransform();
     }
@@ -206,7 +206,7 @@ export class DisplayObject extends EventDispatcher {
 
   globalToLocal(point: Point): Point {
     const local = new Point();
-    this.__globalToLocal(point.__value, local.__value, true);
+    this.__globalToLocal(local.__value, point.__value, true);
     return local;
   }
 

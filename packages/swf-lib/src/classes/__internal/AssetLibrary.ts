@@ -28,7 +28,7 @@ import { SimpleButton } from "../flash/display";
 import { ClassRegistry } from "./ClassRegistry";
 
 export interface AssetLibrary {
-  resolveImage(id: number): Texture;
+  resolveImage(id: number): HTMLImageElement;
   resolveFont(id: number): FontInstance;
 
   instantiateCharacter(id: number): DisplayObject;
@@ -116,8 +116,13 @@ export class AssetLibraryBuilder {
 
     await Promise.all(
       [...this.images.entries()].map(async ([id, image]) => {
-        const tex = await Texture.load(image.path);
-        library.images.set(id, new ImageInstance(id, tex));
+        const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = (e) => reject(e);
+          img.src = image.path;
+        });
+        library.images.set(id, new ImageInstance(id, img));
       })
     );
 
@@ -181,13 +186,13 @@ class InstantiatedLibrary implements AssetLibrary {
   readonly buttons = new Map<number, ButtonInstance>();
   readonly linkedClasses = new Map<number, Function>();
 
-  resolveImage(id: number): Texture {
+  resolveImage(id: number): HTMLImageElement {
     const instance = this.images.get(id);
     if (!instance) {
       throw new Error(`Image character #${id} not found`);
     }
 
-    return instance.texture;
+    return instance.image;
   }
 
   resolveFont(id: number): FontInstance {

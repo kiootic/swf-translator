@@ -1,6 +1,6 @@
 import { Matrix } from "./Matrix";
 import { ColorTransform } from "./ColorTransform";
-import { SceneNode } from "../../../internal/render/SceneNode";
+import { SceneNode } from "../../../internal/render2/SceneNode";
 
 export class Transform {
   __node: SceneNode | null = null;
