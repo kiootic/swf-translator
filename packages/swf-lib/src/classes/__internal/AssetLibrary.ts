@@ -21,13 +21,13 @@ import { FontInstance } from "../../internal/character/FontInstance";
 import { StaticTextInstance } from "../../internal/character/StaticTextInstance";
 import { EditTextInstance } from "../../internal/character/EditTextInstance";
 import { ButtonInstance } from "../../internal/character/ButtonInstance";
-import { Texture } from "../../internal/render/Texture";
 import { AssetBundle } from "./AssetBundle";
 import { FontRegistry } from "./FontRegistry";
 import { SimpleButton } from "../flash/display";
 import { ClassRegistry } from "./ClassRegistry";
 
 export interface AssetLibrary {
+  readonly gradientCache: Map<string, HTMLCanvasElement>;
   resolveImage(id: number): HTMLImageElement;
   resolveFont(id: number): FontInstance;
 
@@ -185,6 +185,8 @@ class InstantiatedLibrary implements AssetLibrary {
   readonly editTexts = new Map<number, EditTextInstance>();
   readonly buttons = new Map<number, ButtonInstance>();
   readonly linkedClasses = new Map<number, Function>();
+
+  readonly gradientCache = new Map<string, HTMLCanvasElement>();
 
   resolveImage(id: number): HTMLImageElement {
     const instance = this.images.get(id);

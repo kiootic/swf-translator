@@ -1,5 +1,11 @@
 import { Gradient } from "../../classes/__internal/character/styles";
 
+export function gradientKey(gradient: Gradient) {
+  return `${gradient.mode};${gradient.points
+    .map(([ratio, color]) => `${ratio}:${color}`)
+    .join(";")}`;
+}
+
 export function makeGradientTexture(gradient: Gradient): HTMLCanvasElement {
   const canvas = document.createElement("canvas");
   canvas.width = 256;

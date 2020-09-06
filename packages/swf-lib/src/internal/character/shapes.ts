@@ -1,9 +1,9 @@
-import { mat2d, vec4 } from "gl-matrix";
+import { mat2d } from "gl-matrix";
 import { RenderObject } from "../render2/RenderObject";
 import type { AssetLibrary } from "../../classes/__internal/AssetLibrary";
 import { ShapeContour } from "../../classes/__internal/character/Shape";
 import { FillStyleKind } from "../../classes/__internal/character/styles";
-import { makeGradientTexture } from "./gradient";
+import { makeGradientTexture, gradientKey } from "./gradient";
 import { rect } from "../math/rect";
 import { preMultiplyAlpha } from "../math/color";
 
@@ -39,7 +39,12 @@ export function makeShapeRenderObject(
 
     case FillStyleKind.LinearGradient:
     case FillStyleKind.RadicalGradient:
-      texture = makeGradientTexture(contour.fill.gradient);
+      const key = gradientKey(contour.fill.gradient);
+      texture = lib.gradientCache.get(key);
+      if (!texture) {
+        texture = makeGradientTexture(contour.fill.gradient);
+        lib.gradientCache.set(key, texture);
+      }
 
       mat2d.set(uvMatrix, ...contour.fill.matrix);
       convertMatrix(uvMatrix, 32768, 32768, 0.5);
