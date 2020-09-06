@@ -11,57 +11,69 @@ import { Program } from "./gl/Program";
 import { VertexArray } from "./gl/VertexArray";
 
 const vertexLimit = 0x10000;
+const indexLimit = 0x80000;
 
 export class Renderer {
   readonly glState: GLState;
 
   private readonly textureMap = new Map<unknown, Texture>();
 
-  private readonly indices = Buffer.index(
-    new Uint16Array(0x80000),
-    "STREAM_DRAW"
-  );
-  private readonly vertices = Buffer.vertex(
-    new Float32Array(vertexLimit * 4),
-    "STREAM_DRAW"
-  );
-  private readonly colors = Buffer.vertex(
-    new Uint32Array(vertexLimit * 1),
-    "STREAM_DRAW"
-  );
-  private readonly colorMul = Buffer.vertex(
-    new Float32Array(vertexLimit * 4),
-    "STREAM_DRAW"
-  );
-  private readonly colorAdd = Buffer.vertex(
-    new Float32Array(vertexLimit * 4),
-    "STREAM_DRAW"
-  );
-  private readonly modes = Buffer.vertex(
-    new Uint8Array(vertexLimit * 1),
-    "STREAM_DRAW"
-  );
+  private readonly indexData = new Uint16Array(indexLimit);
+  private readonly attributeData = new ArrayBuffer(vertexLimit * 14 * 4);
   private readonly textureUnits: Int32Array;
+
+  private readonly indices = Buffer.index(this.indexData, "STREAM_DRAW");
+  private readonly attributes = Buffer.vertex(
+    new Uint32Array(this.attributeData),
+    "STREAM_DRAW"
+  );
+  private readonly attrFloat = new Float32Array(this.attributeData, 0);
+  private readonly attrUint = new Uint32Array(this.attributeData, 0);
 
   private readonly renderProgram: Program;
   private readonly renderVertexArray = new VertexArray(
     [
-      { index: 0, buffer: this.vertices, type: "float", components: 4 },
+      {
+        index: 0,
+        buffer: this.attributes,
+        type: "float",
+        components: 4,
+        offset: 0,
+        stride: 56,
+      },
       {
         index: 1,
-        buffer: this.colors,
+        buffer: this.attributes,
         type: "byte",
         components: 4,
         normalized: true,
+        offset: 16,
+        stride: 56,
       },
-      { index: 2, buffer: this.colorMul, type: "float", components: 4 },
-      { index: 3, buffer: this.colorAdd, type: "float", components: 4 },
+      {
+        index: 2,
+        buffer: this.attributes,
+        type: "float",
+        components: 4,
+        offset: 20,
+        stride: 56,
+      },
+      {
+        index: 3,
+        buffer: this.attributes,
+        type: "float",
+        components: 4,
+        offset: 36,
+        stride: 56,
+      },
       {
         index: 4,
-        buffer: this.modes,
-        type: "byte",
+        buffer: this.attributes,
+        type: "uint",
         components: 1,
         integer: true,
+        offset: 52,
+        stride: 56,
       },
     ],
     this.indices
@@ -128,11 +140,7 @@ export class Renderer {
       }
 
       this.indices.update(this.glState, 0, numIndex);
-      this.vertices.update(this.glState, 0, numVertex * 4);
-      this.colors.update(this.glState, 0, numVertex);
-      this.colorMul.update(this.glState, 0, numVertex * 4);
-      this.colorAdd.update(this.glState, 0, numVertex * 4);
-      this.modes.update(this.glState, 0, numVertex);
+      this.attributes.update(this.glState, 0, numVertex * 14);
 
       for (const tex of textures) {
         tex.ensure(this.glState);
@@ -160,7 +168,7 @@ export class Renderer {
       const objectNumIndex = render.object.indices.length;
       if (numVertex + objectNumVertex >= vertexLimit) {
         flush();
-      } else if (numIndex + objectNumIndex >= this.indices.length) {
+      } else if (numIndex + objectNumIndex >= indexLimit) {
         flush();
       }
 
@@ -179,33 +187,36 @@ export class Renderer {
 
       const { view, colorMul, colorAdd } = render.transform;
       const uv = render.object.uvMatrix;
+      const mode = render.object.fillMode + textureIndex * 4;
       for (let i = 0; i < objectNumVertex; i++) {
         const x = render.object.vertices[i * 2];
         const y = render.object.vertices[i * 2 + 1];
-        this.vertices.data[(numVertex + i) * 4 + 0] =
+        const color = render.object.colors[i];
+
+        this.attrFloat[(numVertex + i) * 14 + 0] =
           view[0] * x + view[2] * y + view[4];
-        this.vertices.data[(numVertex + i) * 4 + 1] =
+        this.attrFloat[(numVertex + i) * 14 + 1] =
           view[1] * x + view[3] * y + view[5];
-        this.vertices.data[(numVertex + i) * 4 + 2] =
+
+        this.attrFloat[(numVertex + i) * 14 + 2] =
           uv[0] * x + uv[2] * y + uv[4];
-        this.vertices.data[(numVertex + i) * 4 + 3] =
+        this.attrFloat[(numVertex + i) * 14 + 3] =
           uv[1] * x + uv[3] * y + uv[5];
 
-        this.colorMul.data[(numVertex + i) * 4 + 0] = colorMul[0];
-        this.colorMul.data[(numVertex + i) * 4 + 1] = colorMul[1];
-        this.colorMul.data[(numVertex + i) * 4 + 2] = colorMul[2];
-        this.colorMul.data[(numVertex + i) * 4 + 3] = colorMul[3];
+        this.attrUint[(numVertex + i) * 14 + 4] = color;
 
-        this.colorAdd.data[(numVertex + i) * 4 + 0] = colorAdd[0];
-        this.colorAdd.data[(numVertex + i) * 4 + 1] = colorAdd[1];
-        this.colorAdd.data[(numVertex + i) * 4 + 2] = colorAdd[2];
-        this.colorAdd.data[(numVertex + i) * 4 + 3] = colorAdd[3];
+        this.attrFloat[(numVertex + i) * 14 + 5] = colorMul[0];
+        this.attrFloat[(numVertex + i) * 14 + 6] = colorMul[1];
+        this.attrFloat[(numVertex + i) * 14 + 7] = colorMul[2];
+        this.attrFloat[(numVertex + i) * 14 + 8] = colorMul[3];
+
+        this.attrFloat[(numVertex + i) * 14 + 9] = colorAdd[0];
+        this.attrFloat[(numVertex + i) * 14 + 10] = colorAdd[1];
+        this.attrFloat[(numVertex + i) * 14 + 11] = colorAdd[2];
+        this.attrFloat[(numVertex + i) * 14 + 12] = colorAdd[3];
+
+        this.attrUint[(numVertex + i) * 14 + 13] = mode;
       }
-
-      this.colors.data.set(render.object.colors, numVertex);
-
-      const mode = render.object.fillMode + textureIndex * 4;
-      this.modes.data.fill(mode, numVertex, numVertex + objectNumVertex);
 
       numVertex += objectNumVertex;
       numIndex += objectNumIndex;

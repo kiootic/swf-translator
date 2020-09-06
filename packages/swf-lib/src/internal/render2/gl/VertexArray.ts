@@ -7,6 +7,8 @@ interface VertexArrayAttribute {
   type: "byte" | "ushort" | "uint" | "float";
   components: number;
   normalized?: boolean;
+  stride?: number;
+  offset?: number;
   integer?: boolean;
 }
 
@@ -46,6 +48,8 @@ export class VertexArray {
         type,
         components,
         normalized = false,
+        stride = 0,
+        offset = 0,
         integer = false,
       } = attr;
 
@@ -68,9 +72,16 @@ export class VertexArray {
       buffer.ensure(state);
       state.bindBuffer(gl[buffer.binding], buffer.buffer);
       if (integer) {
-        gl.vertexAttribIPointer(index, components, glType, 0, 0);
+        gl.vertexAttribIPointer(index, components, glType, stride, offset);
       } else {
-        gl.vertexAttribPointer(index, components, glType, normalized, 0, 0);
+        gl.vertexAttribPointer(
+          index,
+          components,
+          glType,
+          normalized,
+          stride,
+          offset
+        );
       }
       gl.enableVertexAttribArray(index);
     }
