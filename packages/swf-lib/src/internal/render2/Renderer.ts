@@ -20,6 +20,7 @@ import {
 } from "./RenderPool";
 import { RenderObject } from "./RenderObject";
 import { Framebuffer } from "./gl/Framebuffer";
+import { mat2d } from "gl-matrix";
 
 const vertexLimit = 0x10000;
 const indexLimit = 0x80000;
@@ -176,9 +177,9 @@ export class Renderer {
   ) {
     const gl = this.glState.gl;
     for (const render of textures) {
-      const { bounds, fn, then } = render.texture;
-      const width = Math.ceil(bounds[2]);
-      const height = Math.ceil(bounds[3]);
+      const { bounds, scale, fn, then } = render.texture;
+      const width = Math.ceil(bounds[2] * scale[0]);
+      const height = Math.ceil(bounds[3] * scale[1]);
 
       const texItem = this.renderPool.takeTexture(width, height);
       this.textureReturnBox.push(texItem);
@@ -186,11 +187,12 @@ export class Renderer {
       const rbItem = this.renderPool.takeRenderbuffer(width, height);
       try {
         const renderBounds = rect.create();
-        renderBounds[0] = Math.floor(bounds[0]);
-        renderBounds[1] = Math.floor(bounds[1]);
+        renderBounds[0] = Math.floor(bounds[0] * scale[0]);
+        renderBounds[1] = Math.floor(bounds[1] * scale[1]);
         renderBounds[2] = texItem.texture.width;
         renderBounds[3] = texItem.texture.height;
         const ctx = new RenderContext(renderBounds, true, false);
+        mat2d.scale(ctx.transform.view, ctx.transform.view, scale);
         fn(ctx);
 
         this.render(ctx.renders, rbItem.framebuffer);
@@ -219,8 +221,8 @@ export class Renderer {
 
         renderBounds[0] = 0;
         renderBounds[1] = 0;
-        renderBounds[2] = bounds[2];
-        renderBounds[3] = bounds[3];
+        renderBounds[2] = bounds[2] * scale[0];
+        renderBounds[3] = bounds[3] * scale[1];
         const thenCtx = new RenderContext(renderBounds, false);
         thenCtx.transform = render.transform;
         then(thenCtx, RenderObject.rect(renderBounds, texItem.texture));
