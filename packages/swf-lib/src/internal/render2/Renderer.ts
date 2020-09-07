@@ -21,6 +21,7 @@ import {
 import { RenderObject } from "./RenderObject";
 import { Framebuffer } from "./gl/Framebuffer";
 import { mat2d } from "gl-matrix";
+import { Renderbuffer } from "./gl/Renderbuffer";
 
 const vertexLimit = 0x10000;
 const indexLimit = 0x80000;
@@ -94,12 +95,15 @@ export class Renderer {
     this.indices
   );
 
+  private readonly defaultFramebuffer: Framebuffer;
+
   backgroundColor = 0x000000;
 
   constructor(readonly canvas: Canvas) {
     this.glState = new GLState(canvas.element, {
       alpha: false,
       premultipliedAlpha: false,
+      antialias: false,
     });
 
     this.renderProgram = new Program(
@@ -110,6 +114,10 @@ export class Renderer {
 
     this.renderProgram.ensure(this.glState);
     this.renderVertexArray.ensure(this.glState);
+
+    this.defaultFramebuffer = new Framebuffer(
+      new Renderbuffer(canvas.width, canvas.height, "rgb")
+    );
   }
 
   renderFrame(node: SceneNode) {
@@ -118,10 +126,11 @@ export class Renderer {
     const ctx = new RenderContext(bounds);
     node.render(ctx);
 
+    const gl = this.glState.gl;
     this.textureReturnBox.length = 0;
     this.renderbufferReturnBox.length = 0;
     try {
-      this.render(ctx.renders, null);
+      this.render(ctx.renders, this.defaultFramebuffer);
     } finally {
       for (const texture of this.textureReturnBox) {
         this.renderPool.returnTexture(texture);
@@ -130,6 +139,25 @@ export class Renderer {
         this.renderPool.returnRenderbuffer(renderbuffer);
       }
     }
+
+    this.defaultFramebuffer.ensure(this.glState);
+    this.glState.bindFramebuffer(
+      gl.READ_FRAMEBUFFER,
+      this.defaultFramebuffer.framebuffer
+    );
+    this.glState.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+    gl.blitFramebuffer(
+      0,
+      0,
+      width,
+      height,
+      0,
+      0,
+      width,
+      height,
+      gl.COLOR_BUFFER_BIT,
+      gl.NEAREST
+    );
   }
 
   private loadTexture(
@@ -147,7 +175,7 @@ export class Renderer {
     return tex;
   }
 
-  private render(renders: DeferredRender[], framebuffer: Framebuffer | null) {
+  private render(renders: DeferredRender[], framebuffer: Framebuffer) {
     const textures: DeferredRenderTexture[] = [];
     const classifyRenders = (renders: DeferredRender[]) => {
       textures.length = 0;
@@ -237,31 +265,24 @@ export class Renderer {
 
   private renderObjects(
     objects: DeferredRenderObject[],
-    framebuffer: Framebuffer | null
+    framebuffer: Framebuffer
   ) {
     const gl = this.glState.gl;
-    framebuffer?.ensure(this.glState);
-    this.glState.bindFramebuffer(
-      gl.DRAW_FRAMEBUFFER,
-      framebuffer?.framebuffer ?? null
-    );
+    framebuffer.ensure(this.glState);
+    this.glState.bindFramebuffer(gl.DRAW_FRAMEBUFFER, framebuffer.framebuffer);
 
-    if (framebuffer) {
-      gl.viewport(
-        0,
-        0,
-        framebuffer.colorAttachment.width,
-        framebuffer.colorAttachment.height
-      );
-    } else {
-      gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-    }
+    this.glState.setViewport(
+      0,
+      0,
+      framebuffer.colorAttachment.width,
+      framebuffer.colorAttachment.height
+    );
 
     this.glState.enable(gl.BLEND);
     this.glState.setBlendEquation(gl.FUNC_ADD);
     this.glState.setBlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
-    if (framebuffer) {
+    if (framebuffer !== this.defaultFramebuffer) {
       this.glState.setClearColor(0, 0, 0, 0);
     } else {
       this.glState.setClearColor(

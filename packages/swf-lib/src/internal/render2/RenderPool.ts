@@ -49,7 +49,7 @@ export class RenderPool {
 
     const items = this.renderbufferPool.get(key) || [];
     if (items.length === 0) {
-      const rb = new Renderbuffer(width, height, "color");
+      const rb = new Renderbuffer(width, height, "rgba");
       const framebuffer = new Framebuffer(rb);
       items.push({ renderbuffer: rb, framebuffer });
     }

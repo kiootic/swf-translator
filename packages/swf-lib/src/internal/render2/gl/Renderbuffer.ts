@@ -7,7 +7,11 @@ export class Renderbuffer {
   state: GLState | null = null;
   renderbuffer: WebGLRenderbuffer | null = null;
 
-  constructor(width: number, height: number, readonly type: "depth" | "color") {
+  constructor(
+    width: number,
+    height: number,
+    readonly type: "depth" | "rgba" | "rgb"
+  ) {
     this.width = width;
     this.height = height;
   }
@@ -23,8 +27,11 @@ export class Renderbuffer {
       case "depth":
         glFormat = gl.DEPTH_COMPONENT16;
         break;
-      case "color":
+      case "rgba":
         glFormat = gl.RGBA8;
+        break;
+      case "rgb":
+        glFormat = gl.RGB8;
         break;
     }
 

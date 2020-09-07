@@ -5,6 +5,7 @@ export class GLState {
 
   readonly maxTextures: number;
   readonly clearColor = vec4.create();
+  readonly viewport = vec4.create();
   readonly bindings = new Map<GLenum, unknown>();
   readonly textureUnits = new Map<number, WebGLTexture | null>();
   activeTexture: GLenum = 0;
@@ -124,6 +125,14 @@ export class GLState {
     }
     this.gl.clearColor(red, green, blue, alpha);
     vec4.set(this.clearColor, red, green, blue, alpha);
+  }
+
+  setViewport(x: number, y: number, width: number, height: number) {
+    if (vec4.equals(this.viewport, [x, y, width, height])) {
+      return;
+    }
+    this.gl.viewport(x, y, width, height);
+    vec4.set(this.viewport, x, y, width, height);
   }
 
   enable(cap: GLenum) {
