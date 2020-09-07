@@ -1,7 +1,11 @@
-import { mat3 } from "gl-matrix";
 import { Canvas } from "./Canvas";
 import { SceneNode } from "./SceneNode";
-import { RenderContext, DeferredRender } from "./RenderContext";
+import {
+  RenderContext,
+  DeferredRender,
+  DeferredRenderObject,
+  DeferredRenderTexture,
+} from "./RenderContext";
 import { rect } from "../math/rect";
 import { renderVertexShader, renderFragmentShader } from "./programs/render";
 import { GLState } from "./gl/GLState";
@@ -9,6 +13,13 @@ import { Texture } from "./gl/Texture";
 import { Buffer } from "./gl/Buffer";
 import { Program } from "./gl/Program";
 import { VertexArray } from "./gl/VertexArray";
+import {
+  RenderPool,
+  TexturePoolItem,
+  RenderbufferPoolItem,
+} from "./RenderPool";
+import { RenderObject } from "./RenderObject";
+import { Framebuffer } from "./gl/Framebuffer";
 
 const vertexLimit = 0x10000;
 const indexLimit = 0x80000;
@@ -17,6 +28,9 @@ export class Renderer {
   readonly glState: GLState;
 
   private readonly textureMap = new Map<unknown, Texture>();
+  private readonly renderPool = new RenderPool();
+  private readonly textureReturnBox: TexturePoolItem[] = [];
+  private readonly renderbufferReturnBox: RenderbufferPoolItem[] = [];
 
   private readonly indexData = new Uint16Array(indexLimit);
   private readonly attributeData = new ArrayBuffer(vertexLimit * 14 * 4);
@@ -103,23 +117,27 @@ export class Renderer {
     const ctx = new RenderContext(bounds);
     node.render(ctx);
 
-    const gl = this.glState.gl;
-
-    this.glState.setClearColor(
-      ((this.backgroundColor >>> 16) & 0xff) / 0xff,
-      ((this.backgroundColor >>> 8) & 0xff) / 0xff,
-      ((this.backgroundColor >>> 0) & 0xff) / 0xff,
-      1
-    );
-    this.glState.enable(gl.BLEND);
-    this.glState.setBlendEquation(gl.FUNC_ADD);
-    this.glState.setBlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    this.render(ctx.renders);
+    this.textureReturnBox.length = 0;
+    this.renderbufferReturnBox.length = 0;
+    try {
+      this.render(ctx.renders, null);
+    } finally {
+      for (const texture of this.textureReturnBox) {
+        this.renderPool.returnTexture(texture);
+      }
+      for (const renderbuffer of this.renderbufferReturnBox) {
+        this.renderPool.returnRenderbuffer(renderbuffer);
+      }
+    }
   }
 
-  private loadTexture(image: HTMLImageElement | HTMLCanvasElement | null) {
+  private loadTexture(
+    image: HTMLImageElement | HTMLCanvasElement | Texture | null
+  ) {
+    if (image instanceof Texture) {
+      return image;
+    }
+
     let tex = this.textureMap.get(image);
     if (!tex) {
       tex = image ? Texture.image(image) : Texture.WHITE;
@@ -128,8 +146,130 @@ export class Renderer {
     return tex;
   }
 
-  private render(renders: DeferredRender[]) {
+  private render(renders: DeferredRender[], framebuffer: Framebuffer | null) {
+    const textures: DeferredRenderTexture[] = [];
+    const classifyRenders = (renders: DeferredRender[]) => {
+      textures.length = 0;
+      for (const render of renders) {
+        if ("texture" in render) {
+          textures.push(render);
+        }
+      }
+    };
+
+    let resolved: boolean;
+    do {
+      resolved = false;
+      classifyRenders(renders);
+
+      if (textures.length > 0) {
+        this.renderTextures(renders, textures);
+        resolved = true;
+      }
+    } while (resolved);
+    this.renderObjects(renders as DeferredRenderObject[], framebuffer);
+  }
+
+  private renderTextures(
+    renders: DeferredRender[],
+    textures: DeferredRenderTexture[]
+  ) {
     const gl = this.glState.gl;
+    for (const render of textures) {
+      const { bounds, fn, then } = render.texture;
+      const width = Math.ceil(bounds[2]);
+      const height = Math.ceil(bounds[3]);
+
+      const texItem = this.renderPool.takeTexture(width, height);
+      this.textureReturnBox.push(texItem);
+
+      const rbItem = this.renderPool.takeRenderbuffer(width, height);
+      try {
+        const renderBounds = rect.create();
+        renderBounds[0] = Math.floor(bounds[0]);
+        renderBounds[1] = Math.floor(bounds[1]);
+        renderBounds[2] = texItem.texture.width;
+        renderBounds[3] = texItem.texture.height;
+        const ctx = new RenderContext(renderBounds, true, false);
+        fn(ctx);
+
+        this.render(ctx.renders, rbItem.framebuffer);
+
+        texItem.framebuffer.ensure(this.glState);
+        this.glState.bindFramebuffer(
+          gl.READ_FRAMEBUFFER,
+          rbItem.framebuffer.framebuffer
+        );
+        this.glState.bindFramebuffer(
+          gl.DRAW_FRAMEBUFFER,
+          texItem.framebuffer.framebuffer
+        );
+        gl.blitFramebuffer(
+          0,
+          0,
+          width,
+          height,
+          0,
+          0,
+          width,
+          height,
+          gl.COLOR_BUFFER_BIT,
+          gl.NEAREST
+        );
+
+        renderBounds[0] = 0;
+        renderBounds[1] = 0;
+        renderBounds[2] = bounds[2];
+        renderBounds[3] = bounds[3];
+        const thenCtx = new RenderContext(renderBounds, false);
+        thenCtx.transform = render.transform;
+        then(thenCtx, RenderObject.rect(renderBounds, texItem.texture));
+
+        const index = renders.indexOf(render);
+        renders.splice(index, 1, ...thenCtx.renders);
+      } finally {
+        this.renderPool.returnRenderbuffer(rbItem);
+      }
+    }
+  }
+
+  private renderObjects(
+    objects: DeferredRenderObject[],
+    framebuffer: Framebuffer | null
+  ) {
+    const gl = this.glState.gl;
+    framebuffer?.ensure(this.glState);
+    this.glState.bindFramebuffer(
+      gl.DRAW_FRAMEBUFFER,
+      framebuffer?.framebuffer ?? null
+    );
+
+    if (framebuffer) {
+      gl.viewport(
+        0,
+        0,
+        framebuffer.colorAttachment.width,
+        framebuffer.colorAttachment.height
+      );
+    } else {
+      gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+    }
+
+    this.glState.enable(gl.BLEND);
+    this.glState.setBlendEquation(gl.FUNC_ADD);
+    this.glState.setBlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+
+    if (framebuffer) {
+      this.glState.setClearColor(0, 0, 0, 0);
+    } else {
+      this.glState.setClearColor(
+        ((this.backgroundColor >>> 16) & 0xff) / 0xff,
+        ((this.backgroundColor >>> 8) & 0xff) / 0xff,
+        ((this.backgroundColor >>> 0) & 0xff) / 0xff,
+        1
+      );
+    }
+    gl.clear(gl.COLOR_BUFFER_BIT);
 
     let numVertex = 0;
     let numIndex = 0;
@@ -163,7 +303,7 @@ export class Renderer {
       textures.length = 0;
     };
 
-    for (const render of renders) {
+    for (const render of objects) {
       const objectNumVertex = render.object.vertices.length / 2;
       const objectNumIndex = render.object.indices.length;
       if (numVertex + objectNumVertex >= vertexLimit) {

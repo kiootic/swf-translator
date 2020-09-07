@@ -1,16 +1,17 @@
 import { GLState } from "./GLState";
 
 export class Texture {
-  data:
+  readonly data:
     | HTMLImageElement
     | {
         width: number;
         height: number;
       };
+  readonly width: number;
+  readonly height: number;
 
   state: GLState | null = null;
   texture: WebGLTexture | null = null;
-  unit: GLenum | null = null;
 
   static readonly WHITE: Texture = (() => {
     const canvas = document.createElement("canvas");
@@ -26,6 +27,8 @@ export class Texture {
 
   private constructor(data: Texture["data"]) {
     this.data = data;
+    this.width = data.width;
+    this.height = data.height;
   }
 
   static image(image: HTMLImageElement | HTMLCanvasElement) {
@@ -59,8 +62,8 @@ export class Texture {
         gl.TEXTURE_2D,
         0,
         gl.RGBA,
-        this.data.width,
-        this.data.height,
+        this.width,
+        this.height,
         0,
         gl.RGBA,
         gl.UNSIGNED_BYTE,

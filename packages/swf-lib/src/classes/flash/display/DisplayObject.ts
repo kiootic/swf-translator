@@ -80,7 +80,7 @@ export class DisplayObject extends EventDispatcher {
 
   set filters(value) {
     this.__filters = value;
-    // this.__node.filters = value.map((f) => f.__filter);
+    this.__node.filters = value.map((f) => f.__filter);
     this.__node.markRenderDirty();
   }
 

@@ -86,6 +86,22 @@ export class GLState {
     this.bindings.clear();
   }
 
+  bindRenderbuffer(target: GLenum, renderbuffer: WebGLRenderbuffer | null) {
+    if (this.bindings.get(target) === renderbuffer) {
+      return;
+    }
+    this.gl.bindRenderbuffer(target, renderbuffer);
+    this.bindings.set(target, renderbuffer);
+  }
+
+  bindFramebuffer(target: GLenum, framebuffer: WebGLFramebuffer | null) {
+    if (this.bindings.get(target) === framebuffer) {
+      return;
+    }
+    this.gl.bindFramebuffer(target, framebuffer);
+    this.bindings.set(target, framebuffer);
+  }
+
   useProgram(program: WebGLProgram | null) {
     if (this.program === program) {
       return;

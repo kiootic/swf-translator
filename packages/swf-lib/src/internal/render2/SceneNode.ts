@@ -28,6 +28,7 @@ export class SceneNode {
   readonly boundsIntrinsic = rect.create();
 
   cacheAsBitmap = false;
+  filters: unknown[] = [];
 
   readonly transformLocal = mat2d.identity(mat2d.create());
   readonly colorTransformLocalMul = vec4.fromValues(1, 1, 1, 1);
@@ -151,10 +152,10 @@ export class SceneNode {
 
   render(ctx: RenderContext) {
     this.ensureLocalBounds();
-    this.doRender(ctx);
+    this.renderRecursive(ctx);
   }
 
-  private doRender(ctx: RenderContext) {
+  private renderRecursive(ctx: RenderContext) {
     ctx.pushTransform(
       this.transformLocal,
       this.colorTransformLocalMul,
@@ -165,20 +166,32 @@ export class SceneNode {
     if (this.visible && rect.intersects(tmpRect, ctx.bounds)) {
       this.flags &= ~Flags.DirtyRender;
 
-      for (const o of this.renderObjects) {
-        ctx.renderObject(o);
-      }
-
-      if (this.buttonState >= 0) {
-        this.children[this.buttonState].render(ctx);
+      if (this.cacheAsBitmap || this.filters.length > 0) {
+        ctx.renderTexture(
+          this.boundsLocal,
+          (ctx) => this.doRender(ctx),
+          (ctx, obj) => ctx.renderObject(obj)
+        );
       } else {
-        for (const child of this.children) {
-          child.doRender(ctx);
-        }
+        this.doRender(ctx);
       }
     }
 
     ctx.popTransform();
+  }
+
+  private doRender(ctx: RenderContext) {
+    for (const o of this.renderObjects) {
+      ctx.renderObject(o);
+    }
+
+    if (this.buttonState >= 0) {
+      this.children[this.buttonState].render(ctx);
+    } else {
+      for (const child of this.children) {
+        child.renderRecursive(ctx);
+      }
+    }
   }
 
   hitTest(pt: vec2, exact: boolean): boolean {

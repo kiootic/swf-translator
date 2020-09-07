@@ -1,6 +1,7 @@
 import { rect } from "../math/rect";
 import { mat2d, vec2 } from "gl-matrix";
 import { sum } from "../math/funcs";
+import { Texture } from "./gl/Texture";
 
 interface RenderObjectMerge {
   renderObject: RenderObject;
@@ -14,10 +15,48 @@ export class RenderObject {
     readonly colors: Uint32Array,
     readonly indices: Uint16Array,
     readonly uvMatrix: mat2d,
-    readonly texture: HTMLImageElement | HTMLCanvasElement | null,
+    readonly texture: HTMLImageElement | HTMLCanvasElement | Texture | null,
     readonly fillMode: number,
     readonly bounds: rect
   ) {}
+
+  static rect(bounds: rect, texture: Texture): RenderObject {
+    const vertices = new Float32Array(8);
+    vertices[0] = bounds[0] + bounds[2];
+    vertices[1] = bounds[1];
+    vertices[2] = bounds[0];
+    vertices[3] = bounds[1] + bounds[3];
+    vertices[4] = bounds[0];
+    vertices[5] = bounds[1];
+    vertices[6] = bounds[0] + bounds[2];
+    vertices[7] = bounds[1] + bounds[3];
+
+    const colors = new Uint32Array(4);
+    colors.fill(0xffffffff);
+
+    const indices = new Uint16Array(6);
+    indices[0] = 0;
+    indices[1] = 1;
+    indices[2] = 2;
+    indices[3] = 1;
+    indices[4] = 0;
+    indices[5] = 3;
+
+    const uvMatrix = mat2d.fromScaling(mat2d.create(), [
+      1 / texture.width,
+      1 / texture.height,
+    ]);
+
+    return new RenderObject(
+      vertices,
+      colors,
+      indices,
+      uvMatrix,
+      texture,
+      0,
+      bounds
+    );
+  }
 
   hitTest(x: number, y: number, exact: boolean): boolean {
     if (!exact) {
