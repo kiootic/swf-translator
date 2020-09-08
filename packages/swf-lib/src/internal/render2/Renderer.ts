@@ -22,9 +22,25 @@ import { RenderObject } from "./RenderObject";
 import { Framebuffer } from "./gl/Framebuffer";
 import { mat2d } from "gl-matrix";
 import { Renderbuffer } from "./gl/Renderbuffer";
+import { Atlas } from "./Atlas";
 
 const vertexLimit = 0x10000;
 const indexLimit = 0x80000;
+const atlasSize = 512;
+
+function renderTextureSize(n: number) {
+  if (n < 128) {
+    return 128;
+  } else if (n < 256) {
+    return 256;
+  } else if (n < 512) {
+    return 512;
+  } else if (n < 1024) {
+    return 1024;
+  } else {
+    return n;
+  }
+}
 
 export class Renderer {
   readonly glState: GLState;
@@ -123,7 +139,7 @@ export class Renderer {
   renderFrame(node: SceneNode) {
     const { width, height } = this.canvas;
     const bounds = rect.fromValues(0, 0, width, height);
-    const ctx = new RenderContext(bounds);
+    const ctx = new RenderContext({ bounds, projectionSize: [width, height] });
     node.render(ctx);
 
     const gl = this.glState.gl;
@@ -204,63 +220,101 @@ export class Renderer {
     textures: DeferredRenderTexture[]
   ) {
     const gl = this.glState.gl;
+    let atlas: Atlas | null = null;
+    let atlasContext: RenderContext | null = null;
+    const atlasItems = new Map<DeferredRenderTexture, rect>();
+
+    const flush = () => {
+      if (!atlas || !atlasContext || atlasItems.size === 0) {
+        return;
+      }
+      const texItem = this.renderPool.takeTexture(atlas.width, atlas.height);
+      const rbItem = this.renderPool.takeRenderbuffer(
+        atlas.width,
+        atlas.height
+      );
+      this.textureReturnBox.push(texItem);
+      this.renderbufferReturnBox.push(rbItem);
+
+      this.render(atlasContext.renders, rbItem.framebuffer);
+
+      texItem.framebuffer.ensure(this.glState);
+      this.glState.bindFramebuffer(
+        gl.READ_FRAMEBUFFER,
+        rbItem.framebuffer.framebuffer
+      );
+      this.glState.bindFramebuffer(
+        gl.DRAW_FRAMEBUFFER,
+        texItem.framebuffer.framebuffer
+      );
+      gl.blitFramebuffer(
+        0,
+        0,
+        atlas.width,
+        atlas.height,
+        0,
+        0,
+        atlas.width,
+        atlas.height,
+        gl.COLOR_BUFFER_BIT,
+        gl.NEAREST
+      );
+
+      const renderBounds = rect.fromValues(-1, -1, 2, 2);
+      for (const [item, bounds] of atlasItems) {
+        const ctx = new RenderContext({
+          bounds: renderBounds,
+          projectionSize: null,
+        });
+        ctx.transform = item.transform;
+        item.texture.then(ctx, RenderObject.rect(bounds, texItem.texture));
+
+        const index = renders.indexOf(item);
+        renders.splice(index, 1, ...ctx.renders);
+      }
+    };
+
     for (const render of textures) {
-      const { bounds, scale, fn, then } = render.texture;
+      const { bounds, scale, fn } = render.texture;
       const width = Math.ceil(bounds[2] * scale[0]);
       const height = Math.ceil(bounds[3] * scale[1]);
 
-      const texItem = this.renderPool.takeTexture(width, height);
-      this.textureReturnBox.push(texItem);
+      let atlasBounds: rect | null;
+      if (
+        !atlas ||
+        !atlasContext ||
+        !(atlasBounds = atlas.add(width, height))
+      ) {
+        flush();
 
-      const rbItem = this.renderPool.takeRenderbuffer(width, height);
-      try {
-        const renderBounds = rect.create();
-        renderBounds[0] = Math.floor(bounds[0] * scale[0]);
-        renderBounds[1] = Math.floor(bounds[1] * scale[1]);
-        renderBounds[2] = texItem.texture.width;
-        renderBounds[3] = texItem.texture.height;
-        const ctx = new RenderContext(renderBounds, true, false);
-        mat2d.scale(ctx.transform.view, ctx.transform.view, scale);
-        fn(ctx);
-
-        this.render(ctx.renders, rbItem.framebuffer);
-
-        texItem.framebuffer.ensure(this.glState);
-        this.glState.bindFramebuffer(
-          gl.READ_FRAMEBUFFER,
-          rbItem.framebuffer.framebuffer
+        atlas = new Atlas(
+          Math.max(atlasSize, renderTextureSize(width)),
+          Math.max(atlasSize, renderTextureSize(height))
         );
-        this.glState.bindFramebuffer(
-          gl.DRAW_FRAMEBUFFER,
-          texItem.framebuffer.framebuffer
-        );
-        gl.blitFramebuffer(
-          0,
-          0,
-          width,
-          height,
-          0,
-          0,
-          width,
-          height,
-          gl.COLOR_BUFFER_BIT,
-          gl.NEAREST
-        );
-
-        renderBounds[0] = 0;
-        renderBounds[1] = 0;
-        renderBounds[2] = bounds[2] * scale[0];
-        renderBounds[3] = bounds[3] * scale[1];
-        const thenCtx = new RenderContext(renderBounds, false);
-        thenCtx.transform = render.transform;
-        then(thenCtx, RenderObject.rect(renderBounds, texItem.texture));
-
-        const index = renders.indexOf(render);
-        renders.splice(index, 1, ...thenCtx.renders);
-      } finally {
-        this.renderPool.returnRenderbuffer(rbItem);
+        atlasContext = new RenderContext({
+          bounds: rect.create(),
+          projectionSize: [atlas.width, atlas.height],
+          invertY: false,
+        });
+        atlasItems.clear();
+        atlasBounds = atlas.add(width, height)!;
       }
+
+      atlasContext.bounds[2] = width;
+      atlasContext.bounds[3] = height;
+
+      const projectionMat = atlasContext.postProjection;
+      mat2d.fromTranslation(projectionMat, [atlasBounds[0], atlasBounds[1]]);
+
+      const viewMat = atlasContext.transform.view;
+      mat2d.fromScaling(viewMat, scale);
+      mat2d.translate(viewMat, viewMat, [-bounds[0], -bounds[1]]);
+
+      fn(atlasContext);
+
+      atlasItems.set(render, atlasBounds);
     }
+    flush();
   }
 
   private renderObjects(

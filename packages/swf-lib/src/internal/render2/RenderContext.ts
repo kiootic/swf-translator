@@ -26,11 +26,18 @@ export interface DeferredRenderTexture {
   };
 }
 
+export interface RenderContextParams {
+  bounds: rect;
+  projectionSize: vec2 | null;
+  invertY?: boolean;
+}
+
 export class RenderContext {
   readonly bounds: rect;
   readonly renders: DeferredRender[] = [];
   readonly transformStack: Transform[] = [];
   readonly projection: mat2d;
+  readonly postProjection: mat2d;
 
   get transform(): Transform {
     return this.transformStack[this.transformStack.length - 1];
@@ -39,24 +46,23 @@ export class RenderContext {
     this.transformStack[this.transformStack.length - 1] = transform;
   }
 
-  constructor(bounds: rect, projection = true, invertY = true) {
+  constructor(params: RenderContextParams) {
+    const { bounds, projectionSize, invertY = true } = params;
+
     this.transformStack.push({
       view: mat2d.identity(mat2d.create()),
       colorMul: vec4.set(vec4.create(), 1, 1, 1, 1),
       colorAdd: vec4.set(vec4.create(), 0, 0, 0, 0),
     });
-    this.bounds = rect.copy(rect.create(), bounds);
-    this.projection = mat2d.create();
+    this.bounds = bounds;
 
-    if (projection) {
-      this.projection[0] = 2 / bounds[2];
-      this.projection[3] = (invertY ? -2 : 2) / bounds[3];
+    this.projection = mat2d.create();
+    this.postProjection = mat2d.create();
+    if (projectionSize) {
+      this.projection[0] = 2 / projectionSize[0];
+      this.projection[3] = (invertY ? -2 : 2) / projectionSize[1];
       this.projection[4] = -1;
       this.projection[5] = invertY ? 1 : -1;
-      mat2d.translate(this.projection, this.projection, [
-        -bounds[0],
-        -bounds[1],
-      ]);
     }
   }
 
@@ -92,6 +98,7 @@ export class RenderContext {
   popTransform() {
     const transform = this.transformStack.pop()!;
     vec4.scale(transform.colorAdd, transform.colorAdd, 1 / 0xff);
+    mat2d.multiply(transform.view, this.postProjection, transform.view);
     mat2d.multiply(transform.view, this.projection, transform.view);
   }
 
@@ -111,8 +118,8 @@ export class RenderContext {
 
     const viewMatrix = this.transform.view;
     mat2d.translate(viewMatrix, viewMatrix, [bounds[0], bounds[1]]);
-    viewMatrix[4] = Math.floor(viewMatrix[4]);
-    viewMatrix[5] = Math.floor(viewMatrix[5]);
+    viewMatrix[4] = viewMatrix[4];
+    viewMatrix[5] = viewMatrix[5];
 
     const scale = vec2.fromValues(viewMatrix[0], viewMatrix[3]);
     mat2d.scale(viewMatrix, viewMatrix, [1 / scale[0], 1 / scale[1]]);

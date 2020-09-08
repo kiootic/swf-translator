@@ -22,14 +22,14 @@ export class RenderObject {
 
   static rect(bounds: rect, texture: Texture): RenderObject {
     const vertices = new Float32Array(8);
-    vertices[0] = bounds[0] + bounds[2];
-    vertices[1] = bounds[1];
-    vertices[2] = bounds[0];
-    vertices[3] = bounds[1] + bounds[3];
-    vertices[4] = bounds[0];
-    vertices[5] = bounds[1];
-    vertices[6] = bounds[0] + bounds[2];
-    vertices[7] = bounds[1] + bounds[3];
+    vertices[0] = bounds[2];
+    vertices[1] = 0;
+    vertices[2] = 0;
+    vertices[3] = bounds[3];
+    vertices[4] = 0;
+    vertices[5] = 0;
+    vertices[6] = bounds[2];
+    vertices[7] = bounds[3];
 
     const colors = new Uint32Array(4);
     colors.fill(0xffffffff);
@@ -46,6 +46,7 @@ export class RenderObject {
       1 / texture.width,
       1 / texture.height,
     ]);
+    mat2d.translate(uvMatrix, uvMatrix, [bounds[0], bounds[1]]);
 
     return new RenderObject(
       vertices,

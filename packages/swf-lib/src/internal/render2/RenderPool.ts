@@ -29,8 +29,6 @@ export class RenderPool {
   private readonly renderbufferPool = new Map<string, RenderbufferPoolItem[]>();
 
   takeTexture(width: number, height: number): TexturePoolItem {
-    width = texSize(width);
-    height = texSize(height);
     const key = `${width}:${height}`;
 
     const items = this.texturePool.get(key) || [];
@@ -43,8 +41,6 @@ export class RenderPool {
   }
 
   takeRenderbuffer(width: number, height: number): RenderbufferPoolItem {
-    width = texSize(width);
-    height = texSize(height);
     const key = `${width}:${height}`;
 
     const items = this.renderbufferPool.get(key) || [];
