@@ -323,7 +323,7 @@ export class Renderer {
   ) {
     const gl = this.glState.gl;
     framebuffer.ensure(this.glState);
-    this.glState.bindFramebuffer(gl.DRAW_FRAMEBUFFER, framebuffer.framebuffer);
+    this.glState.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.framebuffer);
 
     this.glState.setViewport(
       0,

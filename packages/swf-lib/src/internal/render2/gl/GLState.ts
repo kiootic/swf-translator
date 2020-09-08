@@ -52,9 +52,24 @@ export class GLState {
         continue;
       }
 
+      // Use unbound texture unit.
       for (let unit = 0; unit < this.maxTextures; unit++) {
         const unitTex = this.textureUnits.get(unit);
-        if (!unitTex || !textures.includes(unitTex)) {
+        if (!unitTex) {
+          this.bindTexture(unit, tex);
+          units.push(unit);
+          found = true;
+          break;
+        }
+      }
+      if (found) {
+        continue;
+      }
+
+      // Reuse bound texture unit.
+      for (let unit = 0; unit < this.maxTextures; unit++) {
+        const unitTex = this.textureUnits.get(unit);
+        if (unitTex && !textures.includes(unitTex)) {
           this.bindTexture(unit, tex);
           units.push(unit);
           found = true;
@@ -101,6 +116,17 @@ export class GLState {
     }
     this.gl.bindFramebuffer(target, framebuffer);
     this.bindings.set(target, framebuffer);
+    if (target === this.gl.FRAMEBUFFER) {
+      this.bindings.set(this.gl.FRAMEBUFFER, framebuffer);
+      this.bindings.set(this.gl.READ_FRAMEBUFFER, framebuffer);
+      this.bindings.set(this.gl.DRAW_FRAMEBUFFER, framebuffer);
+    } else if (target === this.gl.READ_FRAMEBUFFER) {
+      this.bindings.set(this.gl.FRAMEBUFFER, undefined);
+      this.bindings.set(this.gl.READ_FRAMEBUFFER, framebuffer);
+    } else if (target === this.gl.DRAW_FRAMEBUFFER) {
+      this.bindings.set(this.gl.FRAMEBUFFER, undefined);
+      this.bindings.set(this.gl.DRAW_FRAMEBUFFER, framebuffer);
+    }
   }
 
   useProgram(program: WebGLProgram | null) {
