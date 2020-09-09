@@ -167,8 +167,15 @@ export class SceneNode {
       this.flags &= ~Flags.DirtyRender;
 
       if (this.cacheAsBitmap || this.filters.length > 0) {
+        const paddings = vec2.create();
+        for (const filter of this.filters) {
+          vec2.max(paddings, paddings, filter.paddings);
+        }
+        vec2.ceil(paddings, paddings);
+
         ctx.renderTexture(
           this.boundsLocal,
+          paddings,
           (ctx) => this.doRender(ctx),
           (ctx, tex, bounds) => {
             ctx.renderObject(RenderObject.rect(bounds, tex));

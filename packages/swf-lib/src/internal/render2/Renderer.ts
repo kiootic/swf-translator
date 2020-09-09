@@ -271,9 +271,9 @@ export class Renderer {
     };
 
     for (const render of textures) {
-      const { bounds, scale, fn } = render.texture;
-      const width = Math.ceil(bounds[2] * scale[0]);
-      const height = Math.ceil(bounds[3] * scale[1]);
+      const { bounds, paddings, scale, fn } = render.texture;
+      const width = Math.ceil(bounds[2] * scale[0] + paddings[0] * 2);
+      const height = Math.ceil(bounds[3] * scale[1] + paddings[1] * 2);
 
       let atlasBounds: rect | null;
       if (
@@ -296,11 +296,14 @@ export class Renderer {
         atlasBounds = atlas.add(width, height)!;
       }
 
-      atlasContext.bounds[2] = width;
-      atlasContext.bounds[3] = height;
+      atlasContext.bounds[2] = bounds[2];
+      atlasContext.bounds[3] = bounds[3];
 
       const projectionMat = atlasContext.postProjection;
-      mat2d.fromTranslation(projectionMat, [atlasBounds[0], atlasBounds[1]]);
+      mat2d.fromTranslation(projectionMat, [
+        atlasBounds[0] + paddings[0],
+        atlasBounds[1] + paddings[1],
+      ]);
 
       const viewMat = atlasContext.transform.view;
       mat2d.fromScaling(viewMat, scale);

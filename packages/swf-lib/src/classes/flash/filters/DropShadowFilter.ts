@@ -1,3 +1,4 @@
+import { vec2 } from "gl-matrix";
 import { BitmapFilter } from "./BitmapFilter";
 import {
   DropShadowFilterInstance,
@@ -8,8 +9,10 @@ export class DropShadowFilter extends BitmapFilter {
   get __filter(): DropShadowFilterInstance {
     return {
       filter: RenderDropShadowFilter.instance,
-      padX: this.blurX + this.distance,
-      padY: this.blurY + this.distance,
+      paddings: vec2.fromValues(
+        this.blurX + this.distance,
+        this.blurY + this.distance
+      ),
       blurX: this.blurX,
       blurY: this.blurY,
       passes: this.quality,

@@ -1,4 +1,5 @@
 import { BitmapFilter } from "./BitmapFilter";
+import { vec2 } from "gl-matrix";
 import {
   BlurFilterInstance,
   BlurFilter as RenderBlurFilter,
@@ -8,8 +9,7 @@ export class BlurFilter extends BitmapFilter {
   get __filter(): BlurFilterInstance {
     return {
       filter: RenderBlurFilter.instance,
-      padX: this.blurX,
-      padY: this.blurY,
+      paddings: vec2.fromValues(this.blurX, this.blurY),
       blurX: this.blurX,
       blurY: this.blurY,
       passes: this.quality,
