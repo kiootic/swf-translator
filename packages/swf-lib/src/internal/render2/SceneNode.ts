@@ -170,7 +170,9 @@ export class SceneNode {
         ctx.renderTexture(
           this.boundsLocal,
           (ctx) => this.doRender(ctx),
-          (ctx, obj) => ctx.renderObject(obj)
+          (ctx, tex, bounds) => {
+            ctx.renderObject(RenderObject.rect(bounds, tex));
+          }
         );
       } else {
         this.doRender(ctx);

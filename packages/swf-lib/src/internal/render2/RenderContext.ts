@@ -2,6 +2,7 @@ import { mat2d, vec4, vec2 } from "gl-matrix";
 import { RenderObject } from "./RenderObject";
 import { rect } from "../math/rect";
 import { multiplyColorTransform } from "../math/color";
+import { Texture } from "./gl/Texture";
 
 export interface Transform {
   view: mat2d;
@@ -22,7 +23,7 @@ export interface DeferredRenderTexture {
     bounds: rect;
     scale: vec2;
     fn: (ctx: RenderContext) => void;
-    then: (ctx: RenderContext, result: RenderObject) => void;
+    then: (ctx: RenderContext, texture: Texture, bounds: rect) => void;
   };
 }
 
@@ -112,7 +113,7 @@ export class RenderContext {
   renderTexture(
     bounds: rect,
     fn: (ctx: RenderContext) => void,
-    then: (ctx: RenderContext, result: RenderObject) => void
+    then: (ctx: RenderContext, texture: Texture, bounds: rect) => void
   ) {
     this.dupTransform();
 

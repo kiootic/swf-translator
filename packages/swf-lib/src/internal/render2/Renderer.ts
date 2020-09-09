@@ -267,7 +267,7 @@ export class Renderer {
           projectionSize: null,
         });
         ctx.transform = item.transform;
-        item.texture.then(ctx, RenderObject.rect(bounds, texItem.texture));
+        item.texture.then(ctx, texItem.texture, bounds);
 
         const index = renders.indexOf(item);
         renders.splice(index, 1, ...ctx.renders);
