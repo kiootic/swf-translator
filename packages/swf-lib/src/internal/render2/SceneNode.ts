@@ -3,6 +3,7 @@ import { RenderObject } from "./RenderObject";
 import { rect } from "../math/rect";
 import { FilterInstance } from "./filter/Filter";
 import { RenderContext } from "./RenderContext";
+import { Texture } from "./gl/Texture";
 
 const enum Flags {
   DirtyBounds = 1,
@@ -173,13 +174,26 @@ export class SceneNode {
         }
         vec2.ceil(paddings, paddings);
 
+        const filters = this.filters.slice();
+        const onRenderTexture = (
+          ctx: RenderContext,
+          tex: Texture,
+          bounds: rect
+        ) => {
+          const nextFilter = filters.shift();
+          if (nextFilter) {
+            ctx.renderFilter(tex, bounds, nextFilter, onRenderTexture);
+            return;
+          }
+
+          ctx.renderObject(RenderObject.rect(bounds, tex));
+        };
+
         ctx.renderTexture(
           this.boundsLocal,
           paddings,
           (ctx) => this.doRender(ctx),
-          (ctx, tex, bounds) => {
-            ctx.renderObject(RenderObject.rect(bounds, tex));
-          }
+          onRenderTexture
         );
       } else {
         this.doRender(ctx);

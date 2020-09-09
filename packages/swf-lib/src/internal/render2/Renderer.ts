@@ -6,6 +6,7 @@ import {
   DeferredRender,
   DeferredRenderObject,
   DeferredRenderTexture,
+  DeferredRenderFilter,
 } from "./RenderContext";
 import { rect } from "../math/rect";
 import { renderVertexShader, renderFragmentShader } from "./programs/render";
@@ -19,6 +20,7 @@ import { Framebuffer } from "./gl/Framebuffer";
 import { Renderbuffer } from "./gl/Renderbuffer";
 import { TextureTarget, RenderbufferTarget } from "./gl/targets";
 import { Atlas } from "./Atlas";
+import { FilterInput, Filter, FilterInstance } from "./filter/Filter";
 
 const vertexLimit = 0x10000;
 const indexLimit = 0x80000;
@@ -189,23 +191,33 @@ export class Renderer {
 
   private render(renders: DeferredRender[], framebuffer: Framebuffer) {
     const textures: DeferredRenderTexture[] = [];
+    const filters: DeferredRenderFilter[] = [];
     const classifyRenders = (renders: DeferredRender[]) => {
       textures.length = 0;
+      filters.length = 0;
       for (const render of renders) {
         if ("texture" in render) {
           textures.push(render);
+        } else if ("filter" in render) {
+          filters.push(render);
         }
       }
     };
 
     let resolved: boolean;
+    classifyRenders(renders);
     do {
       resolved = false;
-      classifyRenders(renders);
 
-      if (textures.length > 0) {
+      while (textures.length > 0) {
         this.renderTextures(renders, textures);
         resolved = true;
+        classifyRenders(renders);
+      }
+      while (filters.length > 0) {
+        this.renderFilters(renders, filters);
+        resolved = true;
+        classifyRenders(renders);
       }
     } while (resolved);
     this.renderObjects(renders as DeferredRenderObject[], framebuffer);
@@ -314,6 +326,79 @@ export class Renderer {
       atlasItems.set(render, atlasBounds);
     }
     flush();
+  }
+
+  private renderFilters(
+    renders: DeferredRender[],
+    filters: DeferredRenderFilter[]
+  ) {
+    const gl = this.glState.gl;
+    let atlas: Atlas | null = null;
+    let filter: Filter | null = null;
+    const filterInputs = new Map<DeferredRenderFilter, FilterInput>();
+
+    const flush = () => {
+      if (!atlas || !filter || filterInputs.size === 0) {
+        return;
+      }
+      const target = this.renderPool.takeTexture(atlas.width, atlas.height);
+      this.textureReturnBox.push(target);
+
+      filter.apply(Array.from(filterInputs.values()), target);
+
+      const renderBounds = rect.fromValues(-1, -1, 2, 2);
+      for (const [render, { outBounds }] of filterInputs) {
+        const ctx = new RenderContext({
+          bounds: renderBounds,
+          projectionSize: null,
+        });
+        ctx.transform = render.transform;
+        render.filter.then(ctx, target.texture, outBounds);
+
+        const index = renders.indexOf(render);
+        renders.splice(index, 1, ...ctx.renders);
+      }
+
+      atlas = null;
+      filterInputs.clear();
+    };
+
+    const filterGroups = new Map<Filter, DeferredRenderFilter[]>();
+    for (const render of filters) {
+      const filter = render.filter.instance.filter;
+      let group = filterGroups.get(filter);
+      if (!group) {
+        group = [];
+        filterGroups.set(filter, group);
+      }
+      group.push(render);
+    }
+
+    for (const [groupFilter, renders] of filterGroups) {
+      filter = groupFilter;
+      for (const render of renders) {
+        const { texture, bounds, instance } = render.filter;
+        let atlasBounds: rect | null;
+        if (!atlas || !(atlasBounds = atlas.add(bounds[2], bounds[3]))) {
+          flush();
+
+          atlas = new Atlas(
+            Math.max(atlasSize, renderTextureSize(bounds[2])),
+            Math.max(atlasSize, renderTextureSize(bounds[3]))
+          );
+          atlasBounds = atlas.add(bounds[2], bounds[3])!;
+        }
+
+        const input: FilterInput = {
+          instance,
+          texture,
+          inBounds: bounds,
+          outBounds: atlasBounds,
+        };
+        filterInputs.set(render, input);
+      }
+      flush();
+    }
   }
 
   private renderObjects(

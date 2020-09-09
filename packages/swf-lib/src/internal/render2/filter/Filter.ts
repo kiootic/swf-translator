@@ -8,13 +8,13 @@ export interface FilterInstance {
   paddings: vec2;
 }
 
-export interface FilterInput<T extends FilterInstance> {
+export interface FilterInput<T extends FilterInstance = FilterInstance> {
   instance: T;
   texture: Texture;
   inBounds: rect;
   outBounds: rect;
 }
 
-export interface Filter<T extends FilterInstance> {
+export interface Filter<T extends FilterInstance = FilterInstance> {
   apply(input: FilterInput<T>[], out: TextureTarget): void;
 }

@@ -3,6 +3,7 @@ import { RenderObject } from "./RenderObject";
 import { rect } from "../math/rect";
 import { multiplyColorTransform } from "../math/color";
 import { Texture } from "./gl/Texture";
+import { FilterInstance } from "./filter/Filter";
 
 export interface Transform {
   view: mat2d;
@@ -10,7 +11,10 @@ export interface Transform {
   colorAdd: vec4;
 }
 
-export type DeferredRender = DeferredRenderObject | DeferredRenderTexture;
+export type DeferredRender =
+  | DeferredRenderObject
+  | DeferredRenderTexture
+  | DeferredRenderFilter;
 
 export interface DeferredRenderObject {
   transform: Transform;
@@ -24,6 +28,16 @@ export interface DeferredRenderTexture {
     paddings: vec2;
     scale: vec2;
     fn: (ctx: RenderContext) => void;
+    then: (ctx: RenderContext, texture: Texture, bounds: rect) => void;
+  };
+}
+
+export interface DeferredRenderFilter {
+  transform: Transform;
+  filter: {
+    texture: Texture;
+    bounds: rect;
+    instance: FilterInstance;
     then: (ctx: RenderContext, texture: Texture, bounds: rect) => void;
   };
 }
@@ -140,5 +154,22 @@ export class RenderContext {
       },
     });
     this.popTransform();
+  }
+
+  renderFilter(
+    texture: Texture,
+    bounds: rect,
+    instance: FilterInstance,
+    then: (ctx: RenderContext, texture: Texture, bounds: rect) => void
+  ) {
+    this.renders.push({
+      transform: this.transform,
+      filter: {
+        texture,
+        bounds,
+        instance,
+        then,
+      },
+    });
   }
 }

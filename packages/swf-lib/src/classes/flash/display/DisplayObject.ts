@@ -85,7 +85,7 @@ export class DisplayObject extends EventDispatcher {
   }
 
   get cacheAsBitmap() {
-    return this.__node.cacheAsBitmap; // || this.__node.filters.length > 0;
+    return this.__node.cacheAsBitmap || this.__node.filters.length > 0;
   }
   set cacheAsBitmap(value) {
     this.__node.cacheAsBitmap = value;
