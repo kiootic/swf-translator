@@ -1,34 +1,13 @@
 import { Texture } from "./gl/Texture";
 import { Renderbuffer } from "./gl/Renderbuffer";
 import { Framebuffer } from "./gl/Framebuffer";
-
-function texSize(n: number) {
-  if (n < 128) {
-    return 128;
-  } else if (n < 256) {
-    return 256;
-  } else if (n < 512) {
-    return 512;
-  } else {
-    return n;
-  }
-}
-
-export interface TexturePoolItem {
-  texture: Texture;
-  framebuffer: Framebuffer;
-}
-
-export interface RenderbufferPoolItem {
-  renderbuffer: Renderbuffer;
-  framebuffer: Framebuffer;
-}
+import { TextureTarget, RenderbufferTarget } from "./gl/targets";
 
 export class RenderPool {
-  private readonly texturePool = new Map<string, TexturePoolItem[]>();
-  private readonly renderbufferPool = new Map<string, RenderbufferPoolItem[]>();
+  private readonly texturePool = new Map<string, TextureTarget[]>();
+  private readonly renderbufferPool = new Map<string, RenderbufferTarget[]>();
 
-  takeTexture(width: number, height: number): TexturePoolItem {
+  takeTexture(width: number, height: number): TextureTarget {
     const key = `${width}:${height}`;
 
     const items = this.texturePool.get(key) || [];
@@ -40,7 +19,7 @@ export class RenderPool {
     return items.pop()!;
   }
 
-  takeRenderbuffer(width: number, height: number): RenderbufferPoolItem {
+  takeRenderbuffer(width: number, height: number): RenderbufferTarget {
     const key = `${width}:${height}`;
 
     const items = this.renderbufferPool.get(key) || [];
@@ -52,17 +31,17 @@ export class RenderPool {
     return items.pop()!;
   }
 
-  returnTexture(poolItem: TexturePoolItem) {
-    const key = `${poolItem.texture.width}:${poolItem.texture.height}`;
+  returnTexture(target: TextureTarget) {
+    const key = `${target.texture.width}:${target.texture.height}`;
     const items = this.texturePool.get(key) || [];
-    items.push(poolItem);
+    items.push(target);
     this.texturePool.set(key, items);
   }
 
-  returnRenderbuffer(poolItem: RenderbufferPoolItem) {
-    const key = `${poolItem.renderbuffer.width}:${poolItem.renderbuffer.height}`;
+  returnRenderbuffer(target: RenderbufferTarget) {
+    const key = `${target.renderbuffer.width}:${target.renderbuffer.height}`;
     const items = this.renderbufferPool.get(key) || [];
-    items.push(poolItem);
+    items.push(target);
     this.renderbufferPool.set(key, items);
   }
 }

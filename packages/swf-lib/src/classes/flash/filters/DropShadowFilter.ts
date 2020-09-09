@@ -1,65 +1,34 @@
 import { BitmapFilter } from "./BitmapFilter";
-import { DropShadowFilter as RenderDropShadowFilter } from "../../../internal/render/filters/DropShadowFilter";
+import {
+  DropShadowFilterInstance,
+  DropShadowFilter as RenderDropShadowFilter,
+} from "../../../internal/render2/filter/DropShadowFilter";
 
 export class DropShadowFilter extends BitmapFilter {
-  readonly __filter = new RenderDropShadowFilter();
+  get __filter(): DropShadowFilterInstance {
+    return {
+      filter: RenderDropShadowFilter.instance,
+      padX: this.blurX + this.distance,
+      padY: this.blurY + this.distance,
+      blurX: this.blurX,
+      blurY: this.blurY,
+      passes: this.quality,
+      color: this.color,
+      strength: this.strength,
+      angle: this.angle,
+      distance: this.distance,
+      knockout: this.knockout,
+    };
+  }
 
+  blurX = 0;
+  blurY = 0;
+  quality = 3;
+  color = 0xffffff;
+  strength = 1;
+  angle = 45;
+  distance = 4;
+  knockout = false;
   hideObject = false;
   inner = false;
-
-  get color() {
-    return this.__filter.color;
-  }
-  set color(value) {
-    this.__filter.color = value;
-  }
-
-  get blurX() {
-    return this.__filter.blurX;
-  }
-  set blurX(value) {
-    this.__filter.blurX = value;
-  }
-
-  get blurY() {
-    return this.__filter.blurY;
-  }
-  set blurY(value) {
-    this.__filter.blurY = value;
-  }
-
-  get quality() {
-    return this.__filter.passes;
-  }
-  set quality(value) {
-    this.__filter.passes = value;
-  }
-
-  get strength() {
-    return this.__filter.strength;
-  }
-  set strength(value) {
-    this.__filter.strength = value;
-  }
-
-  get angle() {
-    return this.__filter.angle;
-  }
-  set angle(value) {
-    this.__filter.angle = value;
-  }
-
-  get distance() {
-    return this.__filter.distance;
-  }
-  set distance(value) {
-    this.__filter.distance = value;
-  }
-
-  get knockout() {
-    return this.__filter.knockout;
-  }
-  set knockout(value) {
-    this.__filter.knockout = value;
-  }
 }

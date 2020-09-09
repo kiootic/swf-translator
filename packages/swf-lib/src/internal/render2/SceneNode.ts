@@ -1,7 +1,7 @@
 import { mat2d, vec2, vec4 } from "gl-matrix";
 import { RenderObject } from "./RenderObject";
 import { rect } from "../math/rect";
-import { multiplyColorTransform } from "../math/color";
+import { FilterInstance } from "./filter/Filter";
 import { RenderContext } from "./RenderContext";
 
 const enum Flags {
@@ -28,7 +28,7 @@ export class SceneNode {
   readonly boundsIntrinsic = rect.create();
 
   cacheAsBitmap = false;
-  filters: unknown[] = [];
+  filters: FilterInstance[] = [];
 
   readonly transformLocal = mat2d.identity(mat2d.create());
   readonly colorTransformLocalMul = vec4.fromValues(1, 1, 1, 1);

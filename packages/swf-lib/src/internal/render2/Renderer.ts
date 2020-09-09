@@ -1,3 +1,4 @@
+import { mat2d } from "gl-matrix";
 import { Canvas } from "./Canvas";
 import { SceneNode } from "./SceneNode";
 import {
@@ -13,15 +14,10 @@ import { Texture } from "./gl/Texture";
 import { Buffer } from "./gl/Buffer";
 import { Program } from "./gl/Program";
 import { VertexArray } from "./gl/VertexArray";
-import {
-  RenderPool,
-  TexturePoolItem,
-  RenderbufferPoolItem,
-} from "./RenderPool";
-import { RenderObject } from "./RenderObject";
+import { RenderPool } from "./RenderPool";
 import { Framebuffer } from "./gl/Framebuffer";
-import { mat2d } from "gl-matrix";
 import { Renderbuffer } from "./gl/Renderbuffer";
+import { TextureTarget, RenderbufferTarget } from "./gl/targets";
 import { Atlas } from "./Atlas";
 
 const vertexLimit = 0x10000;
@@ -47,8 +43,8 @@ export class Renderer {
 
   private readonly textureMap = new Map<unknown, Texture>();
   private readonly renderPool = new RenderPool();
-  private readonly textureReturnBox: TexturePoolItem[] = [];
-  private readonly renderbufferReturnBox: RenderbufferPoolItem[] = [];
+  private readonly textureReturnBox: TextureTarget[] = [];
+  private readonly renderbufferReturnBox: RenderbufferTarget[] = [];
 
   private readonly indexData = new Uint16Array(indexLimit);
   private readonly attributeData = new ArrayBuffer(vertexLimit * 14 * 4);

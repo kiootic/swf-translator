@@ -1,5 +1,5 @@
-import { Filter } from "../../../internal/render/Filter";
+import { FilterInstance } from "../../../internal/render2/filter/Filter";
 
 export abstract class BitmapFilter {
-  abstract readonly __filter: Filter;
+  abstract readonly __filter: FilterInstance;
 }
