@@ -27,6 +27,7 @@ export interface DeferredRenderTexture {
     bounds: rect;
     paddings: vec2;
     scale: vec2;
+    translate: vec2;
     fn: (ctx: RenderContext) => void;
     then: (ctx: RenderContext, texture: Texture, bounds: rect) => void;
   };
@@ -143,12 +144,17 @@ export class RenderContext {
     mat2d.scale(viewMatrix, viewMatrix, [1 / scale[0], 1 / scale[1]]);
     mat2d.translate(viewMatrix, viewMatrix, [-paddings[0], -paddings[1]]);
 
+    const translate = vec2.fromValues(viewMatrix[4], viewMatrix[5]);
+    viewMatrix[4] = Math.floor(viewMatrix[4]);
+    viewMatrix[5] = Math.floor(viewMatrix[5]);
+
     this.renders.push({
       transform: this.transform,
       texture: {
         bounds: rect.copy(rect.create(), bounds),
         paddings,
         scale,
+        translate,
         fn,
         then,
       },
