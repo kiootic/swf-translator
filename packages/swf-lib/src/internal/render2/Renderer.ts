@@ -456,7 +456,7 @@ export class Renderer {
         this.textureUnits
       );
       this.glState.useProgram(this.renderProgram.program);
-      this.glState.bindVertexArray(this.renderVertexArray.vertexArray);
+      this.renderVertexArray.bind(this.glState);
       gl.drawElements(gl.TRIANGLES, numIndex, gl.UNSIGNED_SHORT, 0);
 
       numVertex = 0;

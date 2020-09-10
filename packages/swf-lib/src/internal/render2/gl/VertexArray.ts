@@ -89,4 +89,12 @@ export class VertexArray {
     this.vertexArray = vertexArray;
     this.state = state;
   }
+
+  bind(state: GLState) {
+    this.ensure(state);
+    state.bindVertexArray(this.vertexArray);
+    // HACK: Always rebind index buffer due to driver bugs:
+    // ref: https://stackoverflow.com/a/11261922
+    this.indexBuffer?.bind(state);
+  }
 }
