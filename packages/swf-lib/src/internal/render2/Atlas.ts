@@ -1,6 +1,6 @@
 import { rect } from "../math/rect";
 
-const padding = 2;
+const padding = 1;
 
 export class Atlas {
   private x = padding;
@@ -13,15 +13,19 @@ export class Atlas {
     let x = this.x;
     let y = this.y;
 
-    if (this.x + width + padding > this.width) {
-      this.x = padding;
+    if (this.x + width > this.width) {
+      this.x = 0;
       this.y += this.rowHeight;
       this.rowHeight = 0;
 
       x = this.x;
       y = this.y;
     }
-    this.x += width + padding;
+    this.x += width;
+    if (this.x > this.width) {
+      return null;
+    }
+    this.x += padding;
 
     this.rowHeight = Math.max(this.rowHeight, height + padding);
     if (this.y + this.rowHeight > this.height) {
