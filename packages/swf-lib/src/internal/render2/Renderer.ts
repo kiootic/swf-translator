@@ -24,7 +24,7 @@ import { FilterInput, Filter, FilterInstance } from "./filter/Filter";
 
 const vertexLimit = 0x10000;
 const indexLimit = 0x80000;
-const atlasSize = 512;
+const atlasSize = 1024;
 
 function renderTextureSize(n: number) {
   if (n < 128) {
