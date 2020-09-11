@@ -2,6 +2,7 @@ import { mat2d, vec4, vec2 } from "gl-matrix";
 import { RenderObject } from "./RenderObject";
 import { rect } from "../math/rect";
 import { multiplyColorTransform } from "../math/color";
+import { projection } from "../math/matrix";
 import { Texture } from "./gl/Texture";
 import { FilterInstance } from "./filter/Filter";
 
@@ -76,10 +77,12 @@ export class RenderContext {
     this.projection = mat2d.create();
     this.postProjection = mat2d.create();
     if (projectionSize) {
-      this.projection[0] = 2 / projectionSize[0];
-      this.projection[3] = (invertY ? -2 : 2) / projectionSize[1];
-      this.projection[4] = -1;
-      this.projection[5] = invertY ? 1 : -1;
+      projection(
+        this.projection,
+        projectionSize[0],
+        projectionSize[1],
+        invertY
+      );
     }
   }
 

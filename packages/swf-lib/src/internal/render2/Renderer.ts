@@ -44,9 +44,9 @@ export class Renderer {
   readonly glState: GLState;
 
   private readonly textureMap = new Map<unknown, Texture>();
-  private readonly renderPool = new RenderPool();
-  private readonly textureReturnBox: TextureTarget[] = [];
-  private readonly renderbufferReturnBox: RenderbufferTarget[] = [];
+  readonly renderPool = new RenderPool();
+  readonly textureReturnBox: TextureTarget[] = [];
+  readonly renderbufferReturnBox: RenderbufferTarget[] = [];
 
   private readonly indexData = new Uint16Array(indexLimit);
   private readonly attributeData = new ArrayBuffer(vertexLimit * 14 * 4);
@@ -346,7 +346,7 @@ export class Renderer {
       const target = this.renderPool.takeTexture(atlas.width, atlas.height);
       this.textureReturnBox.push(target);
 
-      filter.apply(Array.from(filterInputs.values()), target);
+      filter.apply(this, Array.from(filterInputs.values()), target);
 
       const renderBounds = rect.fromValues(-1, -1, 2, 2);
       for (const [render, { outBounds }] of filterInputs) {

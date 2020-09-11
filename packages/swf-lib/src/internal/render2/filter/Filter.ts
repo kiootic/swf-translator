@@ -1,7 +1,8 @@
-import { Texture } from "../gl/Texture";
-import { rect } from "../../math/rect";
-import { TextureTarget } from "../gl/targets";
 import { vec2 } from "gl-matrix";
+import { rect } from "../../math/rect";
+import { Texture } from "../gl/Texture";
+import { TextureTarget } from "../gl/targets";
+import { Renderer } from "../Renderer";
 
 export interface FilterInstance {
   filter: Filter<this>;
@@ -16,5 +17,5 @@ export interface FilterInput<T extends FilterInstance = FilterInstance> {
 }
 
 export interface Filter<T extends FilterInstance = FilterInstance> {
-  apply(input: FilterInput<T>[], out: TextureTarget): void;
+  apply(renderer: Renderer, input: FilterInput<T>[], out: TextureTarget): void;
 }
