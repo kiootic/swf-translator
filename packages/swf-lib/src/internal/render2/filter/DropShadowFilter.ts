@@ -32,6 +32,10 @@ const outTexScale = vec2.create();
 export class DropShadowFilter implements Filter<DropShadowFilterInstance> {
   static readonly instance = new DropShadowFilter();
 
+  isEffective(instance: DropShadowFilterInstance): boolean {
+    return instance.blurX > 0 || instance.blurY > 0 || instance.distance > 0;
+  }
+
   apply(
     renderer: Renderer,
     input: FilterInput<DropShadowFilterInstance>[],

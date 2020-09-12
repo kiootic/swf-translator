@@ -19,6 +19,10 @@ const outTexScale = vec2.create();
 export class BlurFilter implements Filter<BlurFilterInstance> {
   static readonly instance = new BlurFilter();
 
+  isEffective(instance: BlurFilterInstance): boolean {
+    return instance.blurX > 0 || instance.blurY > 0;
+  }
+
   apply(
     renderer: Renderer,
     input: FilterInput<BlurFilterInstance>[],

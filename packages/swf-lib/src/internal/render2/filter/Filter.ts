@@ -17,5 +17,6 @@ export interface FilterInput<T extends FilterInstance = FilterInstance> {
 }
 
 export interface Filter<T extends FilterInstance = FilterInstance> {
+  isEffective(instance: T): boolean;
   apply(renderer: Renderer, input: FilterInput<T>[], out: TextureTarget): void;
 }
