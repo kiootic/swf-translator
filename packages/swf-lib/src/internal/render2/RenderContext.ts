@@ -175,7 +175,9 @@ export class RenderContext {
       Math.abs(viewMatrix[0]),
       Math.abs(viewMatrix[3])
     );
-    mat2d.scale(viewMatrix, viewMatrix, [1 / scale[0], 1 / scale[1]]);
+    if (scale[0] !== 0 && scale[1] !== 0) {
+      mat2d.scale(viewMatrix, viewMatrix, [1 / scale[0], 1 / scale[1]]);
+    }
     mat2d.translate(viewMatrix, viewMatrix, [-paddings[0], -paddings[1]]);
 
     const translate = vec2.fromValues(viewMatrix[4], viewMatrix[5]);
