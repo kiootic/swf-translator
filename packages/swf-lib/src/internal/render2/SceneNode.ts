@@ -164,7 +164,10 @@ export class SceneNode {
     );
 
     rect.apply(tmpRect, this.boundsLocal, ctx.transform.view);
-    if (this.visible && rect.intersects(tmpRect, ctx.bounds)) {
+    if (
+      this.visible &&
+      (!ctx.viewport || rect.intersects(tmpRect, ctx.viewport))
+    ) {
       this.flags &= ~Flags.DirtyRender;
 
       if (this.cacheAsBitmap || this.filters.length > 0) {

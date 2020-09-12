@@ -2,7 +2,6 @@ import { mat2d, vec4, vec2 } from "gl-matrix";
 import { RenderObject } from "./RenderObject";
 import { rect } from "../math/rect";
 import { multiplyColorTransform } from "../math/color";
-import { projection } from "../math/matrix";
 import { Texture } from "./gl/Texture";
 import { FilterInstance } from "./filter/Filter";
 
@@ -46,16 +45,16 @@ export interface DeferredRenderFilter {
 
 export interface RenderContextParams {
   bounds: rect;
-  projectionSize: vec2 | null;
-  invertY?: boolean;
 }
 
+const colorMulIdentity = vec4.fromValues(1, 1, 1, 1);
+const colorAddIdentity = vec4.fromValues(0, 0, 0, 0);
+
 export class RenderContext {
-  readonly bounds: rect;
+  readonly viewport: rect | null;
   readonly renders: DeferredRender[] = [];
   readonly transformStack: Transform[] = [];
-  readonly projection: mat2d;
-  readonly postProjection: mat2d;
+  readonly allTransforms: Transform[] = [];
 
   get transform(): Transform {
     return this.transformStack[this.transformStack.length - 1];
@@ -64,29 +63,17 @@ export class RenderContext {
     this.transformStack[this.transformStack.length - 1] = transform;
   }
 
-  constructor(params: RenderContextParams) {
-    const { bounds, projectionSize, invertY = true } = params;
-
+  constructor(viewport: rect | null) {
     this.transformStack.push({
       view: mat2d.identity(mat2d.create()),
       colorMul: vec4.set(vec4.create(), 1, 1, 1, 1),
       colorAdd: vec4.set(vec4.create(), 0, 0, 0, 0),
     });
-    this.bounds = bounds;
-
-    this.projection = mat2d.create();
-    this.postProjection = mat2d.create();
-    if (projectionSize) {
-      projection(
-        this.projection,
-        projectionSize[0],
-        projectionSize[1],
-        invertY
-      );
-    }
+    this.allTransforms.push(this.transformStack[0]);
+    this.viewport = viewport;
   }
 
-  pushTransform(view: mat2d, colorMul: vec4, colorAdd: vec4) {
+  pushTransform(view: mat2d, colorMul?: vec4, colorAdd?: vec4) {
     const transform = this.transformStack[this.transformStack.length - 1];
     const nodeTransform: Transform = {
       view: mat2d.create(),
@@ -99,10 +86,11 @@ export class RenderContext {
       nodeTransform.colorAdd,
       transform.colorMul,
       transform.colorAdd,
-      colorMul,
-      colorAdd
+      colorMul ?? colorMulIdentity,
+      colorAdd ?? colorAddIdentity
     );
     this.transformStack.push(nodeTransform);
+    this.allTransforms.push(nodeTransform);
   }
 
   dupTransform() {
@@ -113,13 +101,18 @@ export class RenderContext {
       colorMul: vec4.clone(transform.colorMul),
     };
     this.transformStack.push(nodeTransform);
+    this.allTransforms.push(nodeTransform);
   }
 
   popTransform() {
     const transform = this.transformStack.pop()!;
     vec4.scale(transform.colorAdd, transform.colorAdd, 1 / 0xff);
-    mat2d.multiply(transform.view, this.postProjection, transform.view);
-    mat2d.multiply(transform.view, this.projection, transform.view);
+  }
+
+  applyProjection(projection: mat2d) {
+    for (const { view } of this.allTransforms) {
+      mat2d.multiply(view, projection, view);
+    }
   }
 
   renderObject(object: RenderObject) {

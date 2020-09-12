@@ -21,6 +21,7 @@ import { Renderbuffer } from "./gl/Renderbuffer";
 import { TextureTarget, RenderbufferTarget } from "./gl/targets";
 import { Atlas } from "./Atlas";
 import { FilterInput, Filter, FilterInstance } from "./filter/Filter";
+import { projection } from "../math/matrix";
 
 const vertexLimit = 0x10000;
 const indexLimit = 0x80000;
@@ -137,8 +138,9 @@ export class Renderer {
   renderFrame(node: SceneNode) {
     const { width, height } = this.canvas;
     const bounds = rect.fromValues(0, 0, width, height);
-    const ctx = new RenderContext({ bounds, projectionSize: [width, height] });
+    const ctx = new RenderContext(bounds);
     node.render(ctx);
+    ctx.applyProjection(projection(mat2d.create(), width, height, true));
 
     const gl = this.glState.gl;
     this.textureReturnBox.length = 0;
@@ -236,6 +238,14 @@ export class Renderer {
       if (!atlas || !atlasContext || atlasItems.size === 0) {
         return;
       }
+      const projectionMat = projection(
+        mat2d.create(),
+        atlas.width,
+        atlas.height,
+        false
+      );
+      atlasContext.applyProjection(projectionMat);
+
       const texItem = this.renderPool.takeTexture(atlas.width, atlas.height);
       const rbItem = this.renderPool.takeRenderbuffer(
         atlas.width,
@@ -268,12 +278,8 @@ export class Renderer {
         gl.NEAREST
       );
 
-      const renderBounds = rect.fromValues(-1, -1, 2, 2);
       for (const [item, bounds] of atlasItems) {
-        const ctx = new RenderContext({
-          bounds: renderBounds,
-          projectionSize: null,
-        });
+        const ctx = new RenderContext(null);
         ctx.transform = item.transform;
         item.texture.then(ctx, texItem.texture, bounds);
 
@@ -299,31 +305,23 @@ export class Renderer {
           Math.max(atlasSize, renderTextureSize(width)),
           Math.max(atlasSize, renderTextureSize(height))
         );
-        atlasContext = new RenderContext({
-          bounds: rect.create(),
-          projectionSize: [atlas.width, atlas.height],
-          invertY: false,
-        });
+        atlasContext = new RenderContext(null);
         atlasItems.clear();
         atlasBounds = atlas.add(width, height)!;
       }
 
-      atlasContext.bounds[2] = bounds[2];
-      atlasContext.bounds[3] = bounds[3];
-
-      const projectionMat = atlasContext.postProjection;
-      mat2d.fromTranslation(projectionMat, [
+      const atlasView = mat2d.fromTranslation(mat2d.create(), [
         atlasBounds[0] + paddings[0],
         atlasBounds[1] + paddings[1],
       ]);
+      mat2d.scale(atlasView, atlasView, scale);
+      mat2d.translate(atlasView, atlasView, [-bounds[0], -bounds[1]]);
+      atlasView[4] += translate[0] - Math.floor(translate[0]);
+      atlasView[5] += translate[1] - Math.floor(translate[1]);
 
-      const viewMat = atlasContext.transform.view;
-      mat2d.fromScaling(viewMat, scale);
-      mat2d.translate(viewMat, viewMat, [-bounds[0], -bounds[1]]);
-      viewMat[4] += translate[0] - Math.floor(translate[0]);
-      viewMat[5] += translate[1] - Math.floor(translate[1]);
-
+      atlasContext.pushTransform(atlasView);
       fn(atlasContext);
+      atlasContext.popTransform();
 
       atlasItems.set(render, atlasBounds);
     }
@@ -348,12 +346,8 @@ export class Renderer {
 
       filter.apply(this, Array.from(filterInputs.values()), target);
 
-      const renderBounds = rect.fromValues(-1, -1, 2, 2);
       for (const [render, { outBounds }] of filterInputs) {
-        const ctx = new RenderContext({
-          bounds: renderBounds,
-          projectionSize: null,
-        });
+        const ctx = new RenderContext(null);
         ctx.transform = render.transform;
         render.filter.then(ctx, target.texture, outBounds);
 
