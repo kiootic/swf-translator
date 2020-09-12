@@ -18,7 +18,7 @@ export class DropShadowFilter extends BitmapFilter {
       passes: this.quality,
       color: this.color,
       strength: this.strength,
-      angle: this.angle,
+      angle: (this.angle * Math.PI) / 180,
       distance: this.distance,
       knockout: this.knockout,
     };

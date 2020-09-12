@@ -1,19 +1,35 @@
 import { Program } from "../gl/Program";
 import { blurVertexShader, blurFragmentShader } from "../programs/blur";
+import { shadowVertexShader, shadowFragmentShader } from "../programs/shadow";
 import { Buffer } from "../gl/Buffer";
 import { VertexArray } from "../gl/VertexArray";
 
-export const programBlur = new Program(blurVertexShader, blurFragmentShader);
+const programBlurCache = new Map<number, Program>();
+
+export const programBlur = (blurRadius: number) => {
+  const kernelWidth = Math.max(1, Math.ceil(blurRadius / 2));
+  let prog = programBlurCache.get(kernelWidth);
+  if (!prog) {
+    prog = new Program(blurVertexShader, blurFragmentShader(kernelWidth));
+    programBlurCache.set(kernelWidth, prog);
+  }
+  return prog;
+};
+export const programShadow = new Program(
+  shadowVertexShader,
+  shadowFragmentShader
+);
 
 export const maxRect = 100;
 export const indices = Buffer.index(
   new Uint16Array(maxRect * 6),
   "STREAM_DRAW"
 );
-export const attrs = Buffer.vertex(
-  new Float32Array(maxRect * 4 * 16),
-  "STREAM_DRAW"
-);
+
+const attrData = new ArrayBuffer(maxRect * 4 * 68);
+export const attrFloat = new Float32Array(attrData);
+export const attrUint = new Uint32Array(attrData);
+export const attrs = Buffer.vertex(attrFloat, "STREAM_DRAW");
 export const vertexArray = new VertexArray(
   [
     {
@@ -22,7 +38,7 @@ export const vertexArray = new VertexArray(
       type: "float",
       components: 4,
       offset: 0,
-      stride: 64,
+      stride: 68,
     },
     {
       index: 1,
@@ -30,7 +46,7 @@ export const vertexArray = new VertexArray(
       type: "float",
       components: 4,
       offset: 16,
-      stride: 64,
+      stride: 68,
     },
     {
       index: 2,
@@ -38,7 +54,7 @@ export const vertexArray = new VertexArray(
       type: "float",
       components: 4,
       offset: 32,
-      stride: 64,
+      stride: 68,
     },
     {
       index: 3,
@@ -46,7 +62,16 @@ export const vertexArray = new VertexArray(
       type: "float",
       components: 4,
       offset: 48,
-      stride: 64,
+      stride: 68,
+    },
+    {
+      index: 4,
+      buffer: attrs,
+      type: "uint",
+      components: 1,
+      integer: true,
+      offset: 64,
+      stride: 68,
     },
   ],
   indices

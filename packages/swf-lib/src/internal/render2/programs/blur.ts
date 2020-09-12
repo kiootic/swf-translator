@@ -5,6 +5,7 @@ layout(location=0) in vec4 aVertex;
 layout(location=1) in vec4 aTexCoords;
 layout(location=2) in vec4 aBoundsIn;
 layout(location=3) in vec4 aBoundsOut;
+layout(location=4) in uint x;
 
 out vec2 vTextureCoords;
 out vec2 vDelta;
@@ -37,7 +38,15 @@ void main(void) {
 }
 `;
 
-export const blurFragmentShader = `
+export const blurFragmentShader = (kernelWidth: number) => {
+  const samples: number[] = [0];
+  for (let i = 0; i < kernelWidth; i++) {
+    const offset = i + 1;
+    samples.push(offset / kernelWidth);
+    samples.unshift(-offset / kernelWidth);
+  }
+
+  return `
 #version 300 es
 precision highp float;
 
@@ -50,28 +59,19 @@ uniform sampler2D uTexture;
 out vec4 fragColor;
 
 vec4 sampleTex(float offset) {
-  vec2 coords = clamp(vTextureCoords + vDelta * offset, vBounds.xy, vBounds.zw);
+  vec2 coords = vTextureCoords + vDelta * offset;
+  coords = clamp(coords, vBounds.xy, vBounds.zw);
   return texture(uTexture, coords);
 }
 
 void main(void) {
   fragColor = vec4(0.0);
-  fragColor += sampleTex(-8.0) * 0.058823529411764705;
-  fragColor += sampleTex(-7.0) * 0.058823529411764705;
-  fragColor += sampleTex(-6.0) * 0.058823529411764705;
-  fragColor += sampleTex(-5.0) * 0.058823529411764705;
-  fragColor += sampleTex(-4.0) * 0.058823529411764705;
-  fragColor += sampleTex(-3.0) * 0.058823529411764705;
-  fragColor += sampleTex(-2.0) * 0.058823529411764705;
-  fragColor += sampleTex(-1.0) * 0.058823529411764705;
-  fragColor += sampleTex( 0.0) * 0.058823529411764705;
-  fragColor += sampleTex(+1.0) * 0.058823529411764705;
-  fragColor += sampleTex(+2.0) * 0.058823529411764705;
-  fragColor += sampleTex(+3.0) * 0.058823529411764705;
-  fragColor += sampleTex(+4.0) * 0.058823529411764705;
-  fragColor += sampleTex(+5.0) * 0.058823529411764705;
-  fragColor += sampleTex(+6.0) * 0.058823529411764705;
-  fragColor += sampleTex(+7.0) * 0.058823529411764705;
-  fragColor += sampleTex(+8.0) * 0.058823529411764705;
+  ${samples
+    .map(
+      (offset) =>
+        `fragColor += sampleTex(${offset.toFixed(20)}) * ${1 / samples.length};`
+    )
+    .join("\n")}
 }
 `;
+};
