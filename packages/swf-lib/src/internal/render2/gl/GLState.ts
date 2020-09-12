@@ -25,7 +25,10 @@ export class GLState {
     }
     this.gl = gl;
 
-    this.maxTextures = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
+    this.maxTextures = Math.min(
+      16,
+      gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS)
+    );
   }
 
   bindTexture(unit: number, texture: WebGLTexture | null) {
