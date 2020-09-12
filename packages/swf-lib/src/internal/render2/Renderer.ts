@@ -290,8 +290,27 @@ export class Renderer {
 
     for (const render of textures) {
       const { bounds, paddings, scale, translate, fn } = render.texture;
-      const width = Math.ceil(bounds[2] * scale[0] + paddings[0] * 2) + 2;
-      const height = Math.ceil(bounds[3] * scale[1] + paddings[1] * 2) + 2;
+
+      const ctx = new RenderContext(null);
+      const renderView = mat2d.fromTranslation(mat2d.create(), [
+        paddings[0] + translate[0] - Math.floor(translate[0]),
+        paddings[1] + translate[1] - Math.floor(translate[1]),
+      ]);
+      mat2d.scale(renderView, renderView, scale);
+      mat2d.translate(renderView, renderView, [-bounds[0], -bounds[1]]);
+
+      ctx.pushTransform(renderView);
+      fn(ctx);
+      ctx.popTransform();
+
+      const renderBounds = ctx.bounds;
+      // Left padding in renderBounds[0], add right paddings manually.
+      const width = Math.ceil(
+        Math.abs(renderBounds[0]) + renderBounds[2] + paddings[0]
+      );
+      const height = Math.ceil(
+        Math.abs(renderBounds[1]) + renderBounds[3] + paddings[1]
+      );
 
       let atlasBounds: rect | null;
       if (
@@ -310,17 +329,9 @@ export class Renderer {
         atlasBounds = atlas.add(width, height)!;
       }
 
-      const atlasView = mat2d.fromTranslation(mat2d.create(), [
-        atlasBounds[0] + paddings[0],
-        atlasBounds[1] + paddings[1],
-      ]);
-      mat2d.scale(atlasView, atlasView, scale);
-      mat2d.translate(atlasView, atlasView, [-bounds[0], -bounds[1]]);
-      atlasView[4] += translate[0] - Math.floor(translate[0]);
-      atlasView[5] += translate[1] - Math.floor(translate[1]);
-
-      atlasContext.pushTransform(atlasView);
-      fn(atlasContext);
+      mat2d.fromTranslation(renderView, [atlasBounds[0], atlasBounds[1]]);
+      atlasContext.pushTransform(renderView);
+      atlasContext.renderContext(ctx);
       atlasContext.popTransform();
 
       atlasItems.set(render, atlasBounds);

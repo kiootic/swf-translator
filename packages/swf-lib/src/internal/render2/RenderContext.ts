@@ -63,6 +63,27 @@ export class RenderContext {
     this.transformStack[this.transformStack.length - 1] = transform;
   }
 
+  get bounds(): rect {
+    const bounds = rect.create();
+    const renderBounds = rect.create();
+    for (const render of this.renders) {
+      if ("object" in render) {
+        rect.apply(renderBounds, render.object.bounds, render.transform.view);
+      } else if ("texture" in render) {
+        rect.copy(renderBounds, render.texture.bounds);
+        renderBounds[0] -= render.texture.paddings[0];
+        renderBounds[1] -= render.texture.paddings[1];
+        renderBounds[2] += render.texture.paddings[0] * 2;
+        renderBounds[3] += render.texture.paddings[1] * 2;
+        rect.apply(renderBounds, renderBounds, render.transform.view);
+      } else if ("filter" in render) {
+        rect.apply(renderBounds, render.filter.bounds, render.transform.view);
+      }
+      rect.union(bounds, bounds, renderBounds);
+    }
+    return bounds;
+  }
+
   constructor(viewport: rect | null) {
     this.transformStack.push({
       view: mat2d.identity(mat2d.create()),
@@ -113,6 +134,23 @@ export class RenderContext {
     for (const { view } of this.allTransforms) {
       mat2d.multiply(view, projection, view);
     }
+  }
+
+  renderContext(ctx: RenderContext) {
+    const { view, colorMul, colorAdd } = this.transform;
+    for (const transform of ctx.allTransforms) {
+      mat2d.multiply(transform.view, view, transform.view);
+      multiplyColorTransform(
+        transform.colorMul,
+        transform.colorAdd,
+        colorMul,
+        colorAdd,
+        transform.colorMul,
+        transform.colorAdd
+      );
+      this.allTransforms.push(transform);
+    }
+    this.renders.push(...ctx.renders);
   }
 
   renderObject(object: RenderObject) {
