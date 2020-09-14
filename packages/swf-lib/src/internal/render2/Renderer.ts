@@ -356,7 +356,7 @@ export class Renderer {
   ) {
     const gl = this.glState.gl;
     for (const render of caches) {
-      const { texture, bounds, then } = render.cache;
+      const { texture, bounds, view, then } = render.cache;
 
       const width = renderTextureSize(bounds[2]);
       const height = renderTextureSize(bounds[3]);
@@ -391,19 +391,17 @@ export class Renderer {
         tmpFramebuffer.delete();
       }
 
-      const ctx = new RenderContext(null);
-      ctx.transform = render.transform;
       then(
-        ctx,
         new CachedRender(
           this.renderPool,
           cacheTexture,
-          rect.fromValues(0, 0, width, height)
+          view,
+          rect.fromValues(0, 0, bounds[2], bounds[3])
         )
       );
 
       const index = renders.indexOf(render);
-      renders.splice(index, 1, ...ctx.renders);
+      renders.splice(index, 1);
     }
   }
 

@@ -28,7 +28,8 @@ export interface DeferredRenderCache {
   cache: {
     texture: Texture;
     bounds: rect;
-    then: (ctx: RenderContext, render: CachedRender) => void;
+    view: mat2d;
+    then: (render: CachedRender) => void;
   };
 }
 
@@ -174,11 +175,15 @@ export class RenderContext {
   renderCache(
     texture: Texture,
     bounds: rect,
-    then: (ctx: RenderContext, render: CachedRender) => void
+    baseViewMat: mat2d,
+    then: (render: CachedRender) => void
   ) {
+    // Extract correct view matrix for rendering cached texture.
+    const view = mat2d.invert(mat2d.create(), baseViewMat);
+    mat2d.multiply(view, view, this.transform.view);
     this.renders.push({
       transform: this.transform,
-      cache: { texture, bounds, then },
+      cache: { view, texture, bounds, then },
     });
   }
 
