@@ -9,7 +9,7 @@ import { CachedRender } from "./CachedRender";
 const enum Flags {
   DirtyBounds = 1,
   DirtyTransform = 2,
-  DirtyRender = 4,
+  DirtyRender = 4, // FIXME: apply this flag correctly
 
   DirtyAll = 7,
 }
@@ -59,7 +59,7 @@ export class SceneNode {
       if ((node.flags & Flags.DirtyBounds) !== 0) {
         break;
       }
-      node.flags |= Flags.DirtyBounds | Flags.DirtyRender;
+      node.flags |= Flags.DirtyBounds;
       node = node.parent;
     }
   }
@@ -74,7 +74,7 @@ export class SceneNode {
         continue;
       }
 
-      node.flags |= Flags.DirtyTransform | Flags.DirtyRender;
+      node.flags |= Flags.DirtyTransform;
       for (const child of node.children) {
         nodes.push(child);
       }
@@ -86,12 +86,17 @@ export class SceneNode {
       return;
     }
 
-    rect.copy(this.boundsLocal, this.boundsIntrinsic);
+    const newBounds = rect.create();
+    rect.copy(newBounds, this.boundsIntrinsic);
     for (const child of this.children) {
       child.ensureLocalBounds();
       rect.apply(tmpRect, child.boundsLocal, child.transformLocal);
-      rect.union(this.boundsLocal, this.boundsLocal, tmpRect);
+      rect.union(newBounds, newBounds, tmpRect);
     }
+    if (!rect.equals(this.boundsLocal, newBounds)) {
+      this.flags |= Flags.DirtyRender;
+    }
+    rect.copy(this.boundsLocal, newBounds);
 
     this.flags &= ~Flags.DirtyBounds;
   }
