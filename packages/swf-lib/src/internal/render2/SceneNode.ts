@@ -57,8 +57,25 @@ export class SceneNode {
       if ((node.flags & Flags.DirtyBounds) !== 0) {
         break;
       }
-      node.flags |= Flags.DirtyBounds;
+      node.flags |= Flags.DirtyBounds | Flags.DirtyRender;
       node = node.parent;
+    }
+  }
+
+  markTransformDirty() {
+    this.parent?.markBoundsDirty();
+
+    const nodes: SceneNode[] = [this];
+    let node: SceneNode | undefined;
+    while ((node = nodes.pop())) {
+      if ((node.flags & Flags.DirtyTransform) !== 0) {
+        continue;
+      }
+
+      node.flags |= Flags.DirtyTransform | Flags.DirtyRender;
+      for (const child of node.children) {
+        nodes.push(child);
+      }
     }
   }
 
@@ -77,19 +94,14 @@ export class SceneNode {
     this.flags &= ~Flags.DirtyBounds;
   }
 
-  markTransformDirty() {
-    this.parent?.markBoundsDirty();
-    this.flags |= Flags.DirtyTransform;
-    this.markRenderDirty();
-  }
-
   ensureWorldTransform() {
-    let node: SceneNode | null = this;
-    while (node && (node.flags & Flags.DirtyTransform) === 0) {
-      node = node.parent;
-    }
-    if (!node) {
+    if ((this.flags & Flags.DirtyTransform) === 0) {
       return;
+    }
+
+    let node: SceneNode = this;
+    while (node.parent && (node.parent.flags & Flags.DirtyTransform) !== 0) {
+      node = node.parent;
     }
     node.updateWorldTransform();
   }
@@ -122,8 +134,8 @@ export class SceneNode {
         const i = parent.children.indexOf(this);
         parent.children.splice(i, 1);
         parent.children.splice(index, 0, this);
+        parent.markRenderDirty();
       }
-      this.markRenderDirty();
       return;
     }
 
@@ -148,7 +160,6 @@ export class SceneNode {
 
     rect.copy(this.boundsIntrinsic, intrinsicBounds);
     this.markBoundsDirty();
-    this.markRenderDirty();
   }
 
   render(ctx: RenderContext) {
@@ -163,50 +174,57 @@ export class SceneNode {
       this.colorTransformLocalAdd
     );
 
-    rect.apply(tmpRect, this.boundsLocal, ctx.transform.view);
-    if (
-      this.visible &&
-      (!ctx.viewport || rect.intersects(tmpRect, ctx.viewport))
-    ) {
-      this.flags &= ~Flags.DirtyRender;
-
-      if (this.cacheAsBitmap || this.filters.length > 0) {
-        const paddings = vec2.create();
-        for (const filter of this.filters) {
-          vec2.max(paddings, paddings, filter.paddings);
-        }
-        vec2.ceil(paddings, paddings);
-
-        const filters = this.filters.slice();
-        const onRenderTexture = (
-          ctx: RenderContext,
-          tex: Texture,
-          bounds: rect
-        ) => {
-          const nextFilter = filters.shift();
-          if (nextFilter) {
-            ctx.renderFilter(tex, bounds, nextFilter, onRenderTexture);
-            return;
-          }
-
-          ctx.renderObject(RenderObject.rect(bounds, tex));
-        };
-
-        ctx.renderTexture(
-          this.boundsLocal,
-          paddings,
-          (ctx) => this.doRender(ctx),
-          onRenderTexture
-        );
-      } else {
-        this.doRender(ctx);
-      }
-    }
+    this.doRender(ctx);
 
     ctx.popTransform();
   }
 
   private doRender(ctx: RenderContext) {
+    if (!this.visible) {
+      return;
+    }
+
+    rect.apply(tmpRect, this.boundsLocal, ctx.transform.view);
+    if (ctx.viewport && !rect.intersects(tmpRect, ctx.viewport)) {
+      return;
+    }
+
+    this.flags &= ~Flags.DirtyRender;
+
+    if (this.cacheAsBitmap || this.filters.length > 0) {
+      const paddings = vec2.create();
+      for (const filter of this.filters) {
+        vec2.max(paddings, paddings, filter.paddings);
+      }
+      vec2.ceil(paddings, paddings);
+
+      const filters = this.filters.slice();
+      const onRenderTexture = (
+        ctx: RenderContext,
+        tex: Texture,
+        bounds: rect
+      ) => {
+        const nextFilter = filters.shift();
+        if (nextFilter) {
+          ctx.renderFilter(tex, bounds, nextFilter, onRenderTexture);
+          return;
+        }
+
+        ctx.renderObject(RenderObject.rect(bounds, tex));
+      };
+
+      ctx.renderTexture(
+        this.boundsLocal,
+        paddings,
+        (ctx) => this.doRenderContent(ctx),
+        onRenderTexture
+      );
+    } else {
+      this.doRenderContent(ctx);
+    }
+  }
+
+  private doRenderContent(ctx: RenderContext) {
     for (const o of this.renderObjects) {
       ctx.renderObject(o);
     }
