@@ -4,6 +4,7 @@ import { rect } from "../math/rect";
 import { FilterInstance } from "./filter/Filter";
 import { RenderContext } from "./RenderContext";
 import { Texture } from "./gl/Texture";
+import { CachedRender } from "./CachedRender";
 
 const enum Flags {
   DirtyBounds = 1,
@@ -29,6 +30,7 @@ export class SceneNode {
   readonly boundsIntrinsic = rect.create();
 
   cacheAsBitmap = false;
+  cachedRender: CachedRender | null = null;
   filters: FilterInstance[] = [];
 
   readonly transformLocal = mat2d.identity(mat2d.create());
@@ -189,7 +191,19 @@ export class SceneNode {
       return;
     }
 
+    if (
+      this.cacheAsBitmap &&
+      this.cachedRender &&
+      (this.flags & Flags.DirtyRender) === 0
+    ) {
+      ctx.renderObject(this.cachedRender.renderObject);
+      return;
+    }
+
     this.flags &= ~Flags.DirtyRender;
+
+    this.cachedRender?.return();
+    this.cachedRender = null;
 
     if (this.cacheAsBitmap || this.filters.length > 0) {
       const paddings = vec2.create();
@@ -210,7 +224,14 @@ export class SceneNode {
           return;
         }
 
-        ctx.renderObject(RenderObject.rect(bounds, tex));
+        if (this.cacheAsBitmap) {
+          ctx.renderCache(tex, bounds, (ctx, render) => {
+            this.cachedRender = render;
+            ctx.renderObject(this.cachedRender.renderObject);
+          });
+        } else {
+          ctx.renderObject(RenderObject.rect(bounds, tex));
+        }
       };
 
       ctx.renderTexture(

@@ -7,6 +7,7 @@ import {
   DeferredRenderObject,
   DeferredRenderTexture,
   DeferredRenderFilter,
+  DeferredRenderCache,
 } from "./RenderContext";
 import { rect } from "../math/rect";
 import { renderVertexShader, renderFragmentShader } from "./programs/render";
@@ -22,6 +23,7 @@ import { TextureTarget, RenderbufferTarget } from "./gl/targets";
 import { Atlas } from "./Atlas";
 import { FilterInput, Filter, FilterInstance } from "./filter/Filter";
 import { projection } from "../math/matrix";
+import { CachedRender } from "./CachedRender";
 
 const vertexLimit = 0x10000;
 const indexLimit = 0x80000;
@@ -37,7 +39,7 @@ function renderTextureSize(n: number) {
   } else if (n < 1024) {
     return 1024;
   } else {
-    return n;
+    return Math.ceil(n);
   }
 }
 
@@ -194,14 +196,18 @@ export class Renderer {
   private render(renders: DeferredRender[], framebuffer: Framebuffer) {
     const textures: DeferredRenderTexture[] = [];
     const filters: DeferredRenderFilter[] = [];
+    const caches: DeferredRenderCache[] = [];
     const classifyRenders = (renders: DeferredRender[]) => {
       textures.length = 0;
       filters.length = 0;
+      caches.length = 0;
       for (const render of renders) {
         if ("texture" in render) {
           textures.push(render);
         } else if ("filter" in render) {
           filters.push(render);
+        } else if ("cache" in render) {
+          caches.push(render);
         }
       }
     };
@@ -211,6 +217,11 @@ export class Renderer {
     do {
       resolved = false;
 
+      while (caches.length > 0) {
+        this.renderCaches(renders, caches);
+        resolved = true;
+        classifyRenders(renders);
+      }
       while (textures.length > 0) {
         this.renderTextures(renders, textures);
         resolved = true;
@@ -337,6 +348,63 @@ export class Renderer {
       atlasItems.set(render, atlasBounds);
     }
     flush();
+  }
+
+  private renderCaches(
+    renders: DeferredRender[],
+    caches: DeferredRenderCache[]
+  ) {
+    const gl = this.glState.gl;
+    for (const render of caches) {
+      const { texture, bounds, then } = render.cache;
+
+      const width = renderTextureSize(bounds[2]);
+      const height = renderTextureSize(bounds[3]);
+      const cacheTexture = this.renderPool.takeTexture(width, height);
+
+      const tmpFramebuffer = new Framebuffer(texture);
+      try {
+        tmpFramebuffer.ensure(this.glState);
+        cacheTexture.framebuffer.ensure(this.glState);
+
+        this.glState.bindFramebuffer(
+          gl.READ_FRAMEBUFFER,
+          tmpFramebuffer.framebuffer
+        );
+        this.glState.bindFramebuffer(
+          gl.DRAW_FRAMEBUFFER,
+          cacheTexture.framebuffer.framebuffer
+        );
+        gl.blitFramebuffer(
+          bounds[0],
+          bounds[1],
+          bounds[0] + bounds[2],
+          bounds[1] + bounds[3],
+          0,
+          0,
+          bounds[2],
+          bounds[3],
+          gl.COLOR_BUFFER_BIT,
+          gl.NEAREST
+        );
+      } finally {
+        tmpFramebuffer.delete();
+      }
+
+      const ctx = new RenderContext(null);
+      ctx.transform = render.transform;
+      then(
+        ctx,
+        new CachedRender(
+          this.renderPool,
+          cacheTexture,
+          rect.fromValues(0, 0, width, height)
+        )
+      );
+
+      const index = renders.indexOf(render);
+      renders.splice(index, 1, ...ctx.renders);
+    }
   }
 
   private renderFilters(

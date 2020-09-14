@@ -41,4 +41,13 @@ export class Framebuffer {
     this.state = state;
     this.framebuffer = fb;
   }
+
+  delete() {
+    if (!this.state) {
+      return;
+    }
+    this.state.gl.deleteFramebuffer(this.framebuffer);
+    this.state = null;
+    this.framebuffer = null;
+  }
 }

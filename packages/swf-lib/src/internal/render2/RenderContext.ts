@@ -4,6 +4,7 @@ import { rect } from "../math/rect";
 import { multiplyColorTransform } from "../math/color";
 import { Texture } from "./gl/Texture";
 import { FilterInstance } from "./filter/Filter";
+import { CachedRender } from "./CachedRender";
 
 export interface Transform {
   view: mat2d;
@@ -13,12 +14,22 @@ export interface Transform {
 
 export type DeferredRender =
   | DeferredRenderObject
+  | DeferredRenderCache
   | DeferredRenderTexture
   | DeferredRenderFilter;
 
 export interface DeferredRenderObject {
   transform: Transform;
   object: RenderObject;
+}
+
+export interface DeferredRenderCache {
+  transform: Transform;
+  cache: {
+    texture: Texture;
+    bounds: rect;
+    then: (ctx: RenderContext, render: CachedRender) => void;
+  };
 }
 
 export interface DeferredRenderTexture {
@@ -157,6 +168,17 @@ export class RenderContext {
     this.renders.push({
       transform: this.transform,
       object,
+    });
+  }
+
+  renderCache(
+    texture: Texture,
+    bounds: rect,
+    then: (ctx: RenderContext, render: CachedRender) => void
+  ) {
+    this.renders.push({
+      transform: this.transform,
+      cache: { texture, bounds, then },
     });
   }
 
