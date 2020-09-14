@@ -12,6 +12,8 @@ const enum Flags {
   DirtyRender = 4, // FIXME: apply this flag correctly
 
   DirtyAll = 7,
+
+  IsRoot = 128,
 }
 
 const tmpRect = rect.create();
@@ -157,6 +159,8 @@ export class SceneNode {
     if (this.parent) {
       this.parent.children.splice(index, 0, this);
       this.parent.markBoundsDirty();
+    } else if ((this.flags & Flags.IsRoot) === 0) {
+      this.onRemoveFromStage();
     }
 
     this.markTransformDirty();
@@ -201,7 +205,9 @@ export class SceneNode {
       this.cachedRender &&
       (this.flags & Flags.DirtyRender) === 0
     ) {
+      ctx.pushTransform(this.cachedRender.view);
       ctx.renderObject(this.cachedRender.renderObject);
+      ctx.popTransform();
       return;
     }
 
@@ -217,6 +223,8 @@ export class SceneNode {
       }
       vec2.ceil(paddings, paddings);
 
+      const viewMat = ctx.transform.view;
+
       const filters = this.filters.slice();
       const onRenderTexture = (
         ctx: RenderContext,
@@ -230,10 +238,10 @@ export class SceneNode {
         }
 
         if (this.cacheAsBitmap) {
-          ctx.renderCache(tex, bounds, (ctx, render) => {
+          ctx.renderCache(tex, bounds, viewMat, (render) => {
             this.cachedRender = render;
-            ctx.renderObject(this.cachedRender.renderObject);
           });
+          ctx.renderObject(RenderObject.rect(bounds, tex));
         } else {
           ctx.renderObject(RenderObject.rect(bounds, tex));
         }
@@ -261,6 +269,14 @@ export class SceneNode {
       for (const child of this.children) {
         child.renderRecursive(ctx);
       }
+    }
+  }
+
+  private onRemoveFromStage() {
+    this.cachedRender?.return();
+    this.cachedRender = null;
+    for (const child of this.children) {
+      child.onRemoveFromStage();
     }
   }
 

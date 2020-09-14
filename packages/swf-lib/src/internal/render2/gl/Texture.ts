@@ -77,4 +77,13 @@ export class Texture {
     this.state = state;
     this.texture = tex;
   }
+
+  delete() {
+    if (!this.state) {
+      return;
+    }
+    this.state.gl.deleteTexture(this.texture);
+    this.state = null;
+    this.texture = null;
+  }
 }

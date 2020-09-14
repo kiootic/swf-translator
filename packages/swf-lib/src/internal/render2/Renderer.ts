@@ -156,6 +156,7 @@ export class Renderer {
       for (const renderbuffer of this.renderbufferReturnBox) {
         this.renderPool.returnRenderbuffer(renderbuffer);
       }
+      this.renderPool.cleanLRU();
     }
 
     this.defaultFramebuffer.ensure(this.glState);

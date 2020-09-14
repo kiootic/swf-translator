@@ -48,4 +48,13 @@ export class Renderbuffer {
     this.state = state;
     this.renderbuffer = rb;
   }
+
+  delete() {
+    if (!this.state) {
+      return;
+    }
+    this.state.gl.deleteRenderbuffer(this.renderbuffer);
+    this.state = null;
+    this.renderbuffer = null;
+  }
 }
