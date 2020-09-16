@@ -122,7 +122,7 @@ export class DisplayObject extends EventDispatcher {
   set x(value: number) {
     if (this.__node.transformLocal[4] !== value) {
       this.__node.transformLocal[4] = value;
-      this.__node.markTransformDirty();
+      this.__node.markLayoutDirty();
     }
   }
 
@@ -132,7 +132,7 @@ export class DisplayObject extends EventDispatcher {
   set y(value: number) {
     if (this.__node.transformLocal[5] !== value) {
       this.__node.transformLocal[5] = value;
-      this.__node.markTransformDirty();
+      this.__node.markLayoutDirty();
     }
   }
 
@@ -142,7 +142,7 @@ export class DisplayObject extends EventDispatcher {
   set scaleX(value: number) {
     if (this.__node.transformLocal[0] !== value) {
       this.__node.transformLocal[0] = value;
-      this.__node.markTransformDirty();
+      this.__node.markLayoutDirty();
     }
   }
 
@@ -152,7 +152,7 @@ export class DisplayObject extends EventDispatcher {
   set scaleY(value: number) {
     if (this.__node.transformLocal[3] !== value) {
       this.__node.transformLocal[3] = value;
-      this.__node.markTransformDirty();
+      this.__node.markLayoutDirty();
     }
   }
 
@@ -172,35 +172,35 @@ export class DisplayObject extends EventDispatcher {
         this.__node.transformLocal,
         delta
       );
-      this.__node.markTransformDirty();
+      this.__node.markLayoutDirty();
     }
   }
 
   get width(): number {
-    this.__node.ensureLocalBounds();
+    this.__node.ensureLayout();
     return this.__node.boundsLocal[2] * this.__node.transformLocal[0];
   }
   set width(value: number) {
-    this.__node.ensureLocalBounds();
+    this.__node.ensureLayout();
     const scaleX =
       this.__node.boundsLocal[2] === 0 ? 1 : value / this.__node.boundsLocal[2];
     if (this.__node.transformLocal[0] !== scaleX) {
       this.__node.transformLocal[0] = scaleX;
-      this.__node.markTransformDirty();
+      this.__node.markLayoutDirty();
     }
   }
 
   get height(): number {
-    this.__node.ensureLocalBounds();
+    this.__node.ensureLayout();
     return this.__node.boundsLocal[3] * this.__node.transformLocal[3];
   }
   set height(value: number) {
-    this.__node.ensureLocalBounds();
+    this.__node.ensureLayout();
     const scaleY =
       this.__node.boundsLocal[3] === 0 ? 1 : value / this.__node.boundsLocal[3];
     if (this.__node.transformLocal[3] !== scaleY) {
       this.__node.transformLocal[3] = scaleY;
-      this.__node.markTransformDirty();
+      this.__node.markLayoutDirty();
     }
   }
 
@@ -224,7 +224,7 @@ export class DisplayObject extends EventDispatcher {
 
   __globalToLocal(out: vec2, pt: vec2, ensure: boolean) {
     if (ensure) {
-      this.__node.ensureWorldTransform();
+      this.__node.ensureLayout();
     }
     vec2.transformMat2d(out, pt, this.__node.transformWorldInvert);
   }
@@ -236,16 +236,13 @@ export class DisplayObject extends EventDispatcher {
   }
 
   hitTestPoint(x: number, y: number, shapeFlag = false): boolean {
-    this.__node.ensureWorldTransform();
+    this.__node.ensureLayout();
     vec2.transformMat2d(tmpVec2, [x, y], this.__node.transformWorld);
     return this.__node.hitTest(tmpVec2, shapeFlag);
   }
 
   hitTestObject(obj: DisplayObject): boolean {
-    obj.__node.ensureWorldTransform();
-    obj.__node.ensureLocalBounds();
-    this.__node.ensureWorldTransform();
-    this.__node.ensureLocalBounds();
+    obj.__node.ensureLayout();
     rect.apply(
       tmpRect,
       obj.__node.boundsLocal,

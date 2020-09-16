@@ -20,16 +20,16 @@ export class Matrix {
 
   translate(dx: number, dy: number) {
     mat2d.translate(this.__value, this.__value, [dx, dy]);
-    this.__node?.markTransformDirty();
+    this.__node?.markLayoutDirty();
   }
 
   scale(sx: number, sy: number) {
     mat2d.scale(this.__value, this.__value, [sx, sy]);
-    this.__node?.markTransformDirty();
+    this.__node?.markLayoutDirty();
   }
 
   rotate(angle: number) {
     mat2d.rotate(this.__value, this.__value, angle);
-    this.__node?.markTransformDirty();
+    this.__node?.markLayoutDirty();
   }
 }

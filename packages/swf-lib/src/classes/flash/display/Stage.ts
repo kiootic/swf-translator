@@ -80,7 +80,7 @@ export class Stage extends DisplayObjectContainer {
   };
 
   __hitTestObject(pt: vec2): InteractiveObject | null {
-    this.__node.updateWorldTransform();
+    this.__node.ensureLayout();
 
     const hitTest = (target: InteractiveObject): InteractiveObject | null => {
       if (!(target instanceof DisplayObjectContainer)) {

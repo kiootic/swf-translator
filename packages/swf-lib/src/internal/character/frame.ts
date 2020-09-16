@@ -84,10 +84,10 @@ function setupCharacter(
     mat2d.copy(character.__node.transformLocal, action.matrix);
     character.__node.transformLocal[4] /= 20;
     character.__node.transformLocal[5] /= 20;
-    character.__node.markTransformDirty();
+    character.__node.markLayoutDirty();
   } else if (frame === 1) {
     mat2d.identity(character.transform.matrix.__value);
-    character.__node.markTransformDirty();
+    character.__node.markLayoutDirty();
   }
 
   if (action.colorTransform != null) {

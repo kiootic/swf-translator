@@ -16,7 +16,10 @@ const enum Flags {
   IsRoot = 128,
 }
 
-const tmpRect = rect.create();
+const tmpRect1 = rect.create();
+const tmpRect2 = rect.create();
+const tmpMat2d1 = mat2d.create();
+const tmpMat2d2 = mat2d.create();
 const tmpVec2 = vec2.create();
 
 export class SceneNode {
@@ -42,6 +45,7 @@ export class SceneNode {
 
   readonly boundsLocal = rect.create();
   readonly boundsWorld = rect.create();
+  readonly transformRender = mat2d.identity(mat2d.create());
   readonly transformWorld = mat2d.identity(mat2d.create());
   readonly transformWorldInvert = mat2d.identity(mat2d.create());
 
@@ -56,27 +60,21 @@ export class SceneNode {
     }
   }
 
-  markBoundsDirty() {
-    let node: SceneNode | null = this;
+  markLayoutDirty(dirtyTransform = true) {
+    // Mark parent bounds dirty.
+    let node: SceneNode | null | undefined = this;
     while (node) {
-      if ((node.flags & Flags.DirtyBounds) !== 0) {
-        break;
-      }
       node.flags |= Flags.DirtyBounds;
       node = node.parent;
     }
-  }
 
-  markTransformDirty() {
-    this.parent?.markBoundsDirty();
+    if (!dirtyTransform) {
+      return;
+    }
 
+    // Mark children transform dirty.
     const nodes: SceneNode[] = [this];
-    let node: SceneNode | undefined;
     while ((node = nodes.pop())) {
-      if ((node.flags & Flags.DirtyTransform) !== 0) {
-        continue;
-      }
-
       node.flags |= Flags.DirtyTransform;
       for (const child of node.children) {
         nodes.push(child);
@@ -84,57 +82,112 @@ export class SceneNode {
     }
   }
 
-  ensureLocalBounds() {
-    if ((this.flags & Flags.DirtyBounds) === 0) {
-      return;
-    }
-
-    const newBounds = rect.create();
-    rect.copy(newBounds, this.boundsIntrinsic);
-    for (const child of this.children) {
-      child.ensureLocalBounds();
-      rect.apply(tmpRect, child.boundsLocal, child.transformLocal);
-      rect.union(newBounds, newBounds, tmpRect);
-    }
-    if (!rect.equals(this.boundsLocal, newBounds)) {
-      this.flags |= Flags.DirtyRender;
-    }
-    rect.copy(this.boundsLocal, newBounds);
-
-    this.flags &= ~Flags.DirtyBounds;
-  }
-
-  ensureWorldTransform() {
-    if ((this.flags & Flags.DirtyTransform) === 0) {
-      return;
-    }
-
-    let node: SceneNode = this;
-    while (node.parent && (node.parent.flags & Flags.DirtyTransform) !== 0) {
-      node = node.parent;
-    }
-    node.updateWorldTransform();
-  }
-
-  updateWorldTransform() {
-    const nodes: SceneNode[] = [this];
+  ensureLayout() {
+    const queue: SceneNode[] = [this];
     let node: SceneNode | undefined;
-    while ((node = nodes.pop())) {
+    while ((node = queue.pop())) {
+      // Ensure parent transform.
+      if (node.parent && (node.parent.flags & Flags.DirtyTransform) !== 0) {
+        queue.push(node.parent);
+        continue;
+      }
+
+      // Enqueue children to traverse.
+      queue.push(...node.children);
+      if ((node.flags & Flags.DirtyTransform) === 0) {
+        continue;
+      }
+
+      // Compute world/render transform.
       if (!node.parent) {
-        mat2d.copy(node.transformWorld, node.transformLocal);
+        mat2d.copy(tmpMat2d1, node.transformLocal);
+        mat2d.copy(tmpMat2d2, node.transformLocal);
       } else {
         mat2d.multiply(
-          node.transformWorld,
+          tmpMat2d1,
           node.parent.transformWorld,
           node.transformLocal
         );
+        mat2d.multiply(
+          tmpMat2d2,
+          node.parent.transformRender,
+          node.transformLocal
+        );
       }
-      mat2d.invert(node.transformWorldInvert, node.transformWorld);
-      node.ensureLocalBounds();
-      rect.apply(node.boundsWorld, node.boundsLocal, node.transformWorld);
-
+      if (node.cacheAsBitmap) {
+        mat2d.identity(tmpMat2d2);
+      }
+      const updated = !mat2d.exactEquals(tmpMat2d1, node.transformWorld);
+      const renderDirty = !mat2d.exactEquals(tmpMat2d2, node.transformRender);
       node.flags &= ~Flags.DirtyTransform;
-      nodes.push(...node.children);
+
+      // Propagate computation.
+      if (updated) {
+        mat2d.copy(node.transformWorld, tmpMat2d1);
+        mat2d.invert(node.transformWorldInvert, node.transformWorld);
+
+        let dirtyParent = node.parent;
+        while (dirtyParent) {
+          dirtyParent.flags |= Flags.DirtyBounds;
+          dirtyParent = dirtyParent.parent;
+        }
+        for (const child of node.children) {
+          child.flags |= Flags.DirtyTransform;
+        }
+      }
+      if (renderDirty) {
+        mat2d.copy(node.transformRender, tmpMat2d2);
+
+        let dirtyNode: SceneNode | null = node;
+        while (dirtyNode) {
+          dirtyNode.flags |= Flags.DirtyRender;
+          dirtyNode = dirtyNode.parent;
+        }
+      }
+    }
+
+    queue.push(this);
+    while ((node = queue.pop())) {
+      if ((node.flags & Flags.DirtyBounds) === 0) {
+        continue;
+      }
+
+      // Ensure children bounds.
+      let needChildrenBounds = false;
+      for (const child of node.children) {
+        if ((child.flags & Flags.DirtyBounds) === 0) {
+          continue;
+        }
+
+        if (!needChildrenBounds) {
+          needChildrenBounds = true;
+          queue.push(node);
+        }
+        queue.push(child);
+      }
+      if (needChildrenBounds) {
+        continue;
+      }
+
+      // Compute local & world bounds.
+      rect.copy(tmpRect1, node.boundsIntrinsic);
+      for (const child of node.children) {
+        rect.apply(tmpRect2, child.boundsLocal, child.transformLocal);
+        rect.union(tmpRect1, tmpRect1, tmpRect2);
+      }
+      const updated = !rect.equals(tmpRect1, node.boundsLocal);
+      node.flags &= ~Flags.DirtyBounds;
+
+      // Propagate to parent.
+      if (updated) {
+        mat2d.copy(node.boundsLocal, tmpRect1);
+        rect.apply(node.boundsWorld, node.boundsLocal, node.transformWorld);
+
+        if (node.parent) {
+          node.parent.flags |= Flags.DirtyBounds;
+          queue.push(node.parent);
+        }
+      }
     }
   }
 
@@ -152,30 +205,29 @@ export class SceneNode {
     if (this.parent) {
       const i = this.parent.children.indexOf(this);
       this.parent.children.splice(i, 1);
-      this.parent.markBoundsDirty();
+      this.parent.markLayoutDirty(false);
     }
 
     this.parent = parent;
 
     if (this.parent) {
       this.parent.children.splice(index, 0, this);
-      this.parent.markBoundsDirty();
     } else if ((this.flags & Flags.IsRoot) === 0) {
       this.onRemoveFromStage();
     }
 
-    this.markTransformDirty();
+    this.markLayoutDirty();
   }
 
   setRenderObjects(objects: RenderObject[], intrinsicBounds: rect) {
     this.renderObjects = objects;
 
     rect.copy(this.boundsIntrinsic, intrinsicBounds);
-    this.markBoundsDirty();
+    this.markLayoutDirty(false);
   }
 
   render(ctx: RenderContext) {
-    this.ensureLocalBounds();
+    this.ensureLayout();
     this.renderRecursive(ctx);
   }
 
@@ -196,8 +248,8 @@ export class SceneNode {
       return;
     }
 
-    rect.apply(tmpRect, this.boundsLocal, ctx.transform.view);
-    if (ctx.viewport && !rect.intersects(tmpRect, ctx.viewport)) {
+    rect.apply(tmpRect1, this.boundsLocal, ctx.transform.view);
+    if (ctx.viewport && !rect.intersects(tmpRect1, ctx.viewport)) {
       return;
     }
 
@@ -287,7 +339,7 @@ export class SceneNode {
     }
 
     if (!exact) {
-      this.ensureLocalBounds();
+      this.ensureLayout();
       vec2.transformMat2d(tmpVec2, pt, this.transformWorldInvert);
       return rect.contains(this.boundsLocal, tmpVec2[0], tmpVec2[1]);
     }
