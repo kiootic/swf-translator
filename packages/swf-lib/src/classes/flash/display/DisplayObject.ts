@@ -72,6 +72,29 @@ export class DisplayObject extends EventDispatcher {
     return this.parent?.stage ?? null;
   }
 
+  private __mask: DisplayObject | null = null;
+  private __maskRefs = 0;
+
+  get mask() {
+    return this.__mask;
+  }
+
+  set mask(value) {
+    if (this.__mask) {
+      this.__mask.__maskRefs--;
+      this.__mask.__node.isMask = this.__mask.__maskRefs > 0;
+    }
+
+    this.__mask = value;
+    this.__node.mask = value?.__node ?? null;
+    this.__node.markRenderDirty();
+
+    if (this.__mask) {
+      this.__mask.__maskRefs++;
+      this.__mask.__node.isMask = this.__mask.__maskRefs > 0;
+    }
+  }
+
   private __filters: BitmapFilter[] = [];
 
   get filters() {

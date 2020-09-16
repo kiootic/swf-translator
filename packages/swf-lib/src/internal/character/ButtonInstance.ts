@@ -7,7 +7,7 @@ import {
 import { FrameActionKind } from "../../classes/__internal/character/Sprite";
 import type { AssetLibrary } from "../../classes/__internal";
 import { CharacterInstance } from "./CharacterInstance";
-import { executeFrameAction } from "./frame";
+import { executeFrameAction, updateFrameMasks } from "./frame";
 
 export enum ButtonState {
   Up,
@@ -65,6 +65,7 @@ export class ButtonInstance implements CharacterInstance {
         blendMode: record.blendMode,
       });
     }
+    updateFrameMasks(stateContainer);
 
     switch (state) {
       case ButtonState.Up:

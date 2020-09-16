@@ -7,7 +7,7 @@ import {
 } from "../../classes/__internal/character/Sprite";
 import type { AssetLibrary } from "../../classes/__internal";
 import { CharacterInstance } from "./CharacterInstance";
-import { executeFrameAction } from "./frame";
+import { executeFrameAction, updateFrameMasks } from "./frame";
 
 export class SpriteInstance implements CharacterInstance {
   readonly numFrames: number;
@@ -74,5 +74,6 @@ export class SpriteInstance implements CharacterInstance {
     for (const { frame, action } of effectiveActions.values()) {
       executeFrameAction(this.library, sprite, frame, action);
     }
+    updateFrameMasks(sprite);
   }
 }

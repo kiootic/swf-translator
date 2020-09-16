@@ -27,6 +27,7 @@ export class SceneNode {
   children: SceneNode[] = [];
 
   visible = true;
+  isMask = false;
   buttonState = -1;
   renderObjects: RenderObject[] = [];
   readonly boundsIntrinsic = rect.create();

@@ -164,3 +164,19 @@ function setupCharacter(
   }
   // TODO: blendMode
 }
+
+export function updateFrameMasks(container: DisplayObjectContainer) {
+  const clips: DisplayObject[] = [];
+  for (const child of container.__children) {
+    if (child.__clipDepth >= 0) {
+      clips.push(child);
+    }
+  }
+  for (const child of container.__children) {
+    for (const clip of clips) {
+      if (child.__depth > clip.__depth && child.__depth <= clip.__clipDepth) {
+        child.mask = clip;
+      }
+    }
+  }
+}
