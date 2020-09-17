@@ -480,9 +480,6 @@ export class Renderer {
     framebuffer: Framebuffer
   ) {
     const gl = this.glState.gl;
-    framebuffer.ensure(this.glState);
-    this.glState.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.framebuffer);
-
     this.glState.setViewport(
       0,
       0,
@@ -490,9 +487,8 @@ export class Renderer {
       framebuffer.colorAttachment.height
     );
 
-    this.glState.enable(gl.BLEND);
-    this.glState.setBlendEquation(gl.FUNC_ADD);
-    this.glState.setBlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    framebuffer.ensure(this.glState);
+    this.glState.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.framebuffer);
 
     if (framebuffer !== this.defaultFramebuffer) {
       this.glState.setClearColor(0, 0, 0, 0);
@@ -505,6 +501,16 @@ export class Renderer {
       );
     }
     gl.clear(gl.COLOR_BUFFER_BIT);
+
+    this.doRenderObjects(objects.filter((o) => !o.transform.renderMask));
+  }
+
+  private doRenderObjects(objects: DeferredRenderObject[]) {
+    const gl = this.glState.gl;
+
+    this.glState.enable(gl.BLEND);
+    this.glState.setBlendEquation(gl.FUNC_ADD);
+    this.glState.setBlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
     let numVertex = 0;
     let numIndex = 0;
@@ -547,6 +553,8 @@ export class Renderer {
         flush();
       }
 
+      const { view, colorMul, colorAdd } = render.transform;
+
       const texture = this.loadTexture(render.object.texture);
       let textureIndex = textures.indexOf(texture);
       if (textureIndex === -1) {
@@ -560,7 +568,6 @@ export class Renderer {
         this.indices.data[numIndex + i] = render.object.indices[i] + numVertex;
       }
 
-      const { view, colorMul, colorAdd } = render.transform;
       const uv = render.object.uvMatrix;
       const mode = render.object.fillMode + textureIndex * 4;
       for (let i = 0; i < objectNumVertex; i++) {
@@ -585,10 +592,10 @@ export class Renderer {
         this.attrFloat[(numVertex + i) * 14 + 7] = colorMul[2];
         this.attrFloat[(numVertex + i) * 14 + 8] = colorMul[3];
 
-        this.attrFloat[(numVertex + i) * 14 + 9] = colorAdd[0];
-        this.attrFloat[(numVertex + i) * 14 + 10] = colorAdd[1];
-        this.attrFloat[(numVertex + i) * 14 + 11] = colorAdd[2];
-        this.attrFloat[(numVertex + i) * 14 + 12] = colorAdd[3];
+        this.attrFloat[(numVertex + i) * 14 + 9] = colorAdd[0] / 0xff;
+        this.attrFloat[(numVertex + i) * 14 + 10] = colorAdd[1] / 0xff;
+        this.attrFloat[(numVertex + i) * 14 + 11] = colorAdd[2] / 0xff;
+        this.attrFloat[(numVertex + i) * 14 + 12] = colorAdd[3] / 0xff;
 
         this.attrUint[(numVertex + i) * 14 + 13] = mode;
       }

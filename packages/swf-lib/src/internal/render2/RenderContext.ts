@@ -10,6 +10,8 @@ export interface Transform {
   view: mat2d;
   colorMul: vec4;
   colorAdd: vec4;
+  renderMask: unknown;
+  useMask: unknown[];
 }
 
 export type DeferredRender =
@@ -55,10 +57,6 @@ export interface DeferredRenderFilter {
   };
 }
 
-export interface RenderContextParams {
-  bounds: rect;
-}
-
 const colorMulIdentity = vec4.fromValues(1, 1, 1, 1);
 const colorAddIdentity = vec4.fromValues(0, 0, 0, 0);
 
@@ -101,17 +99,26 @@ export class RenderContext {
       view: mat2d.identity(mat2d.create()),
       colorMul: vec4.set(vec4.create(), 1, 1, 1, 1),
       colorAdd: vec4.set(vec4.create(), 0, 0, 0, 0),
+      renderMask: null,
+      useMask: [],
     });
     this.allTransforms.push(this.transformStack[0]);
     this.viewport = viewport;
   }
 
-  pushTransform(view: mat2d, colorMul?: vec4, colorAdd?: vec4) {
+  pushTransform(
+    view: mat2d,
+    opts?: Partial<
+      Pick<Transform, "colorAdd" | "colorMul" | "useMask" | "renderMask">
+    >
+  ) {
     const transform = this.transformStack[this.transformStack.length - 1];
     const nodeTransform: Transform = {
       view: mat2d.create(),
       colorAdd: vec4.create(),
       colorMul: vec4.create(),
+      renderMask: opts?.renderMask ?? transform.renderMask,
+      useMask: transform.useMask.slice(),
     };
     mat2d.multiply(nodeTransform.view, transform.view, view);
     multiplyColorTransform(
@@ -119,9 +126,12 @@ export class RenderContext {
       nodeTransform.colorAdd,
       transform.colorMul,
       transform.colorAdd,
-      colorMul ?? colorMulIdentity,
-      colorAdd ?? colorAddIdentity
+      opts?.colorMul ?? colorMulIdentity,
+      opts?.colorAdd ?? colorAddIdentity
     );
+    if (opts?.useMask) {
+      nodeTransform.useMask.push(opts.useMask);
+    }
     this.transformStack.push(nodeTransform);
     this.allTransforms.push(nodeTransform);
   }
@@ -132,14 +142,15 @@ export class RenderContext {
       view: mat2d.clone(transform.view),
       colorAdd: vec4.clone(transform.colorAdd),
       colorMul: vec4.clone(transform.colorMul),
+      renderMask: transform.renderMask,
+      useMask: transform.useMask.slice(),
     };
     this.transformStack.push(nodeTransform);
     this.allTransforms.push(nodeTransform);
   }
 
   popTransform() {
-    const transform = this.transformStack.pop()!;
-    vec4.scale(transform.colorAdd, transform.colorAdd, 1 / 0xff);
+    this.transformStack.pop();
   }
 
   applyProjection(projection: mat2d) {

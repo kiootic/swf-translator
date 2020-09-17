@@ -232,11 +232,10 @@ export class SceneNode {
   }
 
   private renderRecursive(ctx: RenderContext) {
-    ctx.pushTransform(
-      this.transformLocal,
-      this.colorTransformLocalMul,
-      this.colorTransformLocalAdd
-    );
+    ctx.pushTransform(this.transformLocal, {
+      colorMul: this.colorTransformLocalMul,
+      colorAdd: this.colorTransformLocalAdd,
+    });
 
     this.doRender(ctx);
 
@@ -245,6 +244,9 @@ export class SceneNode {
 
   private doRender(ctx: RenderContext) {
     if (!this.visible) {
+      return;
+    }
+    if (this.isMask && ctx.transform.renderMask !== this) {
       return;
     }
 
@@ -269,6 +271,26 @@ export class SceneNode {
     this.cachedRender?.return();
     this.cachedRender = null;
 
+    this.doRenderMask(ctx);
+  }
+
+  private doRenderMask(ctx: RenderContext) {
+    const mask = this.mask;
+    if (mask) {
+      mat2d.invert(tmpMat2d1, this.transformWorld);
+      mat2d.multiply(tmpMat2d1, tmpMat2d1, mask.transformWorld);
+
+      ctx.pushTransform(tmpMat2d1, { renderMask: mask });
+      mask.doRender(ctx);
+      ctx.popTransform();
+
+      ctx.transform.useMask.push(mask);
+    }
+
+    this.doRenderFilter(ctx);
+  }
+
+  private doRenderFilter(ctx: RenderContext) {
     if (this.cacheAsBitmap || this.filters.length > 0) {
       const paddings = vec2.create();
       for (const filter of this.filters) {
