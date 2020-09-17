@@ -29,6 +29,8 @@ const vertexLimit = 0x10000;
 const indexLimit = 0x80000;
 const atlasSize = 1024;
 
+const tmpRect = rect.create();
+
 function renderTextureSize(n: number) {
   if (n < 128) {
     return 128;
@@ -41,6 +43,12 @@ function renderTextureSize(n: number) {
   } else {
     return Math.ceil(n);
   }
+}
+
+interface MaskRenderObject {
+  render: DeferredRenderObject;
+  maskTex: Texture | null;
+  maskID: number;
 }
 
 export class Renderer {
@@ -102,8 +110,8 @@ export class Renderer {
       {
         index: 4,
         buffer: this.attributes,
-        type: "uint",
-        components: 1,
+        type: "byte",
+        components: 4,
         integer: true,
         offset: 52,
         stride: 56,
@@ -480,32 +488,166 @@ export class Renderer {
     framebuffer: Framebuffer
   ) {
     const gl = this.glState.gl;
-    this.glState.setViewport(
-      0,
-      0,
-      framebuffer.colorAttachment.width,
-      framebuffer.colorAttachment.height
-    );
+    const { width, height } = framebuffer.colorAttachment;
+    this.glState.setViewport(0, 0, width, height);
 
-    framebuffer.ensure(this.glState);
-    this.glState.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.framebuffer);
+    const returnRbs: RenderbufferTarget[] = [];
+    const returnTexs: TextureTarget[] = [];
+    try {
+      interface MaskRenders {
+        renders: DeferredRenderObject[];
+        bounds: rect;
+      }
+      const masks = new Map<unknown, MaskRenders>();
+      const renders: DeferredRenderObject[] = [];
+      for (const render of objects) {
+        if (!render.transform.renderMask) {
+          renders.push(render);
+          continue;
+        }
 
-    if (framebuffer !== this.defaultFramebuffer) {
-      this.glState.setClearColor(0, 0, 0, 0);
-    } else {
-      this.glState.setClearColor(
-        ((this.backgroundColor >>> 16) & 0xff) / 0xff,
-        ((this.backgroundColor >>> 8) & 0xff) / 0xff,
-        ((this.backgroundColor >>> 0) & 0xff) / 0xff,
-        1
-      );
+        const token = render.transform.renderMask;
+        const maskRenders = masks.get(token);
+        if (!maskRenders) {
+          const bounds = rect.create();
+          rect.apply(bounds, render.object.bounds, render.transform.view);
+          masks.set(token, {
+            renders: [render],
+            bounds,
+          });
+        } else {
+          rect.apply(tmpRect, render.object.bounds, render.transform.view);
+          rect.union(maskRenders.bounds, maskRenders.bounds, tmpRect);
+          maskRenders.renders.push(render);
+        }
+      }
+
+      interface MaskGroup {
+        target: TextureTarget;
+        nextID: number;
+        renders: MaskRenderObject[];
+        bounds: rect[];
+      }
+      interface MaskTex {
+        texture: Texture;
+        id: number;
+      }
+      const maskTextures = new Map<unknown, MaskTex>();
+      const maskGroups: MaskGroup[] = [];
+      for (const [token, { bounds, renders }] of masks) {
+        let group: MaskGroup | null = null;
+        for (const g of maskGroups) {
+          let overlapped = false;
+          for (const b of g.bounds) {
+            if (rect.intersects(b, bounds)) {
+              overlapped = true;
+              break;
+            }
+          }
+          if (!overlapped && g.nextID < 0x100) {
+            group = g;
+            break;
+          }
+        }
+        if (!group) {
+          group = {
+            target: this.renderPool.takeTexture(width, height),
+            nextID: 1,
+            renders: [],
+            bounds: [],
+          };
+          returnTexs.push(group.target);
+          maskGroups.push(group);
+        }
+
+        const id = group.nextID++;
+        maskTextures.set(token, { texture: group.target.texture, id });
+        group.bounds.push(bounds);
+        for (const render of renders) {
+          group.renders.push({ maskTex: null, maskID: id, render });
+        }
+      }
+
+      if (maskGroups.length > 0) {
+        const maskFb = this.renderPool.takeRenderbuffer(width, height);
+        returnRbs.push(maskFb);
+
+        maskFb.framebuffer.ensure(this.glState);
+        this.glState.setClearColor(0, 0, 0, 0);
+
+        for (const group of maskGroups) {
+          this.glState.bindFramebuffer(
+            gl.FRAMEBUFFER,
+            maskFb.framebuffer.framebuffer
+          );
+          gl.clear(gl.COLOR_BUFFER_BIT);
+          this.doRenderObjects(group.renders, true);
+
+          group.target.framebuffer.ensure(this.glState);
+          this.glState.bindFramebuffer(
+            gl.READ_FRAMEBUFFER,
+            maskFb.framebuffer.framebuffer
+          );
+          this.glState.bindFramebuffer(
+            gl.DRAW_FRAMEBUFFER,
+            group.target.framebuffer.framebuffer
+          );
+          gl.blitFramebuffer(
+            0,
+            0,
+            width,
+            height,
+            0,
+            0,
+            width,
+            height,
+            gl.COLOR_BUFFER_BIT,
+            gl.NEAREST
+          );
+        }
+      }
+
+      framebuffer.ensure(this.glState);
+      this.glState.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.framebuffer);
+      if (framebuffer !== this.defaultFramebuffer) {
+        this.glState.setClearColor(0, 0, 0, 0);
+      } else {
+        this.glState.setClearColor(
+          ((this.backgroundColor >>> 16) & 0xff) / 0xff,
+          ((this.backgroundColor >>> 8) & 0xff) / 0xff,
+          ((this.backgroundColor >>> 0) & 0xff) / 0xff,
+          1
+        );
+      }
+      gl.clear(gl.COLOR_BUFFER_BIT);
+
+      const idRenders: MaskRenderObject[] = [];
+      for (const render of renders) {
+        const maskToken =
+          render.transform.useMask[render.transform.useMask.length - 1];
+        const tex = maskTextures.get(maskToken);
+        if (maskToken && !tex) {
+          // Masked by a off-screen mask: skip the render.
+          continue;
+        }
+        idRenders.push({
+          maskTex: tex?.texture ?? null,
+          maskID: tex?.id ?? 0,
+          render,
+        });
+      }
+      this.doRenderObjects(idRenders, false);
+    } finally {
+      for (const i of returnRbs) {
+        this.renderPool.returnRenderbuffer(i);
+      }
+      for (const i of returnTexs) {
+        this.renderPool.returnTexture(i);
+      }
     }
-    gl.clear(gl.COLOR_BUFFER_BIT);
-
-    this.doRenderObjects(objects.filter((o) => !o.transform.renderMask));
   }
 
-  private doRenderObjects(objects: DeferredRenderObject[]) {
+  private doRenderObjects(objects: MaskRenderObject[], renderMask: boolean) {
     const gl = this.glState.gl;
 
     this.glState.enable(gl.BLEND);
@@ -544,7 +686,7 @@ export class Renderer {
       textures.length = 0;
     };
 
-    for (const render of objects) {
+    for (const { render, maskTex, maskID } of objects) {
       const objectNumVertex = render.object.vertices.length / 2;
       const objectNumIndex = render.object.indices.length;
       if (numVertex + objectNumVertex >= vertexLimit) {
@@ -557,19 +699,35 @@ export class Renderer {
 
       const texture = this.loadTexture(render.object.texture);
       let textureIndex = textures.indexOf(texture);
+      let maskTextureIndex = maskTex ? textures.indexOf(maskTex) : -1;
       if (textureIndex === -1) {
-        if (textures.length > this.glState.maxTextures) {
+        if (textures.length >= this.glState.maxTextures) {
           flush();
         }
         textureIndex = textures.push(texture) - 1;
+      }
+      if (maskTex && maskTextureIndex === -1) {
+        if (textures.length >= this.glState.maxTextures) {
+          flush();
+          textureIndex = textures.push(texture) - 1;
+        }
+        maskTextureIndex = textures.push(maskTex) - 1;
       }
 
       for (let i = 0; i < objectNumIndex; i++) {
         this.indices.data[numIndex + i] = render.object.indices[i] + numVertex;
       }
 
+      const fillMode = render.object.fillMode + textureIndex * 4;
+      let maskMode = 0;
+      if (renderMask) {
+        maskMode = 1;
+      } else if (maskID > 0) {
+        maskMode = 2 + maskTextureIndex * 4;
+      }
+      const mode = maskID * 0x10000 + maskMode * 0x100 + fillMode;
+
       const uv = render.object.uvMatrix;
-      const mode = render.object.fillMode + textureIndex * 4;
       for (let i = 0; i < objectNumVertex; i++) {
         const x = render.object.vertices[i * 2];
         const y = render.object.vertices[i * 2 + 1];
