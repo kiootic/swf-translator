@@ -1,11 +1,9 @@
-import { vec2, mat2d, vec4 } from "gl-matrix";
+import { vec2, mat2d } from "gl-matrix";
 import { TextFormat, TextFormatAlign } from "../../flash/text";
-import { Texture } from "../../../internal/render/Texture";
 import { RenderObject } from "../../../internal/render2/RenderObject";
 import { preMultiplyAlpha } from "../../../internal/math/color";
 import { rect } from "../../../internal/math/rect";
 import { FontRegistry } from "../FontRegistry";
-import { FillStyleKind } from "../character/styles";
 import { TextSegment } from "./TextSegment";
 
 export interface LayoutResult {
