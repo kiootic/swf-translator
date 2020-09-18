@@ -91,11 +91,11 @@ void main(void) {
     vec4 color = (tex * vColor * vec4(vColorMul.rgb, 1.0) + vColorAdd * tex.a) * vColorMul.a;
 
     if (maskMode == 1) {
-      color = vec4(float(maskID) / 255.0, 1.0, 0.0, 1.0);
+      color = vec4(float(maskID) / 255.0, 0.0, 0.0, 1.0);
     } else if (maskMode == 2) {
       vec4 mask = getTexel(maskTexId, ivec2(gl_FragCoord.xy));
       if (maskID == int(mask.r * 255.0)) {
-        color = color * mask.g;
+        color = color * mask.a;
       } else {
         color = vec4(0.0);
       }

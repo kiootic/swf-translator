@@ -242,14 +242,9 @@ export class DisplayObject extends EventDispatcher {
   }
 
   hitTestObject(obj: DisplayObject): boolean {
+    this.__node.ensureLayout();
     obj.__node.ensureLayout();
-    rect.apply(
-      tmpRect,
-      obj.__node.boundsLocal,
-      obj.__node.transformWorldInvert
-    );
-    rect.apply(tmpRect, tmpRect, this.__node.transformWorld);
-    return rect.intersects(tmpRect, this.__node.boundsLocal);
+    return rect.intersects(obj.__node.boundsWorld, this.__node.boundsWorld);
   }
 
   __onFrameEnter() {

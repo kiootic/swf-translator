@@ -125,6 +125,7 @@ export class SceneNode {
       if (updated) {
         mat2d.copy(node.transformWorld, tmpMat2d1);
         mat2d.invert(node.transformWorldInvert, node.transformWorld);
+        rect.apply(node.boundsWorld, node.boundsLocal, node.transformWorld);
 
         let dirtyParent = node.parent;
         while (dirtyParent) {
