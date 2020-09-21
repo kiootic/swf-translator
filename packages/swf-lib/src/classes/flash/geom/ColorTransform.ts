@@ -20,6 +20,62 @@ export class ColorTransform {
     this.__add = vec4.fromValues(redAdd, greenAdd, blueAdd, alphaAdd);
   }
 
+  get redMultiplier() {
+    return this.__mul[0];
+  }
+  set redMultiplier(value) {
+    this.__mul[0] = value;
+  }
+
+  get greenMultiplier() {
+    return this.__mul[1];
+  }
+  set greenMultiplier(value) {
+    this.__mul[1] = value;
+  }
+
+  get blueMultiplier() {
+    return this.__mul[2];
+  }
+  set blueMultiplier(value) {
+    this.__mul[2] = value;
+  }
+
+  get alphaMultiplier() {
+    return this.__mul[3];
+  }
+  set alphaMultiplier(value) {
+    this.__mul[3] = value;
+  }
+
+  get redOffset() {
+    return this.__add[0];
+  }
+  set redOffset(value) {
+    this.__add[0] = value;
+  }
+
+  get greenOffset() {
+    return this.__add[1];
+  }
+  set greenOffset(value) {
+    this.__add[1] = value;
+  }
+
+  get blueOffset() {
+    return this.__add[2];
+  }
+  set blueOffset(value) {
+    this.__add[2] = value;
+  }
+
+  get alphaOffset() {
+    return this.__add[3];
+  }
+  set alphaOffset(value) {
+    this.__add[3] = value;
+  }
+
   __setNode(value: SceneNode | null) {
     if (value) {
       vec4.copy(value.colorTransformLocalMul, this.__mul);
