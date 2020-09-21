@@ -102,6 +102,7 @@ void main(void) {
       }
     }
 
+    color = trunc(color * 255.0) / 255.0;
     fragColor = color;
 }
 `;
