@@ -15,6 +15,8 @@ import { Keyboard } from "../ui";
 const tmpVec2 = vec2.create();
 
 export class Stage extends DisplayObjectContainer {
+  static __current: Stage | null = null;
+
   readonly __canvas: Canvas;
   readonly __ticker: Ticker;
   readonly __renderer: Renderer;
@@ -71,13 +73,25 @@ export class Stage extends DisplayObjectContainer {
     canvas.addEventListener("blur", this.#handleFocusEvent);
   }
 
-  __onFrame = () => {
+  __onFrame = this.__withContext(() => {
     this.__onFrameEnter();
     this.__onFrameConstruct();
     this.__onFrameExit();
 
     this.__renderer.renderFrame(this.__node);
-  };
+  });
+
+  __withContext<T extends Function>(fn: T): T {
+    return (((...args: unknown[]) => {
+      const p = Stage.__current;
+      Stage.__current = this;
+      try {
+        return fn(...args);
+      } finally {
+        Stage.__current = p;
+      }
+    }) as unknown) as T;
+  }
 
   __hitTestObject(pt: vec2): InteractiveObject | null {
     this.__node.ensureLayout();
@@ -113,97 +127,106 @@ export class Stage extends DisplayObjectContainer {
     return hitTest(this);
   }
 
-  #handleMouseEvent = (sourceEvent: globalThis.MouseEvent) => {
-    this.__canvas.resolveCoords(
-      this.__mousePosition,
-      sourceEvent.clientX,
-      sourceEvent.clientY
-    );
-    let target = this.__hitTestObject(this.__mousePosition);
+  #handleMouseEvent = this.__withContext(
+    (sourceEvent: globalThis.MouseEvent) => {
+      this.__canvas.resolveCoords(
+        this.__mousePosition,
+        sourceEvent.clientX,
+        sourceEvent.clientY
+      );
+      let target = this.__hitTestObject(this.__mousePosition);
 
-    const dispatchMouseEvent = (type: string, target: DisplayObject | null) => {
-      if (!target) {
+      const dispatchMouseEvent = (
+        type: string,
+        target: DisplayObject | null
+      ) => {
+        if (!target) {
+          return;
+        }
+        target.__globalToLocal(tmpVec2, this.__mousePosition, false);
+
+        const event = new MouseEvent(type, true, false);
+        event.buttonDown = sourceEvent.buttons !== 0;
+        event.localX = tmpVec2[0];
+        event.localY = tmpVec2[1];
+        target.dispatchEvent(event);
+      };
+
+      if (this.__mouseTrackTarget) {
+        if (this.__mouseTrackTarget.stage !== this) {
+          this.__mouseTrackTarget = null;
+        }
+        target = this.__mouseTrackTarget;
+      }
+      if (sourceEvent.type === "mouseleave") {
+        target = null;
+      }
+
+      if (this.__mouseOn !== target) {
+        dispatchMouseEvent(MouseEvent.MOUSE_OUT, this.__mouseOn);
+        this.__mouseOn = target;
+        dispatchMouseEvent(MouseEvent.MOUSE_OVER, this.__mouseOn);
+      }
+
+      switch (sourceEvent.type) {
+        case "mousemove":
+          dispatchMouseEvent(MouseEvent.MOUSE_MOVE, this.__mouseOn);
+          break;
+        case "mousedown":
+          dispatchMouseEvent(MouseEvent.MOUSE_DOWN, this.__mouseOn);
+          break;
+        case "mouseup":
+          dispatchMouseEvent(MouseEvent.MOUSE_UP, this.__mouseOn);
+          break;
+        case "click":
+          dispatchMouseEvent(MouseEvent.CLICK, this.__mouseOn);
+          break;
+      }
+
+      if (this.__mouseOn) {
+        this.__canvas.cursor = this.__mouseOn.__isPointerCursor
+          ? "pointer"
+          : "default";
+      } else {
+        this.__canvas.cursor = "default";
+      }
+    }
+  );
+
+  #handleKeyboardEvent = this.__withContext(
+    (sourceEvent: globalThis.KeyboardEvent) => {
+      const keyCode = Keyboard.codeMap[sourceEvent.code];
+      if (!keyCode) {
         return;
       }
-      target.__globalToLocal(tmpVec2, this.__mousePosition, false);
 
-      const event = new MouseEvent(type, true, false);
-      event.buttonDown = sourceEvent.buttons !== 0;
-      event.localX = tmpVec2[0];
-      event.localY = tmpVec2[1];
-      target.dispatchEvent(event);
-    };
-
-    if (this.__mouseTrackTarget) {
-      if (this.__mouseTrackTarget.stage !== this) {
-        this.__mouseTrackTarget = null;
+      let event: KeyboardEvent;
+      switch (sourceEvent.type) {
+        case "keydown":
+          event = new KeyboardEvent(KeyboardEvent.KEY_DOWN, true, false);
+          break;
+        case "keyup":
+          event = new KeyboardEvent(KeyboardEvent.KEY_UP, true, false);
+          break;
+        default:
+          return;
       }
-      target = this.__mouseTrackTarget;
+      event.keyCode = keyCode;
+      (this.focus ?? this).dispatchEvent(event);
     }
-    if (sourceEvent.type === "mouseleave") {
-      target = null;
-    }
+  );
 
-    if (this.__mouseOn !== target) {
-      dispatchMouseEvent(MouseEvent.MOUSE_OUT, this.__mouseOn);
-      this.__mouseOn = target;
-      dispatchMouseEvent(MouseEvent.MOUSE_OVER, this.__mouseOn);
+  #handleFocusEvent = this.__withContext(
+    (sourceEvent: globalThis.FocusEvent) => {
+      let event: Event;
+      switch (sourceEvent.type) {
+        case "blur":
+          event = new Event(Event.DEACTIVATE, true, false);
+          break;
+        default:
+          return;
+      }
+      this.dispatchEvent(event);
     }
-
-    switch (sourceEvent.type) {
-      case "mousemove":
-        dispatchMouseEvent(MouseEvent.MOUSE_MOVE, this.__mouseOn);
-        break;
-      case "mousedown":
-        dispatchMouseEvent(MouseEvent.MOUSE_DOWN, this.__mouseOn);
-        break;
-      case "mouseup":
-        dispatchMouseEvent(MouseEvent.MOUSE_UP, this.__mouseOn);
-        break;
-      case "click":
-        dispatchMouseEvent(MouseEvent.CLICK, this.__mouseOn);
-        break;
-    }
-
-    if (this.__mouseOn) {
-      this.__canvas.cursor = this.__mouseOn.__isPointerCursor
-        ? "pointer"
-        : "default";
-    } else {
-      this.__canvas.cursor = "default";
-    }
-  };
-
-  #handleKeyboardEvent = (sourceEvent: globalThis.KeyboardEvent) => {
-    const keyCode = Keyboard.codeMap[sourceEvent.code];
-    if (!keyCode) {
-      return;
-    }
-
-    let event: KeyboardEvent;
-    switch (sourceEvent.type) {
-      case "keydown":
-        event = new KeyboardEvent(KeyboardEvent.KEY_DOWN, true, false);
-        break;
-      case "keyup":
-        event = new KeyboardEvent(KeyboardEvent.KEY_UP, true, false);
-        break;
-      default:
-        return;
-    }
-    event.keyCode = keyCode;
-    (this.focus ?? this).dispatchEvent(event);
-  };
-
-  #handleFocusEvent = (sourceEvent: globalThis.FocusEvent) => {
-    let event: Event;
-    switch (sourceEvent.type) {
-      case "blur":
-        event = new Event(Event.DEACTIVATE, true, false);
-        break;
-      default:
-        return;
-    }
-    this.dispatchEvent(event);
-  };
+  );
 }

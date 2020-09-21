@@ -20,7 +20,7 @@ export class RenderObject {
     readonly bounds: rect
   ) {}
 
-  static rect(bounds: rect, texture: Texture): RenderObject {
+  static rect(bounds: rect, texture: Texture, invertY = false): RenderObject {
     const vertices = new Float32Array(8);
     vertices[0] = bounds[2];
     vertices[1] = 0;
@@ -42,10 +42,12 @@ export class RenderObject {
     indices[4] = 0;
     indices[5] = 3;
 
-    const uvMatrix = mat2d.fromScaling(mat2d.create(), [
-      1 / texture.width,
-      1 / texture.height,
-    ]);
+    const uvMatrix = mat2d.create();
+    mat2d.scale(uvMatrix, uvMatrix, [1 / texture.width, 1 / texture.height]);
+    if (invertY) {
+      mat2d.scale(uvMatrix, uvMatrix, [1, -1]);
+      mat2d.translate(uvMatrix, uvMatrix, [0, -texture.height]);
+    }
     mat2d.translate(uvMatrix, uvMatrix, [bounds[0], bounds[1]]);
 
     return new RenderObject(

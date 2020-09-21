@@ -39,15 +39,15 @@ export class SceneNode {
   cachedRender: CachedRender | null = null;
   filters: FilterInstance[] = [];
 
-  readonly transformLocal = mat2d.identity(mat2d.create());
+  readonly transformLocal = mat2d.create();
   readonly colorTransformLocalMul = vec4.fromValues(1, 1, 1, 1);
   readonly colorTransformLocalAdd = vec4.fromValues(0, 0, 0, 0);
 
   readonly boundsLocal = rect.create();
   readonly boundsWorld = rect.create();
-  readonly transformRender = mat2d.identity(mat2d.create());
-  readonly transformWorld = mat2d.identity(mat2d.create());
-  readonly transformWorldInvert = mat2d.identity(mat2d.create());
+  readonly transformRender = mat2d.create();
+  readonly transformWorld = mat2d.create();
+  readonly transformWorldInvert = mat2d.create();
 
   markRenderDirty() {
     let node: SceneNode | null = this;
@@ -348,7 +348,7 @@ export class SceneNode {
     }
   }
 
-  private onRemoveFromStage() {
+  onRemoveFromStage() {
     this.cachedRender?.return();
     this.cachedRender = null;
     for (const child of this.children) {
@@ -386,5 +386,39 @@ export class SceneNode {
       }
     }
     return false;
+  }
+
+  clone() {
+    const nodeMap = new Map<SceneNode, SceneNode>();
+    const clone = (n: SceneNode): SceneNode => {
+      let node = nodeMap.get(n);
+      if (node) {
+        return node;
+      }
+      node = new SceneNode();
+      nodeMap.set(n, node);
+
+      node.visible = n.visible;
+      node.isMask = n.isMask;
+      node.buttonState = n.buttonState;
+      node.renderObjects = n.renderObjects.slice();
+      node.cacheAsBitmap = n.cacheAsBitmap;
+      node.filters = n.filters.slice();
+      rect.copy(node.boundsIntrinsic, n.boundsIntrinsic);
+      mat2d.copy(node.transformLocal, n.transformLocal);
+      vec4.copy(node.colorTransformLocalMul, n.colorTransformLocalMul);
+      vec4.copy(node.colorTransformLocalAdd, n.colorTransformLocalAdd);
+
+      node.mask = n.mask && clone(n.mask);
+      for (const child of n.children) {
+        const clonedChild = clone(child);
+        node.children.push(clonedChild);
+        clonedChild.parent = node;
+      }
+
+      return node;
+    };
+
+    return clone(this);
   }
 }

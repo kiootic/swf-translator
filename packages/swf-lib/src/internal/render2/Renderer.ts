@@ -145,27 +145,18 @@ export class Renderer {
     );
   }
 
-  renderFrame(node: SceneNode) {
-    const { width, height } = this.canvas;
-    const bounds = rect.fromValues(0, 0, width, height);
-    const ctx = new RenderContext(bounds);
-    node.render(ctx);
-    ctx.applyProjection(projection(mat2d.create(), width, height, true));
-
+  renderFrame(root: SceneNode) {
+    const { width, height } = this.defaultFramebuffer.colorAttachment;
     const gl = this.glState.gl;
-    this.textureReturnBox.length = 0;
-    this.renderbufferReturnBox.length = 0;
-    try {
-      this.render(ctx.renders, this.defaultFramebuffer);
-    } finally {
-      for (const texture of this.textureReturnBox) {
-        this.renderPool.returnTexture(texture);
-      }
-      for (const renderbuffer of this.renderbufferReturnBox) {
-        this.renderPool.returnRenderbuffer(renderbuffer);
-      }
-      this.renderPool.cleanLRU();
-    }
+    this.renderNode(root, this.defaultFramebuffer, () => {
+      this.glState.setClearColor(
+        ((this.backgroundColor >>> 16) & 0xff) / 0xff,
+        ((this.backgroundColor >>> 8) & 0xff) / 0xff,
+        ((this.backgroundColor >>> 0) & 0xff) / 0xff,
+        1
+      );
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    });
 
     this.defaultFramebuffer.ensure(this.glState);
     this.glState.bindFramebuffer(
@@ -187,6 +178,28 @@ export class Renderer {
     );
   }
 
+  renderNode(node: SceneNode, fb: Framebuffer, clearFb: () => void) {
+    const { width, height } = fb.colorAttachment;
+    const bounds = rect.fromValues(0, 0, width, height);
+    const ctx = new RenderContext(bounds);
+    node.render(ctx);
+    ctx.applyProjection(projection(mat2d.create(), width, height, true));
+
+    this.textureReturnBox.length = 0;
+    this.renderbufferReturnBox.length = 0;
+    try {
+      this.render(ctx.renders, fb, clearFb);
+    } finally {
+      for (const texture of this.textureReturnBox) {
+        this.renderPool.returnTexture(texture);
+      }
+      for (const renderbuffer of this.renderbufferReturnBox) {
+        this.renderPool.returnRenderbuffer(renderbuffer);
+      }
+      this.renderPool.cleanLRU();
+    }
+  }
+
   private loadTexture(
     image: HTMLImageElement | HTMLCanvasElement | Texture | null
   ) {
@@ -202,7 +215,11 @@ export class Renderer {
     return tex;
   }
 
-  private render(renders: DeferredRender[], framebuffer: Framebuffer) {
+  private render(
+    renders: DeferredRender[],
+    framebuffer: Framebuffer,
+    clearFb: () => void
+  ) {
     const textures: DeferredRenderTexture[] = [];
     const filters: DeferredRenderFilter[] = [];
     const caches: DeferredRenderCache[] = [];
@@ -242,7 +259,7 @@ export class Renderer {
         classifyRenders(renders);
       }
     } while (resolved);
-    this.renderObjects(renders as DeferredRenderObject[], framebuffer);
+    this.renderObjects(renders as DeferredRenderObject[], framebuffer, clearFb);
   }
 
   private renderTextures(
@@ -274,7 +291,10 @@ export class Renderer {
       this.textureReturnBox.push(texItem);
       this.renderbufferReturnBox.push(rbItem);
 
-      this.render(atlasContext.renders, rbItem.framebuffer);
+      this.render(atlasContext.renders, rbItem.framebuffer, () => {
+        this.glState.setClearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+      });
 
       texItem.framebuffer.ensure(this.glState);
       this.glState.bindFramebuffer(
@@ -418,7 +438,6 @@ export class Renderer {
     renders: DeferredRender[],
     filters: DeferredRenderFilter[]
   ) {
-    const gl = this.glState.gl;
     let atlas: Atlas | null = null;
     let filter: Filter | null = null;
     const filterInputs = new Map<DeferredRenderFilter, FilterInput>();
@@ -485,7 +504,8 @@ export class Renderer {
 
   private renderObjects(
     objects: DeferredRenderObject[],
-    framebuffer: Framebuffer
+    framebuffer: Framebuffer,
+    clearFb: () => void
   ) {
     const gl = this.glState.gl;
     const { width, height } = framebuffer.colorAttachment;
@@ -609,17 +629,7 @@ export class Renderer {
 
       framebuffer.ensure(this.glState);
       this.glState.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.framebuffer);
-      if (framebuffer !== this.defaultFramebuffer) {
-        this.glState.setClearColor(0, 0, 0, 0);
-      } else {
-        this.glState.setClearColor(
-          ((this.backgroundColor >>> 16) & 0xff) / 0xff,
-          ((this.backgroundColor >>> 8) & 0xff) / 0xff,
-          ((this.backgroundColor >>> 0) & 0xff) / 0xff,
-          1
-        );
-      }
-      gl.clear(gl.COLOR_BUFFER_BIT);
+      clearFb();
 
       const idRenders: MaskRenderObject[] = [];
       for (const render of renders) {
