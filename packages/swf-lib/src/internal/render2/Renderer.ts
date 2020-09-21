@@ -656,7 +656,7 @@ export class Renderer {
 
     let numVertex = 0;
     let numIndex = 0;
-    const textures: Texture[] = [];
+    const textures: Texture[] = [Texture.WHITE];
     const flush = () => {
       if (numIndex === 0) {
         return;
@@ -668,10 +668,11 @@ export class Renderer {
       for (const tex of textures) {
         tex.ensure(this.glState);
       }
-      this.textureUnits.fill(0);
-      this.textureUnits.set(
-        this.glState.bindTextures(textures.map((tex) => tex.texture))
+      const boundUnits = this.glState.bindTextures(
+        textures.map((tex) => tex.texture)
       );
+      this.textureUnits.fill(boundUnits[0]);
+      this.textureUnits.set(boundUnits);
       this.renderProgram.uniform(
         this.glState,
         "uTextures[0]",
@@ -683,7 +684,7 @@ export class Renderer {
 
       numVertex = 0;
       numIndex = 0;
-      textures.length = 0;
+      textures.length = 1;
     };
 
     for (const { render, maskTex, maskID } of objects) {
