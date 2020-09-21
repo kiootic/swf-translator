@@ -88,7 +88,8 @@ void main(void) {
     }
 
     vec4 tex = sampleTex(texId, coords);
-    vec4 color = (tex * vColor * vec4(vColorMul.rgb, 1.0) + vColorAdd * tex.a) * vColorMul.a;
+    vec4 color = (tex * vColor * vec4(vColorMul.rgb, 1.0)) * vColorMul.a;
+    color += vColorAdd * color.a;
 
     if (maskMode == 1) {
       color = vec4(float(maskID) / 255.0, 0.0, 0.0, 1.0);
