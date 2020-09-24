@@ -17,12 +17,16 @@ export class BitmapData {
   __target: TextureTarget | null = null;
   __renderer: Renderer | null = null;
 
+  readonly rect: Rectangle;
+
   constructor(
     readonly width: number,
     readonly height: number,
     readonly transparent = true,
     readonly fillColor = 0xffffffff
-  ) {}
+  ) {
+    this.rect = new Rectangle(0, 0, width, height);
+  }
 
   draw(
     source: DisplayObject,
@@ -49,17 +53,13 @@ export class BitmapData {
   }
 
   colorTransform(bounds: Rectangle, trx: ColorTransform) {
-    if (!this.__renderer || !this.__target) {
-      return;
-    }
-
     this.__render();
-    const target = this.__target;
+    const target = this.__target!;
     this.__target = null;
     try {
       const [x, y, width, height] = bounds.__rect;
       const addPatch = (patch: rect, apply: boolean) => {
-        if (patch[2] === 0 || patch[3] === 0) {
+        if (patch[2] <= 0 || patch[3] <= 0) {
           return;
         }
         const node = new SceneNode();
@@ -88,7 +88,7 @@ export class BitmapData {
 
       this.__render();
     } finally {
-      this.__renderer.renderPool.returnTexture(target);
+      this.__renderer!.renderPool.returnTexture(target);
     }
   }
 
@@ -104,9 +104,76 @@ export class BitmapData {
     sourceBitmapData: BitmapData,
     sourceRect: Rectangle,
     destPoint: Point
-  ) {}
+  ) {
+    this.__render();
+    sourceBitmapData.__render();
 
-  scroll(x: number, y: number) {}
+    const glState = this.__renderer!.glState;
+    const gl = glState.gl;
+    const src = sourceBitmapData.__target!;
+    const dst = this.__target!;
+
+    const srcX = sourceRect.x,
+      srcY = this.height - sourceRect.y - sourceRect.height;
+    const dstX = destPoint.x,
+      dstY = this.height - destPoint.y - sourceRect.height;
+
+    glState.bindFramebuffer(gl.READ_FRAMEBUFFER, src.framebuffer.framebuffer);
+    glState.bindFramebuffer(gl.DRAW_FRAMEBUFFER, dst.framebuffer.framebuffer);
+    gl.blitFramebuffer(
+      srcX,
+      srcY,
+      srcX + sourceRect.width,
+      srcY + sourceRect.height,
+      dstX,
+      dstY,
+      dstX + sourceRect.width,
+      dstY + sourceRect.height,
+      gl.COLOR_BUFFER_BIT,
+      gl.NEAREST
+    );
+  }
+
+  scroll(x: number, y: number) {
+    this.__render();
+    const target = this.__target!;
+    const renderer = this.__renderer!;
+    this.__target = renderer.renderPool.takeTexture(this.width, this.height);
+    try {
+      const src = target.framebuffer;
+      const dst = this.__target.framebuffer;
+      const glState = this.__renderer!.glState;
+      const gl = glState.gl;
+      glState.bindFramebuffer(gl.READ_FRAMEBUFFER, src.framebuffer);
+      glState.bindFramebuffer(gl.DRAW_FRAMEBUFFER, dst.framebuffer);
+      gl.blitFramebuffer(
+        0,
+        0,
+        this.width,
+        this.height,
+        0,
+        0,
+        this.width,
+        this.height,
+        gl.COLOR_BUFFER_BIT,
+        gl.NEAREST
+      );
+      gl.blitFramebuffer(
+        0,
+        0,
+        this.width,
+        this.height,
+        x,
+        -y,
+        x + this.width,
+        -y + this.height,
+        gl.COLOR_BUFFER_BIT,
+        gl.NEAREST
+      );
+    } finally {
+      renderer.renderPool.returnTexture(target);
+    }
+  }
 
   dispose() {
     if (this.__target) {

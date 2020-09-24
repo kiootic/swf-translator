@@ -15,7 +15,7 @@ export class RenderObject {
     readonly colors: Uint32Array,
     readonly indices: Uint16Array,
     readonly uvMatrix: mat2d,
-    readonly texture: HTMLImageElement | HTMLCanvasElement | Texture | null,
+    public texture: HTMLImageElement | HTMLCanvasElement | Texture | null,
     readonly fillMode: number,
     readonly bounds: rect
   ) {}
