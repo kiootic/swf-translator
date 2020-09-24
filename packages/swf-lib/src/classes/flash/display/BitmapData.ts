@@ -14,6 +14,8 @@ import { RenderObject } from "../../../internal/render2/RenderObject";
 export class BitmapData {
   private __root = new SceneNode();
   private __needRender = false;
+  private __needPixel = false;
+  private __pixels: Uint32Array | null = null;
   __target: TextureTarget | null = null;
   __renderer: Renderer | null = null;
 
@@ -93,7 +95,38 @@ export class BitmapData {
   }
 
   getPixel32(x: number, y: number) {
-    return 0;
+    this.__render();
+    if (this.__needPixel || !this.__pixels) {
+      if (!this.__pixels) {
+        this.__pixels = new Uint32Array(this.width * this.height);
+      }
+
+      const glState = this.__renderer!.glState;
+      const gl = glState.gl;
+      glState.bindFramebuffer(
+        gl.READ_FRAMEBUFFER,
+        this.__target!.framebuffer.framebuffer
+      );
+      const pixels = new Uint8Array(this.__pixels.buffer);
+      gl.readPixels(
+        0,
+        0,
+        this.width,
+        this.height,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        pixels
+      );
+      this.__needPixel = false;
+    }
+
+    const offset = Math.floor(x) + (this.height - Math.floor(y)) * this.width;
+    const pixel = this.__pixels[offset];
+    const a = (pixel >>> 24) & 0xff;
+    const b = (pixel >>> 16) & 0xff;
+    const g = (pixel >>> 8) & 0xff;
+    const r = (pixel >>> 0) & 0xff;
+    return a * 0x1000000 + r * 0x10000 + g * 0x100 + b * 0x1;
   }
 
   lock() {}
@@ -215,5 +248,6 @@ export class BitmapData {
     this.__root.onRemoveFromStage();
     this.__root = new SceneNode();
     this.__needRender = false;
+    this.__needPixel = true;
   }
 }
