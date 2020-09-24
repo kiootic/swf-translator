@@ -178,12 +178,15 @@ export class DisplayObject extends EventDispatcher {
 
   get width(): number {
     this.__node.ensureLayout();
-    return this.__node.boundsLocal[2] * this.__node.transformLocal[0];
+    return Math.abs(this.__node.boundsLocal[2] * this.__node.transformLocal[0]);
   }
   set width(value: number) {
     this.__node.ensureLayout();
-    const scaleX =
+    let scaleX =
       this.__node.boundsLocal[2] === 0 ? 1 : value / this.__node.boundsLocal[2];
+    if (this.__node.transformLocal[0] !== 0) {
+      scaleX *= Math.sign(this.__node.transformLocal[0]);
+    }
     if (this.__node.transformLocal[0] !== scaleX) {
       this.__node.transformLocal[0] = scaleX;
       this.__node.markLayoutDirty();
@@ -196,8 +199,11 @@ export class DisplayObject extends EventDispatcher {
   }
   set height(value: number) {
     this.__node.ensureLayout();
-    const scaleY =
+    let scaleY =
       this.__node.boundsLocal[3] === 0 ? 1 : value / this.__node.boundsLocal[3];
+    if (this.__node.transformLocal[3] !== 0) {
+      scaleY *= Math.sign(this.__node.transformLocal[3]);
+    }
     if (this.__node.transformLocal[3] !== scaleY) {
       this.__node.transformLocal[3] = scaleY;
       this.__node.markLayoutDirty();
