@@ -19,17 +19,36 @@ export class Matrix {
   }
 
   translate(dx: number, dy: number) {
-    mat2d.translate(this.__value, this.__value, [dx, dy]);
+    this.__value[4] += dx;
+    this.__value[5] += dy;
     this.__node?.markLayoutDirty();
   }
 
   scale(sx: number, sy: number) {
-    mat2d.scale(this.__value, this.__value, [sx, sy]);
+    this.__value[0] *= sx;
+    this.__value[1] *= sy;
+    this.__value[2] *= sx;
+    this.__value[3] *= sy;
+    this.__value[4] *= sx;
+    this.__value[5] *= sy;
     this.__node?.markLayoutDirty();
   }
 
   rotate(angle: number) {
-    mat2d.rotate(this.__value, this.__value, angle);
+    const a = this.__value[0];
+    const b = this.__value[1];
+    const c = this.__value[2];
+    const d = this.__value[3];
+    const tx = this.__value[4];
+    const ty = this.__value[5];
+    const u = Math.sin(angle);
+    const v = Math.cos(angle);
+    this.__value[0] = a * u - b * v;
+    this.__value[1] = a * v + b * u;
+    this.__value[2] = c * u - d * v;
+    this.__value[3] = c * v + d * u;
+    this.__value[4] = tx * u - ty * v;
+    this.__value[5] = tx * v + ty * u;
     this.__node?.markLayoutDirty();
   }
 }
