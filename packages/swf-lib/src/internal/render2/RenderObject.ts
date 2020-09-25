@@ -1,6 +1,5 @@
 import { rect } from "../math/rect";
 import { mat2d, vec2 } from "gl-matrix";
-import { sum } from "../math/funcs";
 import { Texture } from "./gl/Texture";
 
 interface RenderObjectMerge {
@@ -56,6 +55,56 @@ export class RenderObject {
       indices,
       uvMatrix,
       texture,
+      0,
+      bounds
+    );
+  }
+
+  static line(
+    ax: number,
+    ay: number,
+    bx: number,
+    by: number,
+    width: number,
+    color: number
+  ): RenderObject {
+    const norm = normal(ax, ay, bx, by);
+    const radius = width / 2;
+
+    const vertices = new Float32Array(8);
+    vertices[0] = bx - norm[0] * radius;
+    vertices[1] = by - norm[1] * radius;
+    vertices[2] = ax + norm[0] * radius;
+    vertices[3] = ay + norm[1] * radius;
+    vertices[4] = ax - norm[0] * radius;
+    vertices[5] = ay - norm[1] * radius;
+    vertices[6] = bx + norm[0] * radius;
+    vertices[7] = by + norm[1] * radius;
+
+    const colors = new Uint32Array(4);
+    colors.fill(color);
+
+    const indices = new Uint16Array(6);
+    indices[0] = 0;
+    indices[1] = 1;
+    indices[2] = 2;
+    indices[3] = 1;
+    indices[4] = 0;
+    indices[5] = 3;
+
+    const uvMatrix = mat2d.create();
+    const bounds = rect.create();
+    bounds[0] = Math.min(ax, bx);
+    bounds[1] = Math.min(ay, by);
+    bounds[2] = Math.max(ax, bx) - bounds[0];
+    bounds[3] = Math.max(ay, by) - bounds[1];
+
+    return new RenderObject(
+      vertices,
+      colors,
+      indices,
+      uvMatrix,
+      Texture.WHITE,
       0,
       bounds
     );
@@ -165,4 +214,16 @@ function doMerge(
     0,
     bounds
   );
+}
+
+function normal(
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number
+): [number, number] {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const l = Math.sqrt(dx * dx + dy * dy);
+  return [-dy / l, dx / l];
 }
