@@ -89,12 +89,15 @@ function handlePlaceObject(
   const cacheAsBitmap =
     tag instanceof PlaceObject3Tag ? tag.cacheAsBitmap : undefined;
   const visible = tag instanceof PlaceObject3Tag ? tag.visible : undefined;
+  const version = tag instanceof PlaceObject3Tag ? 3 : 2;
 
   const filterModels = (filters ?? []).map((f) => filter(f));
 
   frame.actions.push({
     kind: FrameActionKind.PlaceObject,
     depth: tag.depth,
+    version,
+    moveCharacter: tag.moveCharacter,
     characterId: tag.placeCharacterId,
 
     matrix: tag.matrix && matrix(tag.matrix),

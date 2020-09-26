@@ -23,57 +23,48 @@ export class SpriteInstance implements CharacterInstance {
   }
 
   applyTo(sprite: Sprite, prevFrameNum: number, thisFrameNum: number) {
-    interface EffectiveAction {
-      frame: number;
-      action: FrameAction;
-    }
-
-    // ref: https://github.com/mozilla/shumway/blob/16451d8836fa85f4b16eeda8b4bda2fa9e2b22b0/src/flash/display/Sprite.ts#L147
-    const effectiveActions = new Map<number, EffectiveAction>();
+    const effectiveActions = new Map<number, FrameAction>();
     const setActions = (frameNum: number) => {
-      if (frameNum === 1) {
-        // Reset timeline on frame 1
-        for (const child of sprite.__children) {
-          if (child.__depth >= 0) {
-            effectiveActions.set(child.__depth, {
-              frame: frameNum,
-              action: {
-                kind: FrameActionKind.RemoveObject,
-                depth: child.__depth,
-              },
-            });
-          }
-        }
-      }
-
       const frame = this.frames.find((f) => f.frame === frameNum);
       if (!frame) {
         return;
       }
       for (const action of frame.actions) {
         const ea = effectiveActions.get(action.depth);
-        if (!ea || ea.action.kind !== action.kind) {
-          effectiveActions.set(action.depth, { frame: frameNum, action });
-        } else {
+        if (!ea || ea.kind !== action.kind) {
+          effectiveActions.set(action.depth, action);
+        } else if (ea.kind === FrameActionKind.PlaceObject) {
           effectiveActions.set(action.depth, {
-            frame: frameNum,
-            action: { ...(ea.action || {}), ...action },
+            ...ea,
+            ...action,
           });
         }
       }
     };
-    for (
-      let i = prevFrameNum - 1;
-      i !== thisFrameNum - 1;
-      i = (i + 1) % this.numFrames
-    ) {
-      setActions(i + 1);
-    }
-    setActions(thisFrameNum);
 
-    for (const { frame, action } of effectiveActions.values()) {
-      executeFrameAction(this.library, sprite, frame, action);
+    if (thisFrameNum >= prevFrameNum) {
+      for (let i = prevFrameNum; i <= thisFrameNum; i++) {
+        setActions(i);
+      }
+    } else {
+      // Reset timeline on frame 1
+      for (const child of sprite.__children) {
+        if (child.__depth >= 0) {
+          effectiveActions.set(child.__depth, {
+            kind: FrameActionKind.RemoveObject,
+            depth: child.__depth,
+          });
+        }
+      }
+      for (let i = 1; i <= thisFrameNum; i++) {
+        setActions(i);
+      }
     }
+
+    for (const action of effectiveActions.values()) {
+      executeFrameAction(this.library, sprite, action);
+    }
+
     updateFrameMasks(sprite);
   }
 }

@@ -54,10 +54,12 @@ export class ButtonInstance implements CharacterInstance {
       if (!inState(record)) {
         continue;
       }
-      executeFrameAction(this.library, stateContainer, 1, {
+      executeFrameAction(this.library, stateContainer, {
         kind: FrameActionKind.PlaceObject,
         depth: record.depth,
         characterId: record.characterId,
+        moveCharacter: false,
+        version: 3,
 
         matrix: record.matrix,
         colorTransform: record.colorTransform,

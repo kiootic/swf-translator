@@ -22,6 +22,8 @@ export enum FrameActionKind {
 export interface FrameActionPlaceObject {
   kind: FrameActionKind.PlaceObject;
   depth: number;
+  version: 1 | 2 | 3;
+  moveCharacter: boolean;
   characterId?: number;
 
   matrix?: Matrix;
