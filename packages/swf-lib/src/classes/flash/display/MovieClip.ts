@@ -1,9 +1,11 @@
 import { Sprite } from "./Sprite";
+import { runFrame, enqueueFrameScript } from "./frame";
 
 export type MovieClipT<T> = MovieClip & T;
 
 export class MovieClip extends Sprite {
   __lastFrame = 1;
+  __constructed = false;
   __frameScripts = new Map<number, () => void>();
   __scriptFrame = 0;
 
@@ -19,10 +21,26 @@ export class MovieClip extends Sprite {
     return this.__character?.numFrames ?? 1;
   }
 
+  __initFrame(advance: boolean) {
+    super.__initFrame(advance);
+    if (advance && this.isPlaying && this.__constructed) {
+      this.currentFrame++;
+      if (this.currentFrame > this.totalFrames || this.currentFrame < 1) {
+        this.currentFrame = 1;
+      }
+    }
+  }
+
   __constructFrame() {
+    super.__constructFrame();
     if (this.__lastFrame !== this.currentFrame) {
       this.__character?.applyTo(this, this.__lastFrame, this.currentFrame);
       this.__lastFrame = this.currentFrame;
+    }
+    this.__constructed = true;
+
+    if (this.__scriptFrame !== this.currentFrame) {
+      enqueueFrameScript(() => this.__runFrameScript());
     }
   }
 
@@ -32,27 +50,6 @@ export class MovieClip extends Sprite {
       const frameScript = this.__frameScripts.get(this.__scriptFrame);
       frameScript?.();
     }
-  }
-
-  __onFrameEnter() {
-    this.__constructFrame();
-    super.__onFrameEnter();
-  }
-
-  __onFrameConstruct() {
-    this.__runFrameScript();
-    super.__onFrameConstruct();
-  }
-
-  __onFrameExit() {
-    if (this.isPlaying) {
-      this.currentFrame++;
-      if (this.currentFrame > this.totalFrames || this.currentFrame < 1) {
-        this.currentFrame = 1;
-      }
-    }
-
-    super.__onFrameExit();
   }
 
   addFrameScript(...args: unknown[]) {
@@ -82,8 +79,14 @@ export class MovieClip extends Sprite {
       this.currentFrame = frameNumber;
     }
     this.isPlaying = true;
-    this.__constructFrame();
-    this.__runFrameScript();
+
+    const stage = this.stage;
+    if (stage) {
+      runFrame(false, stage);
+    } else {
+      this.__constructFrame();
+      this.__runFrameScript();
+    }
   }
 
   gotoAndStop(frame: unknown) {
@@ -92,8 +95,14 @@ export class MovieClip extends Sprite {
       this.currentFrame = frameNumber;
     }
     this.isPlaying = false;
-    this.__constructFrame();
-    this.__runFrameScript();
+
+    const stage = this.stage;
+    if (stage) {
+      runFrame(false, stage);
+    } else {
+      this.__constructFrame();
+      this.__runFrameScript();
+    }
   }
 
   play() {

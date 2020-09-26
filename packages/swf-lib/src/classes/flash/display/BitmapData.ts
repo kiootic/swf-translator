@@ -66,7 +66,7 @@ export class BitmapData {
         }
         const node = new SceneNode();
         node.setRenderObjects(
-          [RenderObject.rect(patch, target.texture, true)],
+          [RenderObject.rect(patch, target.texture, { invertY: true })],
           rect.fromValues(0, 0, patch[2], patch[3])
         );
         mat2d.fromTranslation(node.transformLocal, [patch[0], patch[1]]);

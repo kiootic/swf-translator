@@ -93,19 +93,23 @@ export class SimpleButton extends InteractiveObject {
     return this.useHandCursor || super.__isPointerCursor;
   }
 
-  __onFrameEnter() {
-    this.__activeState?.__onFrameEnter();
-    this.hitTestState.__onFrameEnter();
+  __initFrame(advance: boolean) {
+    super.__initFrame(advance);
+    this.__activeState?.__initFrame(advance);
+    this.hitTestState.__initFrame(advance);
   }
 
-  __onFrameConstruct() {
-    this.__activeState?.__onFrameConstruct();
-    this.hitTestState.__onFrameConstruct();
+  __constructFrame() {
+    super.__constructFrame();
+    this.__activeState?.__constructFrame();
+    this.hitTestState.__constructFrame();
   }
 
-  __onFrameExit() {
-    this.__activeState?.__onFrameExit();
-    this.hitTestState.__onFrameExit();
+  __getChildren(list: DisplayObject[]) {
+    if (this.__activeState) {
+      list.push(this.__activeState);
+    }
+    list.push(this.hitTestState);
   }
 
   #handleMouseEvent = (event: MouseEvent) => {

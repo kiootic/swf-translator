@@ -8,6 +8,12 @@ interface RenderObjectMerge {
   transform: mat2d;
 }
 
+interface RenderObjectRectOptions {
+  invertY?: boolean;
+  texWidth?: number;
+  texHeight?: number;
+}
+
 export class RenderObject {
   constructor(
     readonly vertices: Float32Array,
@@ -19,7 +25,17 @@ export class RenderObject {
     readonly bounds: rect
   ) {}
 
-  static rect(bounds: rect, texture: Texture, invertY = false): RenderObject {
+  static rect(
+    bounds: rect,
+    texture: Texture,
+    opts?: RenderObjectRectOptions
+  ): RenderObject {
+    const {
+      invertY = false,
+      texWidth = texture.width,
+      texHeight = texture.height,
+    } = opts ?? {};
+
     const vertices = new Float32Array(8);
     vertices[0] = bounds[2];
     vertices[1] = 0;
@@ -42,10 +58,10 @@ export class RenderObject {
     indices[5] = 3;
 
     const uvMatrix = mat2d.create();
-    mat2d.scale(uvMatrix, uvMatrix, [1 / texture.width, 1 / texture.height]);
+    mat2d.scale(uvMatrix, uvMatrix, [1 / texWidth, 1 / texHeight]);
     if (invertY) {
       mat2d.scale(uvMatrix, uvMatrix, [1, -1]);
-      mat2d.translate(uvMatrix, uvMatrix, [0, -texture.height]);
+      mat2d.translate(uvMatrix, uvMatrix, [0, -texHeight]);
     }
     mat2d.translate(uvMatrix, uvMatrix, [bounds[0], bounds[1]]);
 

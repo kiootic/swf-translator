@@ -7,32 +7,27 @@ import { Texture } from "../../../internal/render2/gl/Texture";
 export class Bitmap extends DisplayObject {
   constructor(readonly bitmapData: BitmapData) {
     super();
+
+    const { width, height } = this.bitmapData;
+    const bounds = rect.fromValues(0, 0, width, height);
+    this.__node.setRenderObjects(
+      [
+        RenderObject.rect(bounds, Texture.WHITE, {
+          texWidth: width,
+          texHeight: height,
+          invertY: true,
+        }),
+      ],
+      bounds
+    );
   }
 
-  __onFrameEnter() {
-    if (this.__node.renderObjects.length === 0) {
-      this.bitmapData.__render();
-      const bounds = rect.fromValues(
-        0,
-        0,
-        this.bitmapData.width,
-        this.bitmapData.height
-      );
-      if (this.bitmapData.__target) {
-        this.__node.setRenderObjects(
-          [RenderObject.rect(bounds, this.bitmapData.__target!.texture, true)],
-          bounds
-        );
-      }
-    }
-    super.__onFrameEnter();
-  }
+  __onRender() {
+    super.__onRender();
 
-  __onFrameExit() {
     this.bitmapData.__render();
-    if (this.__node.renderObjects.length > 0) {
-      this.__node.renderObjects[0].texture = this.bitmapData.__target!.texture;
+    if (this.bitmapData.__target) {
+      this.__node.renderObjects[0].texture = this.bitmapData.__target.texture;
     }
-    super.__onFrameExit();
   }
 }

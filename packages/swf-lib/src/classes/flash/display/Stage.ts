@@ -2,7 +2,6 @@ import { vec2 } from "gl-matrix";
 import { DisplayObject } from "./DisplayObject";
 import { DisplayObjectContainer } from "./DisplayObjectContainer";
 import { InteractiveObject } from "./InteractiveObject";
-import { Point } from "../geom/Point";
 import { Properties } from "../../__internal/Properties";
 import { Canvas } from "../../../internal/render2/Canvas";
 import { Renderer } from "../../../internal/render2/Renderer";
@@ -10,7 +9,8 @@ import { Ticker } from "../../../internal/Ticker";
 import { Event } from "../events/Event";
 import { MouseEvent } from "../events/MouseEvent";
 import { KeyboardEvent } from "../events/KeyboardEvent";
-import { Keyboard } from "../ui";
+import { Keyboard } from "../ui/Keyboard";
+import { runFrame } from "./frame";
 
 const tmpVec2 = vec2.create();
 
@@ -74,10 +74,9 @@ export class Stage extends DisplayObjectContainer {
   }
 
   __onFrame = this.__withContext(() => {
-    this.__onFrameEnter();
-    this.__onFrameConstruct();
-    this.__onFrameExit();
+    runFrame(true, this);
 
+    this.__onRender();
     this.__renderer.renderFrame(this.__node);
   });
 

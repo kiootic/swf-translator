@@ -253,15 +253,15 @@ export class DisplayObject extends EventDispatcher {
     return rect.intersects(obj.__node.boundsWorld, this.__node.boundsWorld);
   }
 
-  __onFrameEnter() {
-    this.dispatchEvent(new Event(Event.ENTER_FRAME, false));
-  }
+  __initFrame(advance: boolean) {}
 
-  __onFrameConstruct() {}
+  __constructFrame() {}
 
-  __onFrameExit() {}
+  __onRender() {}
 
   __onAddToStage() {
     this.dispatchEvent(new Event(Event.ADDED_TO_STAGE, false, false));
   }
+
+  __getChildren(list: DisplayObject[]) {}
 }

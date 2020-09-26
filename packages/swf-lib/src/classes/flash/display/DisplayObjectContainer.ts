@@ -69,27 +69,6 @@ export class DisplayObjectContainer extends InteractiveObject {
     return this.__children.includes(child);
   }
 
-  __onFrameEnter() {
-    for (const child of this.__children) {
-      child.__onFrameEnter();
-    }
-    super.__onFrameEnter();
-  }
-
-  __onFrameConstruct() {
-    for (const child of this.__children) {
-      child.__onFrameConstruct();
-    }
-    super.__onFrameConstruct();
-  }
-
-  __onFrameExit() {
-    for (const child of this.__children) {
-      child.__onFrameExit();
-    }
-    super.__onFrameExit();
-  }
-
   __onAddToStage() {
     // Undefined when added to parent through constructor.
     if (this.__children) {
@@ -98,5 +77,18 @@ export class DisplayObjectContainer extends InteractiveObject {
       }
     }
     super.__onAddToStage();
+  }
+
+  __onRender() {
+    super.__onRender();
+    for (const child of this.__children) {
+      child.__onRender();
+    }
+  }
+
+  __getChildren(list: DisplayObject[]) {
+    for (const child of this.__children) {
+      list.push(child);
+    }
   }
 }
