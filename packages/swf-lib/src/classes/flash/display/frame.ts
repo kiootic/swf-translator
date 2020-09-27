@@ -1,6 +1,7 @@
 import type { Stage } from "./Stage";
 import type { DisplayObject } from "./DisplayObject";
 import { Event } from "../events/Event";
+import { __broadcastDispatcher } from "../events/EventDispatcher";
 
 const frameScriptQueue: Array<() => void> = [];
 
@@ -15,9 +16,9 @@ export function runFrame(isRoot: boolean, stage: Stage) {
   });
 
   if (isRoot) {
-    iterateDisplayObject(stage, (o) => {
-      o.dispatchEvent(new Event(Event.ENTER_FRAME, false, false));
-    });
+    __broadcastDispatcher.dispatchEvent(
+      new Event(Event.ENTER_FRAME, false, false)
+    );
   }
 
   iterateDisplayObject(stage, (o) => {

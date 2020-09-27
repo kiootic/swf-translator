@@ -1,4 +1,4 @@
-import type { Event } from "./Event";
+import { Event } from "./Event";
 
 export type ListenerFn<T extends Event> = (event: T) => void;
 
@@ -7,7 +7,12 @@ interface Listener {
   listener: ListenerFn<Event>;
 }
 
+const forBroadcast = Symbol();
+const broadcastEvents: Array<string | symbol> = [Event.ENTER_FRAME];
+
 export class EventDispatcher {
+  [forBroadcast] = false;
+
   #parent: EventDispatcher | null = null;
   #captureListeners = new Map<string | symbol, Listener[]>();
   #bubbleListeners = new Map<string | symbol, Listener[]>();
@@ -23,6 +28,17 @@ export class EventDispatcher {
     priority = 0,
     useWeakReference = false
   ) {
+    if (broadcastEvents.includes(type) && !this[forBroadcast]) {
+      __broadcastDispatcher.addEventListener(
+        type,
+        listener,
+        useCapture,
+        priority,
+        useWeakReference
+      );
+      return;
+    }
+
     let listeners: Map<string | symbol, Listener[]>;
     if (useCapture) {
       listeners = this.#captureListeners;
@@ -50,6 +66,17 @@ export class EventDispatcher {
     priority = 0,
     useWeakReference = false
   ) {
+    if (broadcastEvents.includes(type) && !this[forBroadcast]) {
+      __broadcastDispatcher.removeEventListener(
+        type,
+        listener,
+        useCapture,
+        priority,
+        useWeakReference
+      );
+      return;
+    }
+
     let listeners: Map<string | symbol, Listener[]>;
     if (useCapture) {
       listeners = this.#captureListeners;
@@ -102,3 +129,6 @@ export class EventDispatcher {
     }
   }
 }
+
+export const __broadcastDispatcher = new EventDispatcher();
+__broadcastDispatcher[forBroadcast] = true;
