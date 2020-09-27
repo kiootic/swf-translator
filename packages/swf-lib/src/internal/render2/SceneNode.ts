@@ -356,14 +356,14 @@ export class SceneNode {
     }
   }
 
-  hitTest(pt: vec2, exact: boolean): boolean {
+  hitTest(worldPt: vec2, exact: boolean): boolean {
     if (this.buttonState >= 0) {
-      return this.children[3].hitTest(pt, true);
+      return this.children[3].hitTest(worldPt, true);
     }
 
     if (!exact) {
       this.ensureLayout();
-      vec2.transformMat2d(tmpVec2, pt, this.transformWorldInvert);
+      vec2.transformMat2d(tmpVec2, worldPt, this.transformWorldInvert);
       return rect.contains(this.boundsLocal, tmpVec2[0], tmpVec2[1]);
     }
 
@@ -371,7 +371,7 @@ export class SceneNode {
     let node: SceneNode | undefined;
     while ((node = nodes.pop())) {
       if (node.renderObjects.length > 0) {
-        vec2.transformMat2d(tmpVec2, pt, node.transformWorldInvert);
+        vec2.transformMat2d(tmpVec2, worldPt, node.transformWorldInvert);
         if (
           node.renderObjects.some((obj) =>
             obj.hitTest(tmpVec2[0], tmpVec2[1], exact)

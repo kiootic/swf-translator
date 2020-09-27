@@ -11,4 +11,6 @@ export class MouseEvent extends Event {
   buttonDown = false;
   localX = 0;
   localY = 0;
+  stageX = 0;
+  stageY = 0;
 }

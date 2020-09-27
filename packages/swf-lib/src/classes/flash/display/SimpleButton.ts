@@ -119,7 +119,7 @@ export class SimpleButton extends InteractiveObject {
       newState = ButtonState.Up;
     } else if (
       event.buttonDown &&
-      this.hitTestPoint(event.localX, event.localY)
+      this.hitTestPoint(event.stageX, event.stageY)
     ) {
       newState = ButtonState.Down;
     } else {

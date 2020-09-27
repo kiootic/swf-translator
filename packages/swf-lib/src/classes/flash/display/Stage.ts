@@ -148,6 +148,8 @@ export class Stage extends DisplayObjectContainer {
         event.buttonDown = sourceEvent.buttons !== 0;
         event.localX = tmpVec2[0];
         event.localY = tmpVec2[1];
+        event.stageX = this.__mousePosition[0];
+        event.stageY = this.__mousePosition[1];
         target.dispatchEvent(event);
       };
 

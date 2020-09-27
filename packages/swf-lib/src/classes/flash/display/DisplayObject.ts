@@ -242,8 +242,11 @@ export class DisplayObject extends EventDispatcher {
   }
 
   hitTestPoint(x: number, y: number, shapeFlag = false): boolean {
+    if (!this.visible) {
+      return false;
+    }
     this.__node.ensureLayout();
-    vec2.transformMat2d(tmpVec2, [x, y], this.__node.transformWorld);
+    vec2.set(tmpVec2, x, y);
     return this.__node.hitTest(tmpVec2, shapeFlag);
   }
 
