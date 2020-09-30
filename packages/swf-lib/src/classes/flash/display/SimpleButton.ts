@@ -115,13 +115,17 @@ export class SimpleButton extends InteractiveObject {
       newState = ButtonState.Over;
     }
 
+    const stage = this.stage;
+
     if (this.__state !== newState) {
       this.__state = newState;
       this.__node.buttonState = newState;
       this.__character?.instantiateState(this, newState);
+      if (stage) {
+        stage.__displayListDirty = true;
+      }
     }
 
-    const stage = this.stage;
     if (!this.trackAsMenu && stage) {
       if (isMouseDown) {
         stage.__mouseTrackTarget = this;
