@@ -66,7 +66,7 @@ export class DisplayObject extends EventDispatcher {
 
     if (newStage && newStage !== oldStage) {
       newStage.__displayListDirty = true;
-      this.__onAddToStage();
+      this.__onAddToStage(newStage);
     }
     this.__setEventParent(this.parent);
   }
@@ -259,13 +259,11 @@ export class DisplayObject extends EventDispatcher {
     return rect.intersects(obj.__node.boundsWorld, this.__node.boundsWorld);
   }
 
-  __initFrame(advance: boolean) {}
-
-  __constructFrame() {}
+  __initFrame(stage: Stage) {}
 
   __onRender() {}
 
-  __onAddToStage() {
+  __onAddToStage(stage: Stage) {
     this.dispatchEvent(new Event(Event.ADDED_TO_STAGE, false, false));
   }
 }

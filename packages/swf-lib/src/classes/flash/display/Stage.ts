@@ -14,6 +14,10 @@ import { runFrame } from "./frame";
 
 const tmpVec2 = vec2.create();
 
+interface Constructible {
+  __constructFrame(): void;
+}
+
 export class Stage extends DisplayObjectContainer {
   static __current: Stage | null = null;
 
@@ -23,6 +27,7 @@ export class Stage extends DisplayObjectContainer {
 
   __displayListDirty = false;
   readonly __displayList: DisplayObject[] = [];
+  readonly __constructionQueue: Constructible[] = [];
 
   __mousePosition = vec2.create();
   __mouseOn: InteractiveObject | null = null;

@@ -1,5 +1,6 @@
 import { DisplayObject } from "./DisplayObject";
 import { InteractiveObject } from "./InteractiveObject";
+import { Stage } from "./Stage";
 
 export class DisplayObjectContainer extends InteractiveObject {
   __children!: DisplayObject[];
@@ -74,11 +75,11 @@ export class DisplayObjectContainer extends InteractiveObject {
     return this.__children.includes(child);
   }
 
-  __onAddToStage() {
+  __onAddToStage(stage: Stage) {
     for (const child of this.__children) {
-      child.__onAddToStage();
+      child.__onAddToStage(stage);
     }
-    super.__onAddToStage();
+    super.__onAddToStage(stage);
   }
 
   __onRender() {

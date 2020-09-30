@@ -11,25 +11,25 @@ export function enqueueFrameScript(script: () => void) {
   frameScriptQueue.push(script);
 }
 
-const frameInitQueue: Array<MovieClip> = [];
-const frameConstructQueue: Array<MovieClip> = [];
-
 // ref: https://github.com/mozilla/shumway/blob/16451d8836fa85f4b16eeda8b4bda2fa9e2b22b0/src/flash/display/DisplayObject.ts#L422
 export function runFrame(isRoot: boolean, stage: Stage) {
-  stage.__ensureDisplayList();
-  for (const o of stage.__displayList.slice()) {
-    o.__initFrame(isRoot);
-  }
-
   if (isRoot) {
+    stage.__ensureDisplayList();
+    for (const o of stage.__displayList.slice()) {
+      o.__initFrame(stage);
+    }
+
     __broadcastDispatcher.dispatchEvent(
       new Event(Event.ENTER_FRAME, false, false)
     );
   }
 
-  stage.__ensureDisplayList();
-  for (const o of stage.__displayList.slice()) {
-    o.__constructFrame();
+  while (stage.__constructionQueue.length > 0) {
+    const queue = stage.__constructionQueue.slice();
+    stage.__constructionQueue.length = 0;
+    for (const o of queue) {
+      o.__constructFrame();
+    }
   }
 
   const scripts = frameScriptQueue.slice();

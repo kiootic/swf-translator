@@ -1,5 +1,6 @@
 import { Sprite } from "./Sprite";
 import { runFrame, enqueueFrameScript } from "./frame";
+import { Stage } from "./Stage";
 
 export type MovieClipT<T> = MovieClip & T;
 
@@ -21,18 +22,24 @@ export class MovieClip extends Sprite {
     return this.__character?.numFrames ?? 1;
   }
 
-  __initFrame(advance: boolean) {
-    super.__initFrame(advance);
-    if (advance && this.isPlaying && this.__constructed) {
-      this.currentFrame++;
-      if (this.currentFrame > this.totalFrames || this.currentFrame < 1) {
-        this.currentFrame = 1;
+  __initFrame(stage: Stage) {
+    super.__initFrame(stage);
+
+    if (this.isPlaying && this.__constructed) {
+      let newFrame = this.currentFrame + 1;
+      if (newFrame > this.totalFrames || newFrame < 1) {
+        newFrame = 1;
       }
+      if (this.currentFrame !== newFrame) {
+        this.currentFrame = newFrame;
+        stage.__constructionQueue.push(this);
+      }
+    } else if (!this.__constructed) {
+      stage.__constructionQueue.push(this);
     }
   }
 
   __constructFrame() {
-    super.__constructFrame();
     if (this.__lastFrame !== this.currentFrame) {
       this.__character?.applyTo(this, this.__lastFrame, this.currentFrame);
       this.__lastFrame = this.currentFrame;
@@ -82,6 +89,7 @@ export class MovieClip extends Sprite {
 
     const stage = this.stage;
     if (stage) {
+      stage.__constructionQueue.push(this);
       runFrame(false, stage);
     } else {
       this.__constructFrame();
@@ -98,6 +106,7 @@ export class MovieClip extends Sprite {
 
     const stage = this.stage;
     if (stage) {
+      stage.__constructionQueue.push(this);
       runFrame(false, stage);
     } else {
       this.__constructFrame();
@@ -111,5 +120,10 @@ export class MovieClip extends Sprite {
 
   stop() {
     this.isPlaying = false;
+  }
+
+  __onAddToStage(stage: Stage) {
+    super.__onAddToStage(stage);
+    stage.__constructionQueue.push(this);
   }
 }

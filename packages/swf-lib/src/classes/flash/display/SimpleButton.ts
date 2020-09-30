@@ -5,6 +5,7 @@ import {
   ButtonState,
 } from "../../../internal/character/ButtonInstance";
 import { MouseEvent } from "../events";
+import { Stage } from "./Stage";
 
 export class SimpleButton extends InteractiveObject {
   static __character?: ButtonInstance;
@@ -98,18 +99,6 @@ export class SimpleButton extends InteractiveObject {
 
   get __isPointerCursor() {
     return this.useHandCursor || super.__isPointerCursor;
-  }
-
-  __initFrame(advance: boolean) {
-    super.__initFrame(advance);
-    this.__activeState?.__initFrame(advance);
-    this.hitTestState.__initFrame(advance);
-  }
-
-  __constructFrame() {
-    super.__constructFrame();
-    this.__activeState?.__constructFrame();
-    this.hitTestState.__constructFrame();
   }
 
   #handleMouseEvent = (event: MouseEvent) => {
