@@ -35,11 +35,13 @@ export class DisplayObject extends EventDispatcher {
     this.transform = new Transform();
     this.transform.__setNode(this.__node);
 
-    if (charInit) {
-      charInit.fn(this);
-      charInit = null;
-    }
+    const initChar = charInit;
+    charInit = null;
+    this.__initChar();
+    initChar?.fn(this);
   }
+
+  __initChar() {}
 
   readonly transform: Transform;
 

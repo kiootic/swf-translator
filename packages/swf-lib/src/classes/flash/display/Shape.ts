@@ -12,9 +12,13 @@ export class Shape extends DisplayObject {
   constructor() {
     super();
 
+    this.graphics = new Graphics(this.__node);
+  }
+
+  __initChar() {
     this.__character = (this.constructor as typeof Shape).__character ?? null;
     this.__character?.applyTo(this);
 
-    this.graphics = new Graphics(this.__node);
+    super.__initChar();
   }
 }

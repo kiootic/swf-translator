@@ -2,7 +2,12 @@ import { DisplayObject } from "./DisplayObject";
 import { InteractiveObject } from "./InteractiveObject";
 
 export class DisplayObjectContainer extends InteractiveObject {
-  __children: DisplayObject[] = [];
+  __children!: DisplayObject[];
+
+  constructor() {
+    super();
+    this.__children = this.__children ?? [];
+  }
 
   get numChildren(): number {
     return this.__children.length;
@@ -70,11 +75,8 @@ export class DisplayObjectContainer extends InteractiveObject {
   }
 
   __onAddToStage() {
-    // Undefined when added to parent through constructor.
-    if (this.__children) {
-      for (const child of this.__children) {
-        child.__onAddToStage();
-      }
+    for (const child of this.__children) {
+      child.__onAddToStage();
     }
     super.__onAddToStage();
   }

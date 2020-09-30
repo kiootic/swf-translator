@@ -14,6 +14,22 @@ export class SimpleButton extends InteractiveObject {
   constructor() {
     super();
 
+    this.addEventListener(MouseEvent.MOUSE_OVER, this.#handleMouseEvent);
+    this.addEventListener(MouseEvent.MOUSE_OUT, this.#handleMouseEvent);
+    this.addEventListener(MouseEvent.MOUSE_DOWN, this.#handleMouseEvent);
+    this.addEventListener(MouseEvent.MOUSE_UP, this.#handleMouseEvent);
+    this.addEventListener(MouseEvent.MOUSE_MOVE, this.#handleMouseEvent);
+  }
+
+  __initChar() {
+    this.__state = ButtonState.Up;
+    this.__states = [
+      new DisplayObject(),
+      new DisplayObject(),
+      new DisplayObject(),
+      new DisplayObject(),
+    ];
+
     for (const obj of this.__states) {
       obj.__node.setParent(this.__node, this.__node.children.length);
     }
@@ -23,20 +39,11 @@ export class SimpleButton extends InteractiveObject {
     this.__character?.applyTo(this);
     this.__node.buttonState = this.__state;
 
-    this.addEventListener(MouseEvent.MOUSE_OVER, this.#handleMouseEvent);
-    this.addEventListener(MouseEvent.MOUSE_OUT, this.#handleMouseEvent);
-    this.addEventListener(MouseEvent.MOUSE_DOWN, this.#handleMouseEvent);
-    this.addEventListener(MouseEvent.MOUSE_UP, this.#handleMouseEvent);
-    this.addEventListener(MouseEvent.MOUSE_MOVE, this.#handleMouseEvent);
+    super.__initChar();
   }
 
   private __state = ButtonState.Up;
-  private __states = [
-    new DisplayObject(),
-    new DisplayObject(),
-    new DisplayObject(),
-    new DisplayObject(),
-  ];
+  private __states!: DisplayObject[];
 
   get __activeState() {
     switch (this.__state) {
