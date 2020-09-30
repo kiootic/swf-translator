@@ -112,13 +112,6 @@ export class SimpleButton extends InteractiveObject {
     this.hitTestState.__constructFrame();
   }
 
-  __getChildren(list: DisplayObject[]) {
-    if (this.__activeState) {
-      list.push(this.__activeState);
-    }
-    list.push(this.hitTestState);
-  }
-
   #handleMouseEvent = (event: MouseEvent) => {
     let newState: ButtonState = this.__state;
     let isMouseDown = event.type !== MouseEvent.MOUSE_OUT && event.buttonDown;

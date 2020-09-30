@@ -23,7 +23,7 @@ export class DisplayObject extends EventDispatcher {
   __depth: number = -1;
   __clipDepth: number = -1;
 
-  readonly __node = new SceneNode();
+  readonly __node = new SceneNode(this);
 
   static __initChar<T>(fn: () => T, init: (char: T) => void): T {
     charInit = { fn: init };
@@ -65,6 +65,7 @@ export class DisplayObject extends EventDispatcher {
     const newStage = this.stage;
 
     if (newStage && newStage !== oldStage) {
+      newStage.__displayListDirty = true;
       this.__onAddToStage();
     }
     this.__setEventParent(this.parent);
@@ -267,6 +268,4 @@ export class DisplayObject extends EventDispatcher {
   __onAddToStage() {
     this.dispatchEvent(new Event(Event.ADDED_TO_STAGE, false, false));
   }
-
-  __getChildren(list: DisplayObject[]) {}
 }

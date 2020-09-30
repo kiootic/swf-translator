@@ -49,6 +49,8 @@ export class SceneNode {
   readonly transformWorld = mat2d.create();
   readonly transformWorldInvert = mat2d.create();
 
+  constructor(readonly object: unknown) {}
+
   markRenderDirty() {
     let node: SceneNode | null = this;
     while (node) {
@@ -395,7 +397,7 @@ export class SceneNode {
       if (node) {
         return node;
       }
-      node = new SceneNode();
+      node = new SceneNode(n.object);
       nodeMap.set(n, node);
 
       node.visible = n.visible;

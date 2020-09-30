@@ -87,10 +87,4 @@ export class DisplayObjectContainer extends InteractiveObject {
       child.__onRender();
     }
   }
-
-  __getChildren(list: DisplayObject[]) {
-    for (const child of this.__children) {
-      list.push(child);
-    }
-  }
 }

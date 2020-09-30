@@ -12,7 +12,7 @@ import { rect } from "../../../internal/math/rect";
 import { RenderObject } from "../../../internal/render2/RenderObject";
 
 export class BitmapData {
-  private __root = new SceneNode();
+  private __root = new SceneNode(null);
   private __needRender = false;
   private __needPixel = false;
   private __pixels: Uint32Array | null = null;
@@ -64,7 +64,7 @@ export class BitmapData {
         if (patch[2] <= 0 || patch[3] <= 0) {
           return;
         }
-        const node = new SceneNode();
+        const node = new SceneNode(null);
         node.setRenderObjects(
           [RenderObject.rect(patch, target.texture, { invertY: true })],
           rect.fromValues(0, 0, patch[2], patch[3])
@@ -246,7 +246,7 @@ export class BitmapData {
       clearFb
     );
     this.__root.onRemoveFromStage();
-    this.__root = new SceneNode();
+    this.__root = new SceneNode(null);
     this.__needRender = false;
     this.__needPixel = true;
   }

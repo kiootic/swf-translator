@@ -21,6 +21,9 @@ export class Stage extends DisplayObjectContainer {
   readonly __ticker: Ticker;
   readonly __renderer: Renderer;
 
+  __displayListDirty = false;
+  readonly __displayList: DisplayObject[] = [];
+
   __mousePosition = vec2.create();
   __mouseOn: InteractiveObject | null = null;
   __mouseTrackTarget: InteractiveObject | null = null;
@@ -230,4 +233,24 @@ export class Stage extends DisplayObjectContainer {
       this.dispatchEvent(event);
     }
   );
+
+  __ensureDisplayList() {
+    if (!this.__displayListDirty) {
+      return;
+    }
+
+    this.__displayList.length = 1;
+    this.__displayList[0] = this;
+
+    let i = 0;
+    while (i < this.__displayList.length) {
+      const children = this.__displayList[i].__node.children;
+      for (let j = 0; j < children.length; j++) {
+        this.__displayList.push(children[j].object as DisplayObject);
+      }
+      i++;
+    }
+
+    this.__displayListDirty = false;
+  }
 }
