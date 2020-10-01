@@ -9,9 +9,10 @@ import { CachedRender } from "./CachedRender";
 const enum Flags {
   DirtyBounds = 1,
   DirtyTransform = 2,
-  DirtyRender = 4, // FIXME: apply this flag correctly
+  DirtyChildTransform = 4,
+  DirtyRender = 8, // FIXME: apply this flag correctly
 
-  DirtyAll = 7,
+  DirtyAll = 15,
 
   IsRoot = 128,
 }
@@ -74,10 +75,17 @@ export class SceneNode {
       return;
     }
 
+    // Mark parent child transform dirty.
+    node = this;
+    while (node) {
+      node.flags |= Flags.DirtyChildTransform;
+      node = node.parent;
+    }
+
     // Mark children transform dirty.
     const nodes: SceneNode[] = [this];
     while ((node = nodes.pop())) {
-      node.flags |= Flags.DirtyTransform;
+      node.flags |= Flags.DirtyTransform | Flags.DirtyChildTransform;
       for (const child of node.children) {
         nodes.push(child);
       }
@@ -95,7 +103,11 @@ export class SceneNode {
       }
 
       // Enqueue children to traverse.
-      queue.push(...node.children);
+      if (node.flags & Flags.DirtyChildTransform) {
+        queue.push(...node.children);
+        node.flags &= ~Flags.DirtyChildTransform;
+      }
+
       if ((node.flags & Flags.DirtyTransform) === 0) {
         continue;
       }

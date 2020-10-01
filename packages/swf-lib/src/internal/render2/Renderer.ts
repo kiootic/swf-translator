@@ -697,9 +697,13 @@ export class Renderer {
       textures.length = 1;
     };
 
+    const indexData = this.indices.data;
+    const attrFloat = this.attrFloat;
+    const attrUint = this.attrUint;
     for (const { render, maskTex, maskID } of objects) {
-      const objectNumVertex = render.object.vertices.length / 2;
-      const objectNumIndex = render.object.indices.length;
+      const { vertices, indices, uvMatrix, colors } = render.object;
+      const objectNumVertex = vertices.length / 2;
+      const objectNumIndex = indices.length;
       if (numVertex + objectNumVertex >= vertexLimit) {
         flush();
       } else if (numIndex + objectNumIndex >= indexLimit) {
@@ -726,7 +730,7 @@ export class Renderer {
       }
 
       for (let i = 0; i < objectNumIndex; i++) {
-        this.indices.data[numIndex + i] = render.object.indices[i] + numVertex;
+        indexData[numIndex + i] = indices[i] + numVertex;
       }
 
       const fillMode = render.object.fillMode + textureIndex * 4;
@@ -738,35 +742,52 @@ export class Renderer {
       }
       const mode = maskID * 0x10000 + maskMode * 0x100 + fillMode;
 
-      const uv = render.object.uvMatrix;
+      const base = numVertex * 14;
+      const viewA = view[0];
+      const viewB = view[1];
+      const viewC = view[2];
+      const viewD = view[3];
+      const viewTX = view[4];
+      const viewTY = view[5];
+      const uvA = uvMatrix[0];
+      const uvB = uvMatrix[1];
+      const uvC = uvMatrix[2];
+      const uvD = uvMatrix[3];
+      const uvTX = uvMatrix[4];
+      const uvTY = uvMatrix[5];
+      const colorMulR = colorMul[0];
+      const colorMulG = colorMul[1];
+      const colorMulB = colorMul[2];
+      const colorMulA = colorMul[3];
+      const colorAddR = colorAdd[0] / 0xff;
+      const colorAddG = colorAdd[1] / 0xff;
+      const colorAddB = colorAdd[2] / 0xff;
+      const colorAddA = colorAdd[3] / 0xff;
+
       for (let i = 0; i < objectNumVertex; i++) {
-        const x = render.object.vertices[i * 2];
-        const y = render.object.vertices[i * 2 + 1];
-        const color = render.object.colors[i];
+        const x = vertices[i * 2];
+        const y = vertices[i * 2 + 1];
+        const color = colors[i];
 
-        this.attrFloat[(numVertex + i) * 14 + 0] =
-          view[0] * x + view[2] * y + view[4];
-        this.attrFloat[(numVertex + i) * 14 + 1] =
-          view[1] * x + view[3] * y + view[5];
+        attrFloat[base + i * 14 + 0] = viewA * x + viewC * y + viewTX;
+        attrFloat[base + i * 14 + 1] = viewB * x + viewD * y + viewTY;
 
-        this.attrFloat[(numVertex + i) * 14 + 2] =
-          uv[0] * x + uv[2] * y + uv[4];
-        this.attrFloat[(numVertex + i) * 14 + 3] =
-          uv[1] * x + uv[3] * y + uv[5];
+        attrFloat[base + i * 14 + 2] = uvA * x + uvC * y + uvTX;
+        attrFloat[base + i * 14 + 3] = uvB * x + uvD * y + uvTY;
 
-        this.attrUint[(numVertex + i) * 14 + 4] = color;
+        attrUint[base + i * 14 + 4] = color;
 
-        this.attrFloat[(numVertex + i) * 14 + 5] = colorMul[0];
-        this.attrFloat[(numVertex + i) * 14 + 6] = colorMul[1];
-        this.attrFloat[(numVertex + i) * 14 + 7] = colorMul[2];
-        this.attrFloat[(numVertex + i) * 14 + 8] = colorMul[3];
+        attrFloat[base + i * 14 + 5] = colorMulR;
+        attrFloat[base + i * 14 + 6] = colorMulG;
+        attrFloat[base + i * 14 + 7] = colorMulB;
+        attrFloat[base + i * 14 + 8] = colorMulA;
 
-        this.attrFloat[(numVertex + i) * 14 + 9] = colorAdd[0] / 0xff;
-        this.attrFloat[(numVertex + i) * 14 + 10] = colorAdd[1] / 0xff;
-        this.attrFloat[(numVertex + i) * 14 + 11] = colorAdd[2] / 0xff;
-        this.attrFloat[(numVertex + i) * 14 + 12] = colorAdd[3] / 0xff;
+        attrFloat[base + i * 14 + 9] = colorAddR;
+        attrFloat[base + i * 14 + 10] = colorAddG;
+        attrFloat[base + i * 14 + 11] = colorAddB;
+        attrFloat[base + i * 14 + 12] = colorAddA;
 
-        this.attrUint[(numVertex + i) * 14 + 13] = mode;
+        attrUint[base + i * 14 + 13] = mode;
       }
 
       numVertex += objectNumVertex;
