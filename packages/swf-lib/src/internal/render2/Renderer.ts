@@ -146,7 +146,6 @@ export class Renderer {
   }
 
   renderFrame(root: SceneNode) {
-    const { width, height } = this.defaultFramebuffer.colorAttachment;
     const gl = this.glState.gl;
     this.renderNode(root, this.defaultFramebuffer, () => {
       this.glState.setClearColor(
@@ -157,8 +156,12 @@ export class Renderer {
       );
       gl.clear(gl.COLOR_BUFFER_BIT);
     });
+  }
 
-    this.defaultFramebuffer.ensure(this.glState);
+  blitFrame() {
+    const { width, height } = this.defaultFramebuffer.colorAttachment;
+    const gl = this.glState.gl;
+
     this.glState.bindFramebuffer(
       gl.READ_FRAMEBUFFER,
       this.defaultFramebuffer.framebuffer

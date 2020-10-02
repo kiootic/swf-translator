@@ -67,6 +67,7 @@ export class Stage extends DisplayObjectContainer {
 
     this.__ticker = new Ticker(fps);
     this.__ticker.onFrame.subscribe(this.__onFrame);
+    this.__ticker.onRender.subscribe(this.__doRender);
     this.__ticker.begin();
 
     const canvas = this.__canvas.element;
@@ -83,9 +84,12 @@ export class Stage extends DisplayObjectContainer {
 
   __onFrame = this.__withContext(() => {
     runFrame(true, this);
-
     this.__onRender();
     this.__renderer.renderFrame(this.__node);
+  });
+
+  __doRender = this.__withContext(() => {
+    this.__renderer.blitFrame();
   });
 
   __withContext<T extends Function>(fn: T): T {

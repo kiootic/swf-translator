@@ -2,18 +2,24 @@ import { Signal } from "./signal";
 
 export class Ticker {
   readonly onFrame = new Signal<() => void>();
+  readonly onRender = new Signal<() => void>();
 
   private animationHandle?: number;
+  private readonly channel = new MessageChannel();
   private readonly targetMS: number;
   private lastTimestamp = 0;
+  private needRender = false;
 
   constructor(readonly fps: number) {
     this.targetMS = 1000 / fps;
+    this.channel.port1.onmessage = () => {
+      this._onFrame();
+    };
   }
 
   begin() {
     this.end();
-    this.animationHandle = requestAnimationFrame(this._onFrame);
+    this.animationHandle = requestAnimationFrame(this._onRender);
   }
 
   end() {
@@ -23,19 +29,31 @@ export class Ticker {
     }
   }
 
-  private _onFrame = (timestamp: DOMHighResTimeStamp) => {
+  private _onFrame = () => {
     try {
-      if (timestamp - this.lastTimestamp < this.targetMS) {
-        return;
-      }
-      this.lastTimestamp =
-        timestamp - ((timestamp - this.lastTimestamp) % this.targetMS);
-
       this.onFrame.emit();
     } catch (e) {
       console.error(e);
-    } finally {
-      this.animationHandle = requestAnimationFrame(this._onFrame);
     }
+    this.needRender = true;
+  };
+
+  private _onRender = (timestamp: DOMHighResTimeStamp) => {
+    const last = this.lastTimestamp;
+    if (timestamp - last >= this.targetMS) {
+      this.lastTimestamp = timestamp - ((timestamp - last) % this.targetMS);
+      this.channel.port2.postMessage(null);
+    }
+
+    if (this.needRender) {
+      try {
+        this.onRender.emit();
+      } catch (e) {
+        console.error(e);
+      }
+      this.needRender = false;
+    }
+
+    this.animationHandle = requestAnimationFrame(this._onRender);
   };
 }
