@@ -37,11 +37,11 @@ export class DisplayObject extends EventDispatcher {
 
     const initChar = charInit;
     charInit = null;
-    this.__initChar();
+    this.__preInit();
     initChar?.fn(this);
   }
 
-  __initChar() {}
+  __preInit() {}
 
   readonly transform: Transform;
 

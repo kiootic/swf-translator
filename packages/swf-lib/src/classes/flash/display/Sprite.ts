@@ -15,12 +15,12 @@ export class Sprite extends DisplayObjectContainer {
     this.graphics = new Graphics(this.__node);
   }
 
-  __initChar() {
+  __preInit() {
     this.__children = [];
     this.__character = (this.constructor as typeof Sprite).__character ?? null;
     this.__character?.applyTo(this, 1, 1);
 
-    super.__initChar();
+    super.__preInit();
   }
 
   buttonMode = false;

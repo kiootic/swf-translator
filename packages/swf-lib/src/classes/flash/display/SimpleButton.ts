@@ -22,7 +22,7 @@ export class SimpleButton extends InteractiveObject {
     this.addEventListener(MouseEvent.MOUSE_MOVE, this.#handleMouseEvent);
   }
 
-  __initChar() {
+  __preInit() {
     this.__state = ButtonState.Up;
     this.__states = [
       new DisplayObject(),
@@ -40,7 +40,7 @@ export class SimpleButton extends InteractiveObject {
     this.__character?.applyTo(this);
     this.__node.buttonState = this.__state;
 
-    super.__initChar();
+    super.__preInit();
   }
 
   private __state = ButtonState.Up;
