@@ -8,6 +8,7 @@ import {
 } from "../code/structure";
 import { EmitContext } from "./context";
 import { emitAST } from "./ast";
+import * as ast from "../code/ast";
 
 export function emitClass(cls: ClassDef): string {
   const ctx = new EmitContext(cls);
@@ -89,7 +90,7 @@ function emitField(ctx: EmitContext, field: FieldDef) {
     ctx.emit("readonly ");
   }
   ctx.emit(`${field.name}: ${ctx.importType(field.type, false)}`);
-  if (field.initialValue) {
+  if (field.initialValue && field.isStatic) {
     ctx.emit(" = ");
     emitAST(ctx, field.initialValue);
   }

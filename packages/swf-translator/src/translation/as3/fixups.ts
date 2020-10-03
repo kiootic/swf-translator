@@ -33,6 +33,16 @@ function fixupSuperCall(classDef: ClassDef, body: ast.NodeBlock) {
   }
   const i = body.statements.indexOf(superCall);
   body.statements.splice(i, 1);
+
+  const initializers: ast.NodeStatement[] = [];
+  for (const field of classDef.fields) {
+    if (field.initialValue && !field.isStatic) {
+      initializers.push(new ast.NodeStmtExpr(new ast.NodeExprAssignment("=", new ast.NodeExprProperty(new ast.NodeExprThis(), field.name), field.initialValue)))
+      field.initialValue = null;
+    }
+  }
+  body.statements.splice(0, 0, ...initializers);
+
   if (classDef.extendType) {
     body.statements.splice(0, 0, superCall);
   }
