@@ -1,4 +1,5 @@
 import { ImageCharacter } from "./character/Image";
+import { SoundCharacter } from "./character/Sound";
 import { ShapeCharacter } from "./character/Shape";
 import { FontCharacter } from "./character/Font";
 import { StaticTextCharacter } from "./character/StaticText";
@@ -13,7 +14,9 @@ import { Sprite } from "../flash/display/Sprite";
 import { MovieClip } from "../flash/display/MovieClip";
 import { StaticText } from "../flash/text/StaticText";
 import { TextField } from "../flash/text";
+import { Sound } from "../flash/media";
 import { ImageInstance } from "../../internal/character/ImageInstance";
+import { SoundInstance } from "../../internal/character/SoundInstance";
 import { ShapeInstance } from "../../internal/character/ShapeInstance";
 import { MorphShapeInstance } from "../../internal/character/MorphShapeInstance";
 import { SpriteInstance } from "../../internal/character/SpriteInstance";
@@ -25,6 +28,7 @@ import { AssetBundle } from "./AssetBundle";
 import { FontRegistry } from "./FontRegistry";
 import { SimpleButton } from "../flash/display";
 import { ClassRegistry } from "./ClassRegistry";
+import { Audio } from "../../internal/audio";
 
 export interface AssetLibrary {
   readonly gradientCache: Map<string, HTMLCanvasElement>;
@@ -36,6 +40,7 @@ export interface AssetLibrary {
 
 export class AssetLibraryBuilder {
   private readonly images = new Map<number, ImageCharacter>();
+  private readonly sounds = new Map<number, SoundCharacter>();
   private readonly shapes = new Map<number, ShapeCharacter>();
   private readonly sprites = new Map<number, SpriteCharacter>();
   private readonly fonts = new Map<number, FontCharacter>();
@@ -47,6 +52,10 @@ export class AssetLibraryBuilder {
 
   registerImage(id: number, char: ImageCharacter) {
     this.images.set(id, char);
+  }
+
+  registerSound(id: number, char: SoundCharacter) {
+    this.sounds.set(id, char);
   }
 
   registerShape(id: number, char: ShapeCharacter) {
@@ -85,6 +94,9 @@ export class AssetLibraryBuilder {
     for (const [id, char] of Object.entries(bundle.images)) {
       this.registerImage(Number(id), char);
     }
+    for (const [id, char] of Object.entries(bundle.sounds)) {
+      this.registerSound(Number(id), char);
+    }
     for (const [id, char] of Object.entries(bundle.shapes)) {
       this.registerShape(Number(id), char);
     }
@@ -114,8 +126,8 @@ export class AssetLibraryBuilder {
   async instantiate(): Promise<AssetLibrary> {
     const library = new InstantiatedLibrary();
 
-    await Promise.all(
-      [...this.images.entries()].map(async ([id, image]) => {
+    await Promise.all([
+      ...Array.from(this.images.entries()).map(async ([id, image]) => {
         const img = await new Promise<HTMLImageElement>((resolve, reject) => {
           const img = new Image();
           img.onload = () => resolve(img);
@@ -123,8 +135,13 @@ export class AssetLibraryBuilder {
           img.src = image.path;
         });
         library.images.set(id, new ImageInstance(id, img));
-      })
-    );
+      }),
+      ...Array.from(this.sounds.entries()).map(async ([id, image]) => {
+        const data = await fetch(image.path).then((resp) => resp.arrayBuffer());
+        const buf = await Audio.decodeAudioData(data);
+        library.sounds.set(id, new SoundInstance(id, buf));
+      }),
+    ]);
 
     for (const [id, shape] of this.shapes) {
       library.shapes.set(id, new ShapeInstance(id, shape, library));
@@ -177,6 +194,7 @@ export class AssetLibraryBuilder {
 
 class InstantiatedLibrary implements AssetLibrary {
   readonly images = new Map<number, ImageInstance>();
+  readonly sounds = new Map<number, SoundInstance>();
   readonly shapes = new Map<number, ShapeInstance>();
   readonly morphShapes = new Map<number, MorphShapeInstance>();
   readonly sprites = new Map<number, SpriteInstance>();
@@ -207,7 +225,7 @@ class InstantiatedLibrary implements AssetLibrary {
   }
 
   linkCharacters() {
-    type Class = new () => DisplayObject;
+    type Class = new () => object;
     const link = <T>(
       characters: Map<number, T>,
       defaultClassFactory: (char: T) => Class
@@ -224,6 +242,7 @@ class InstantiatedLibrary implements AssetLibrary {
       }
     };
 
+    link(this.sounds, () => Sound);
     link(this.shapes, () => Shape);
     link(this.morphShapes, () => MorphShape);
     link(this.sprites, (s) => (s.numFrames > 1 ? MovieClip : Sprite));
@@ -232,8 +251,8 @@ class InstantiatedLibrary implements AssetLibrary {
     link(this.buttons, () => SimpleButton);
   }
 
-  instantiateCharacter(id: number): DisplayObject {
-    const classFn = this.linkedClasses.get(id) as new () => DisplayObject;
+  instantiateCharacter<T>(id: number): T {
+    const classFn = this.linkedClasses.get(id) as new () => T;
     if (!classFn) {
       throw new Error(`Character ${id} not found`);
     }

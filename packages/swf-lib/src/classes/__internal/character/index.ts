@@ -1,4 +1,5 @@
 export * from "./Image";
+export * from "./Sound";
 export * from "./Shape";
 export * from "./MorphShape";
 export * from "./Sprite";

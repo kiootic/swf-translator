@@ -2,6 +2,7 @@ import JSON5 from "json5";
 import { OutputContext } from "../../output";
 import { SWFFile } from "../../format/swf";
 import { translateImages } from "./images";
+import { translateSounds } from "./sounds";
 import { translateShapes } from "./shapes";
 import { translateSprites } from "./sprites";
 import { translateFonts } from "./fonts";
@@ -27,6 +28,7 @@ export async function generateCharacters(ctx: OutputContext, swf: SWFFile) {
         initializer: JSON5.stringify(
           {
             images: {},
+            sounds: {},
             shapes: {},
             morphShapes: {},
             fonts: {},
@@ -44,6 +46,7 @@ export async function generateCharacters(ctx: OutputContext, swf: SWFFile) {
   });
 
   await translateImages(ctx, swf);
+  await translateSounds(ctx, swf);
   await translateShapes(ctx, swf);
   await translateMorphShapes(ctx, swf);
   await translateSprites(ctx, swf);
