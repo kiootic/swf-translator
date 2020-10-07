@@ -11,6 +11,7 @@ import { RemoveObject2Tag } from "../../format/tags/remove-object-2";
 import { ShowFrameTag } from "../../format/tags/show-frame";
 import { FrameLabelTag } from "../../format/tags/frame-label";
 import { DefineSceneAndFrameLabelDataTag } from "../../format/tags/define-scene-and-frame-label-data";
+import { StartSoundTag } from "../../format/tags/start-sound";
 
 export async function translateSprites(ctx: OutputContext, swf: SWFFile) {
   const sprites: Record<number, unknown> = {};
@@ -58,6 +59,8 @@ function processTags(tags: Tag[]): SpriteFrame[] {
       handlePlaceObject(frame, tag);
     } else if (tag instanceof RemoveObject2Tag) {
       handleRemoveObject(frame, tag);
+    } else if (tag instanceof StartSoundTag) {
+      handleStartSound(frame, tag);
     } else if (tag instanceof ShowFrameTag) {
       frame = { frame: frames.length + 1, actions: [] };
       frames.push(frame);
@@ -117,5 +120,13 @@ function handleRemoveObject(frame: SpriteFrame, tag: RemoveObject2Tag) {
   frame.actions.push({
     kind: FrameActionKind.RemoveObject,
     depth: tag.depth,
+  });
+}
+
+function handleStartSound(frame: SpriteFrame, tag: StartSoundTag) {
+  frame.actions.push({
+    kind: FrameActionKind.StartSound,
+    characterId: tag.soundId,
+    soundInfo: tag.soundInfo,
   });
 }

@@ -28,9 +28,11 @@ import { DefineText2Tag } from "./define-text-2";
 import { DefineEditTextTag } from "./define-edit-text";
 import { DefineMorphShapeTag } from "./define-morph-shape";
 import { DefineButton2Tag } from "./define-button-2";
+import { DefineButtonSoundTag } from "./define-button-sound";
+import { StartSoundTag } from "./start-sound";
 
 interface TagClass {
-  new (reader: Reader): Tag;
+  new(reader: Reader): Tag;
   readonly code: number;
 }
 const tags = new Map<number, TagClass>();
@@ -64,6 +66,8 @@ registerTag(DefineText2Tag);
 registerTag(DefineEditTextTag);
 registerTag(DefineMorphShapeTag);
 registerTag(DefineButton2Tag);
+registerTag(DefineButtonSoundTag);
+registerTag(StartSoundTag);
 
 function parseTag(reader: Reader): Tag {
   const codeAndLength = reader.nextUInt16();

@@ -5,7 +5,7 @@ import {
   ButtonState,
 } from "../../../internal/character/ButtonInstance";
 import { MouseEvent } from "../events";
-import { Stage } from "./Stage";
+import { SoundContext } from "../media/context";
 
 export class SimpleButton extends InteractiveObject {
   static __character?: ButtonInstance;
@@ -23,6 +23,7 @@ export class SimpleButton extends InteractiveObject {
   }
 
   __preInit() {
+    this.__soundContext = new SoundContext();
     this.__state = ButtonState.Up;
     this.__states = [
       new DisplayObject(),
@@ -43,6 +44,7 @@ export class SimpleButton extends InteractiveObject {
     super.__preInit();
   }
 
+  __soundContext!: SoundContext;
   private __state = ButtonState.Up;
   private __states!: DisplayObject[];
 
@@ -118,9 +120,11 @@ export class SimpleButton extends InteractiveObject {
     const stage = this.stage;
 
     if (this.__state !== newState) {
+      const oldState = this.__state;
       this.__state = newState;
       this.__node.buttonState = newState;
       this.__character?.instantiateState(this, newState);
+      this.__character?.stateTransition(this, oldState, newState);
       if (stage) {
         stage.__displayListDirty = true;
       }

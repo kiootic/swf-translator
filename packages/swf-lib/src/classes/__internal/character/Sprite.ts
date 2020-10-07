@@ -1,5 +1,6 @@
 import { Matrix, ColorTransform } from "./primitives";
 import { Filter } from "./filter";
+import { SoundInfo } from "./Sound";
 
 export interface SpriteCharacter {
   numFrames: number;
@@ -12,11 +13,15 @@ export interface SpriteFrame {
   actions: FrameAction[];
 }
 
-export type FrameAction = FrameActionPlaceObject | FrameActionRemoveObject;
+export type FrameAction =
+  | FrameActionPlaceObject
+  | FrameActionRemoveObject
+  | FrameActionStartSound;
 
 export enum FrameActionKind {
   PlaceObject = 0,
   RemoveObject = 1,
+  StartSound = 2,
 }
 
 export interface FrameActionPlaceObject {
@@ -41,4 +46,10 @@ export interface FrameActionPlaceObject {
 export interface FrameActionRemoveObject {
   kind: FrameActionKind.RemoveObject;
   depth: number;
+}
+
+export interface FrameActionStartSound {
+  kind: FrameActionKind.StartSound;
+  characterId: number;
+  soundInfo: SoundInfo;
 }

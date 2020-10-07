@@ -1,7 +1,3 @@
-export interface SoundCharacter {
-  path: string;
-}
-
 export interface SoundEnvelope {
   pos44: number;
   leftLevel: number;

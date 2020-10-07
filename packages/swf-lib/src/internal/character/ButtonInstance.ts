@@ -3,11 +3,16 @@ import { Sprite } from "../../classes/flash/display/Sprite";
 import {
   ButtonCharacter,
   ButtonRecord,
+  ButtonSound,
 } from "../../classes/__internal/character/Button";
 import { FrameActionKind } from "../../classes/__internal/character/Sprite";
 import type { AssetLibrary } from "../../classes/__internal";
 import { CharacterInstance } from "./CharacterInstance";
-import { executeFrameAction, updateFrameMasks } from "./frame";
+import {
+  executeActionPlaceObject,
+  updateFrameMasks,
+  executeActionStartSound,
+} from "./frame";
 
 export enum ButtonState {
   Up,
@@ -54,7 +59,7 @@ export class ButtonInstance implements CharacterInstance {
       if (!inState(record)) {
         continue;
       }
-      executeFrameAction(this.library, stateContainer, {
+      executeActionPlaceObject(this.library, stateContainer, {
         kind: FrameActionKind.PlaceObject,
         depth: record.depth,
         characterId: record.characterId,
@@ -83,5 +88,27 @@ export class ButtonInstance implements CharacterInstance {
         button.hitTestState = stateContainer;
         break;
     }
+  }
+
+  stateTransition(button: SimpleButton, from: ButtonState, to: ButtonState) {
+    let sound: ButtonSound | undefined;
+    if (from === ButtonState.Over && to === ButtonState.Up) {
+      sound = this.def.overUpToIdle;
+    } else if (from === ButtonState.Up && to === ButtonState.Over) {
+      sound = this.def.idleToOverUp;
+    } else if (from === ButtonState.Over && to === ButtonState.Down) {
+      sound = this.def.overUpToOverDown;
+    } else if (from === ButtonState.Down && to === ButtonState.Over) {
+      sound = this.def.idleToOverUp;
+    }
+    if (!sound) {
+      return;
+    }
+
+    executeActionStartSound(this.library, button.__soundContext, {
+      kind: FrameActionKind.StartSound,
+      characterId: sound.characterId,
+      soundInfo: sound.soundInfo,
+    });
   }
 }

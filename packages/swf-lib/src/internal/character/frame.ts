@@ -7,76 +7,85 @@ import { BitmapFilter } from "../../classes/flash/filters/BitmapFilter";
 import { BlurFilter } from "../../classes/flash/filters/BlurFilter";
 import { DropShadowFilter } from "../../classes/flash/filters/DropShadowFilter";
 import {
-  FrameAction,
-  FrameActionKind,
   FrameActionPlaceObject,
+  FrameActionRemoveObject,
+  FrameActionStartSound,
 } from "../../classes/__internal/character/Sprite";
 import { FilterID } from "../../classes/__internal/character/filter";
 import { AssetLibrary } from "../../classes/__internal/AssetLibrary";
+import { SoundContext } from "../../classes/flash/media/context";
+import { Sound } from "../../classes/flash/media";
 
 // ref: https://github.com/mozilla/shumway/blob/16451d8836fa85f4b16eeda8b4bda2fa9e2b22b0/src/flash/display/DisplayObject.ts#L1137
 
-export function executeFrameAction(
+export function executeActionPlaceObject(
   library: AssetLibrary,
   container: DisplayObjectContainer,
-  action: FrameAction
+  action: FrameActionPlaceObject
 ) {
   const children = container.__children;
-  switch (action.kind) {
-    case FrameActionKind.PlaceObject: {
-      let character: DisplayObject | undefined;
-      if (action.characterId) {
-        let index = children.findIndex((o) => o.__depth >= action.depth);
-        let oldCharacter: DisplayObject | null = null;
-        if (index === -1) {
-          index = children.length;
-        } else if (children[index].__depth === action.depth) {
-          const char = children[index].__character;
-          if (char?.id === action.characterId) {
-            character = children[index];
-          } else {
-            oldCharacter = children[index];
-            container.removeChildAt(index);
-          }
-        }
-
-        if (character) {
-          setupCharacter(container, character, action, !action.moveCharacter);
-        } else {
-          const { characterId, depth } = action;
-          DisplayObject.__initChar(
-            () => library.instantiateCharacter(characterId),
-            (char) => {
-              container.addChildAt(char, index);
-              char.__depth = depth;
-              if (oldCharacter) {
-                // When same depth is re-used for new character,
-                // it seems attributes of old character would carry over to new character.
-                copyCharacter(oldCharacter, char);
-              }
-              setupCharacter(container, char, action, !action.moveCharacter);
-            }
-          );
-        }
+  let character: DisplayObject | undefined;
+  if (action.characterId) {
+    let index = children.findIndex((o) => o.__depth >= action.depth);
+    let oldCharacter: DisplayObject | null = null;
+    if (index === -1) {
+      index = children.length;
+    } else if (children[index].__depth === action.depth) {
+      const char = children[index].__character;
+      if (char?.id === action.characterId) {
+        character = children[index];
       } else {
-        character = children.find((o) => o.__depth === action.depth);
-        if (character) {
-          setupCharacter(container, character, action, false);
-        }
+        oldCharacter = children[index];
+        container.removeChildAt(index);
       }
-      break;
     }
 
-    case FrameActionKind.RemoveObject: {
-      const index = children.findIndex((o) => o.__depth === action.depth);
-      if (index < 0) {
-        break;
-      }
-
-      container.removeChildAt(index);
-      break;
+    if (character) {
+      setupCharacter(container, character, action, !action.moveCharacter);
+    } else {
+      const { characterId, depth } = action;
+      DisplayObject.__initChar(
+        () => library.instantiateCharacter<DisplayObject>(characterId),
+        (char) => {
+          container.addChildAt(char, index);
+          char.__depth = depth;
+          if (oldCharacter) {
+            // When same depth is re-used for new character,
+            // it seems attributes of old character would carry over to new character.
+            copyCharacter(oldCharacter, char);
+          }
+          setupCharacter(container, char, action, !action.moveCharacter);
+        }
+      );
+    }
+  } else {
+    character = children.find((o) => o.__depth === action.depth);
+    if (character) {
+      setupCharacter(container, character, action, false);
     }
   }
+}
+
+export function executeActionRemoveObject(
+  container: DisplayObjectContainer,
+  action: FrameActionRemoveObject
+) {
+  const index = container.__children.findIndex(
+    (o) => o.__depth === action.depth
+  );
+  if (index < 0) {
+    return;
+  }
+
+  container.removeChildAt(index);
+}
+
+export function executeActionStartSound(
+  library: AssetLibrary,
+  ctx: SoundContext,
+  action: FrameActionStartSound
+) {
+  ctx.syncSound(library, action.characterId, action.soundInfo);
 }
 
 function copyCharacter(from: DisplayObject, to: DisplayObject) {

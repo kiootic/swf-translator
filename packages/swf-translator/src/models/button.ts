@@ -1,9 +1,15 @@
 import { Matrix, ColorTransform } from "./primitives";
 import { Filter } from "./filter";
+import { SoundInfo } from "./sound";
 
 export interface Button {
   trackAsMenu: boolean;
   characters: ButtonRecord[];
+
+  overUpToIdle?: ButtonSound;
+  idleToOverUp?: ButtonSound;
+  overUpToOverDown?: ButtonSound;
+  overDownToOverUp?: ButtonSound;
 }
 
 export interface ButtonRecord {
@@ -17,4 +23,9 @@ export interface ButtonRecord {
   colorTransform?: ColorTransform;
   filters?: Filter[];
   blendMode?: number;
+}
+
+export interface ButtonSound {
+  characterId: number;
+  soundInfo: SoundInfo;
 }

@@ -4,10 +4,16 @@ import {
   SpriteFrame,
   FrameActionKind,
   FrameAction,
+  FrameActionStartSound,
 } from "../../classes/__internal/character/Sprite";
 import type { AssetLibrary } from "../../classes/__internal";
 import { CharacterInstance } from "./CharacterInstance";
-import { executeFrameAction, updateFrameMasks } from "./frame";
+import {
+  executeActionPlaceObject,
+  executeActionRemoveObject,
+  updateFrameMasks,
+  executeActionStartSound,
+} from "./frame";
 
 export class SpriteInstance implements CharacterInstance {
   readonly numFrames: number;
@@ -24,12 +30,20 @@ export class SpriteInstance implements CharacterInstance {
 
   applyTo(sprite: Sprite, prevFrameNum: number, thisFrameNum: number) {
     const effectiveActions = new Map<number, FrameAction>();
+    const soundActions: FrameActionStartSound[] = [];
     const setActions = (frameNum: number) => {
       const frame = this.frames.find((f) => f.frame === frameNum);
       if (!frame) {
         return;
       }
+
+      soundActions.length = 0;
       for (const action of frame.actions) {
+        if (action.kind === FrameActionKind.StartSound) {
+          soundActions.push(action);
+          continue;
+        }
+
         const ea = effectiveActions.get(action.depth);
         if (!ea || ea.kind !== action.kind) {
           effectiveActions.set(action.depth, action);
@@ -62,7 +76,18 @@ export class SpriteInstance implements CharacterInstance {
     }
 
     for (const action of effectiveActions.values()) {
-      executeFrameAction(this.library, sprite, action);
+      switch (action.kind) {
+        case FrameActionKind.PlaceObject:
+          executeActionPlaceObject(this.library, sprite, action);
+          break;
+        case FrameActionKind.RemoveObject:
+          executeActionRemoveObject(sprite, action);
+          break;
+      }
+    }
+
+    for (const action of soundActions) {
+      executeActionStartSound(this.library, sprite.__soundContext, action);
     }
 
     updateFrameMasks(sprite);

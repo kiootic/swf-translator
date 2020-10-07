@@ -35,7 +35,7 @@ export interface AssetLibrary {
   resolveImage(id: number): HTMLImageElement;
   resolveFont(id: number): FontInstance;
 
-  instantiateCharacter(id: number): DisplayObject;
+  instantiateCharacter<T>(id: number): T;
 }
 
 export class AssetLibraryBuilder {
