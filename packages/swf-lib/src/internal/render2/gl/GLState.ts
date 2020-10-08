@@ -66,61 +66,19 @@ export class GLState {
     this.blendFuncs.fill(0);
   }
 
+  // FIXME: Disabled bound texture unit memorization since it's crashy on macOS.
+  // ref: https://stackoverflow.com/questions/34277156/webgl-on-osx-using-wrong-texture-in-all-browsers
   bindTexture(unit: number, texture: WebGLTexture | null) {
-    if (this.textureUnits.get(unit) === texture) {
-      return;
-    }
     this.gl.activeTexture(this.gl.TEXTURE0 + unit);
     this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
     this.textureUnits.set(unit, texture);
   }
 
   bindTextures(textures: (WebGLTexture | null)[]): GLenum[] {
-    const units: GLenum[] = [];
-    for (const tex of textures) {
-      let found = false;
-      for (const [unit, unitTex] of this.textureUnits) {
-        if (unitTex === tex) {
-          units.push(unit);
-          found = true;
-          break;
-        }
-      }
-      if (found) {
-        continue;
-      }
-
-      // Use unbound texture unit.
-      for (let unit = 0; unit < this.maxTextures; unit++) {
-        const unitTex = this.textureUnits.get(unit);
-        if (!unitTex) {
-          this.bindTexture(unit, tex);
-          units.push(unit);
-          found = true;
-          break;
-        }
-      }
-      if (found) {
-        continue;
-      }
-
-      // Reuse bound texture unit.
-      for (let unit = 0; unit < this.maxTextures; unit++) {
-        const unitTex = this.textureUnits.get(unit);
-        if (unitTex && !textures.includes(unitTex)) {
-          this.bindTexture(unit, tex);
-          units.push(unit);
-          found = true;
-          break;
-        }
-      }
-      if (found) {
-        continue;
-      }
-
-      throw new Error("Failed to bind texture");
-    }
-    return units;
+    return textures.map((tex, i) => {
+      this.bindTexture(i, tex);
+      return i;
+    });
   }
 
   bindBuffer(target: GLenum, buffer: WebGLBuffer | null) {
