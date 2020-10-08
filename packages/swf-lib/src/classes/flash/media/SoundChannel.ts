@@ -41,7 +41,7 @@ export class SoundChannel extends EventDispatcher {
     this.__audioNode.loopStart = 0;
     this.__audioNode.start(currentTime, startTime);
     this.__audioNode.stop(
-      this.__beginTime + Math.max(1, loops) * this.__duration
+      this.__beginTime + Math.min(Math.max(1, loops) * this.__duration, 1000000)
     );
 
     this.__audioNode.onended = () => {
