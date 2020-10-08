@@ -40,6 +40,8 @@ export class Framebuffer {
 
     this.state = state;
     this.framebuffer = fb;
+
+    state.contextLost.subscribe(this.onContextLost);
   }
 
   delete() {
@@ -47,7 +49,16 @@ export class Framebuffer {
       return;
     }
     this.state.gl.deleteFramebuffer(this.framebuffer);
+    this.state.contextLost.unsubscribe(this.onContextLost);
     this.state = null;
     this.framebuffer = null;
   }
+
+  private onContextLost = () => {
+    if (this.state) {
+      this.state.contextLost.unsubscribe(this.onContextLost);
+      this.state = null;
+    }
+    this.framebuffer = null;
+  };
 }

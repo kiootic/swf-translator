@@ -47,6 +47,8 @@ export class Renderbuffer {
 
     this.state = state;
     this.renderbuffer = rb;
+
+    state.contextLost.subscribe(this.onContextLost);
   }
 
   delete() {
@@ -54,7 +56,16 @@ export class Renderbuffer {
       return;
     }
     this.state.gl.deleteRenderbuffer(this.renderbuffer);
+    this.state.contextLost.unsubscribe(this.onContextLost);
     this.state = null;
     this.renderbuffer = null;
   }
+
+  private onContextLost = () => {
+    if (this.state) {
+      this.state.contextLost.unsubscribe(this.onContextLost);
+      this.state = null;
+    }
+    this.renderbuffer = null;
+  };
 }

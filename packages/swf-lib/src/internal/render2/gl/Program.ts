@@ -58,6 +58,8 @@ export class Program {
 
     this.program = program;
     this.state = state;
+
+    state.contextLost.subscribe(this.onContextLost);
   }
 
   uniform(state: GLState, name: string, value: unknown) {
@@ -68,4 +70,12 @@ export class Program {
     }
     uniform.set(this.program, value);
   }
+
+  private onContextLost = () => {
+    if (this.state) {
+      this.state.contextLost.unsubscribe(this.onContextLost);
+      this.state = null;
+    }
+    this.program = null;
+  };
 }

@@ -1,9 +1,12 @@
 import { vec4 } from "gl-matrix";
+import { Signal } from "../../signal";
 
 export class GLState {
   readonly gl: WebGL2RenderingContext;
+  readonly contextLost = new Signal();
+  hasContext = true;
 
-  readonly maxTextures: number;
+  maxTextures: number = 1;
   readonly clearColor = vec4.create();
   readonly viewport = vec4.create();
   readonly bindings = new Map<GLenum, unknown>();
@@ -24,11 +27,43 @@ export class GLState {
       throw new Error("Cannot create WebGL2 context");
     }
     this.gl = gl;
+    canvas.addEventListener(
+      "webglcontextlost",
+      (e) => {
+        e.preventDefault();
+        this.contextLost.emit();
+        this.hasContext = false;
+      },
+      false
+    );
+    canvas.addEventListener(
+      "webglcontextrestored",
+      (e) => {
+        e.preventDefault();
+        this.hasContext = true;
+        this.reset();
+      },
+      false
+    );
 
+    this.reset();
+  }
+
+  reset() {
     this.maxTextures = Math.min(
       16,
-      gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS)
+      this.gl.getParameter(this.gl.MAX_TEXTURE_IMAGE_UNITS)
     );
+    vec4.set(this.clearColor, 0, 0, 0, 0);
+    vec4.set(this.viewport, 0, 0, 0, 0);
+    this.bindings.clear();
+    this.textureUnits.clear();
+    this.activeTexture = 0;
+    this.vertexArray = null;
+    this.program = null;
+    this.capacity = 0;
+    this.blendEquation.fill(0);
+    this.blendFuncs.fill(0);
   }
 
   bindTexture(unit: number, texture: WebGLTexture | null) {

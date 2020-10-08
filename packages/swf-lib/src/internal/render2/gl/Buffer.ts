@@ -39,6 +39,8 @@ export class Buffer<T extends TypedArray = TypedArray> {
 
     this.state = state;
     this.buffer = buffer;
+
+    state.contextLost.subscribe(this.onContextLost);
   }
 
   bind(state: GLState) {
@@ -52,4 +54,12 @@ export class Buffer<T extends TypedArray = TypedArray> {
     gl.bufferSubData(gl[this.binding], 0, this.data, offset, length);
     return this;
   }
+
+  private onContextLost = () => {
+    if (this.state) {
+      this.state.contextLost.unsubscribe(this.onContextLost);
+      this.state = null;
+    }
+    this.buffer = null;
+  };
 }

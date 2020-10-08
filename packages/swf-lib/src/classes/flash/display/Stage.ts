@@ -84,12 +84,16 @@ export class Stage extends DisplayObjectContainer {
 
   __onFrame = this.__withContext(() => {
     runFrame(true, this);
-    this.__onRender();
-    this.__renderer.renderFrame(this.__node);
+    if (this.__renderer.glState.hasContext) {
+      this.__onRender();
+      this.__renderer.renderFrame(this.__node);
+    }
   });
 
   __doRender = this.__withContext(() => {
-    this.__renderer.blitFrame();
+    if (this.__renderer.glState.hasContext) {
+      this.__renderer.blitFrame();
+    }
   });
 
   __withContext<T extends Function>(fn: T): T {

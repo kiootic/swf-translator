@@ -88,6 +88,8 @@ export class VertexArray {
 
     this.vertexArray = vertexArray;
     this.state = state;
+
+    state.contextLost.subscribe(this.onContextLost);
   }
 
   bind(state: GLState) {
@@ -97,4 +99,12 @@ export class VertexArray {
     // ref: https://stackoverflow.com/a/11261922
     this.indexBuffer?.bind(state);
   }
+
+  private onContextLost = () => {
+    if (this.state) {
+      this.state.contextLost.unsubscribe(this.onContextLost);
+      this.state = null;
+    }
+    this.vertexArray = null;
+  };
 }

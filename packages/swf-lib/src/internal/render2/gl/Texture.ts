@@ -76,6 +76,8 @@ export class Texture {
 
     this.state = state;
     this.texture = tex;
+
+    state.contextLost.subscribe(this.onContextLost);
   }
 
   delete() {
@@ -83,7 +85,16 @@ export class Texture {
       return;
     }
     this.state.gl.deleteTexture(this.texture);
+    this.state.contextLost.unsubscribe(this.onContextLost);
     this.state = null;
     this.texture = null;
   }
+
+  private onContextLost = () => {
+    if (this.state) {
+      this.state.contextLost.unsubscribe(this.onContextLost);
+      this.state = null;
+    }
+    this.texture = null;
+  };
 }
