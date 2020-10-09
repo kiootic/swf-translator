@@ -141,13 +141,14 @@ export class Renderer {
     this.renderVertexArray.ensure(this.glState);
 
     this.defaultFramebuffer = new Framebuffer(
-      new Renderbuffer(canvas.width, canvas.height, "rgb")
+      new Renderbuffer(canvas.element.width, canvas.element.height, "rgb")
     );
   }
 
   renderFrame(root: SceneNode) {
     const gl = this.glState.gl;
-    this.renderNode(root, this.defaultFramebuffer, () => {
+    const { width, height } = this.canvas;
+    this.renderNode(root, this.defaultFramebuffer, width, height, () => {
       this.glState.setClearColor(
         ((this.backgroundColor >>> 16) & 0xff) / 0xff,
         ((this.backgroundColor >>> 8) & 0xff) / 0xff,
@@ -181,12 +182,20 @@ export class Renderer {
     );
   }
 
-  renderNode(node: SceneNode, fb: Framebuffer, clearFb: () => void) {
+  renderNode(
+    node: SceneNode,
+    fb: Framebuffer,
+    logicalWidth: number,
+    logicalHeight: number,
+    clearFb: () => void
+  ) {
     const { width, height } = fb.colorAttachment;
     const bounds = rect.fromValues(0, 0, width, height);
     const ctx = new RenderContext(bounds);
     node.render(ctx);
-    ctx.applyProjection(projection(mat2d.create(), width, height, true));
+    ctx.applyProjection(
+      projection(mat2d.create(), logicalWidth, logicalHeight, true)
+    );
 
     this.textureReturnBox.length = 0;
     this.renderbufferReturnBox.length = 0;

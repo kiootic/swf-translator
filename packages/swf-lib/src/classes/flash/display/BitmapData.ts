@@ -240,14 +240,46 @@ export class BitmapData {
         glState.gl.clear(glState.gl.COLOR_BUFFER_BIT);
       };
     }
-    this.__renderer.renderNode(
-      this.__root,
-      this.__target?.framebuffer,
-      clearFb
+
+    const fb = this.__renderer.renderPool.takeRenderbuffer(
+      this.width,
+      this.height
     );
-    this.__root.onRemoveFromStage();
-    this.__root = new SceneNode(null);
-    this.__needRender = false;
-    this.__needPixel = true;
+    try {
+      const glState = this.__renderer!.glState;
+      const gl = glState.gl;
+      this.__renderer.renderNode(
+        this.__root,
+        fb.framebuffer,
+        this.width,
+        this.height,
+        clearFb
+      );
+      this.__target.framebuffer.ensure(glState);
+      glState.bindFramebuffer(gl.READ_FRAMEBUFFER, fb.framebuffer.framebuffer);
+      glState.bindFramebuffer(
+        gl.DRAW_FRAMEBUFFER,
+        this.__target.framebuffer.framebuffer
+      );
+      gl.blitFramebuffer(
+        0,
+        0,
+        this.width,
+        this.height,
+        0,
+        0,
+        this.width,
+        this.height,
+        gl.COLOR_BUFFER_BIT,
+        gl.NEAREST
+      );
+
+      this.__root.onRemoveFromStage();
+      this.__root = new SceneNode(null);
+      this.__needRender = false;
+      this.__needPixel = true;
+    } finally {
+      this.__renderer.renderPool.returnRenderbuffer(fb);
+    }
   }
 }

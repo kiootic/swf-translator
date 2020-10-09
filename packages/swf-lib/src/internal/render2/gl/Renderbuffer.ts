@@ -39,7 +39,7 @@ export class Renderbuffer {
     state.bindRenderbuffer(gl.RENDERBUFFER, rb);
     gl.renderbufferStorageMultisample(
       gl.RENDERBUFFER,
-      gl.getParameter(gl.MAX_SAMPLES),
+      Math.min(gl.getParameter(gl.MAX_SAMPLES), 4),
       glFormat,
       this.width,
       this.height

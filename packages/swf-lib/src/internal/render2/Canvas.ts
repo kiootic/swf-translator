@@ -7,8 +7,10 @@ export class Canvas {
   constructor(readonly width: number, readonly height: number) {
     this.element.tabIndex = 0;
     this.element.style.setProperty("outline", "none", "important");
-    this.element.width = width;
-    this.element.height = height;
+    this.element.style.setProperty("width", `${width}px`);
+    this.element.style.setProperty("height", `${height}px`);
+    this.element.width = width * window.devicePixelRatio;
+    this.element.height = height * window.devicePixelRatio;
   }
 
   get cursor(): string {
