@@ -9,7 +9,7 @@ export interface SoundEnvelope {
 export const soundEnvelope = object<SoundEnvelope>(
   ["pos44", uint32],
   ["leftLevel", uint16],
-  ["rightLevel", uint16],
+  ["rightLevel", uint16]
 );
 
 export interface SoundInfo {

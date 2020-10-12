@@ -13,7 +13,10 @@ export interface SpriteFrame {
   actions: FrameAction[];
 }
 
-export type FrameAction = FrameActionPlaceObject | FrameActionRemoveObject | FrameActionStartSound;
+export type FrameAction =
+  | FrameActionPlaceObject
+  | FrameActionRemoveObject
+  | FrameActionStartSound;
 
 export enum FrameActionKind {
   PlaceObject = 0,

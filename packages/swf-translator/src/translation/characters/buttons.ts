@@ -55,7 +55,10 @@ function translateButton(tag: DefineButton2Tag, tags: Tag[]): Button {
     });
   }
 
-  const soundTag = tags.find((t): t is DefineButtonSoundTag => t instanceof DefineButtonSoundTag && t.buttonId === tag.characterId);
+  const soundTag = tags.find(
+    (t): t is DefineButtonSoundTag =>
+      t instanceof DefineButtonSoundTag && t.buttonId === tag.characterId
+  );
   if (soundTag) {
     button.overUpToIdle = soundTag.overUpToIdle;
     button.idleToOverUp = soundTag.idleToOverUp;

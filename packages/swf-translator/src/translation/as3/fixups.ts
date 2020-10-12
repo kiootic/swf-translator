@@ -37,7 +37,15 @@ function fixupSuperCall(classDef: ClassDef, body: ast.NodeBlock) {
   const initializers: ast.NodeStatement[] = [];
   for (const field of classDef.fields) {
     if (field.initialValue && !field.isStatic) {
-      initializers.push(new ast.NodeStmtExpr(new ast.NodeExprAssignment("=", new ast.NodeExprProperty(new ast.NodeExprThis(), field.name), field.initialValue)))
+      initializers.push(
+        new ast.NodeStmtExpr(
+          new ast.NodeExprAssignment(
+            "=",
+            new ast.NodeExprProperty(new ast.NodeExprThis(), field.name),
+            field.initialValue
+          )
+        )
+      );
       field.initialValue = null;
     }
   }

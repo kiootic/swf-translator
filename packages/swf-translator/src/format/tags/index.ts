@@ -32,7 +32,7 @@ import { DefineButtonSoundTag } from "./define-button-sound";
 import { StartSoundTag } from "./start-sound";
 
 interface TagClass {
-  new(reader: Reader): Tag;
+  new (reader: Reader): Tag;
   readonly code: number;
 }
 const tags = new Map<number, TagClass>();

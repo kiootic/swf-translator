@@ -7,7 +7,7 @@ export interface ButtonSound {
   soundInfo: SoundInfo;
 }
 
-const buttonSound: Parser<ButtonSound | undefined> = reader => {
+const buttonSound: Parser<ButtonSound | undefined> = (reader) => {
   const characterId = reader.nextUInt16();
   if (characterId === 0) {
     return undefined;
@@ -16,7 +16,7 @@ const buttonSound: Parser<ButtonSound | undefined> = reader => {
   return {
     characterId,
     soundInfo: soundInfo(reader),
-  }
+  };
 };
 
 export class DefineButtonSoundTag extends Tag {
