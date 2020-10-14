@@ -83,6 +83,10 @@ function emitVisibility(ctx: EmitContext, v: Visibility) {
 
 function emitField(ctx: EmitContext, field: FieldDef) {
   emitVisibility(ctx, field.visibility);
+  const emitValue = field.initialValue && field.isStatic;
+  if (!emitValue) {
+    ctx.emit("declare ");
+  }
   if (field.isStatic) {
     ctx.emit("static ");
   }
@@ -90,9 +94,9 @@ function emitField(ctx: EmitContext, field: FieldDef) {
     ctx.emit("readonly ");
   }
   ctx.emit(`${field.name}: ${ctx.importType(field.type, false)}`);
-  if (field.initialValue && field.isStatic) {
+  if (emitValue) {
     ctx.emit(" = ");
-    emitAST(ctx, field.initialValue);
+    emitAST(ctx, field.initialValue!);
   }
   ctx.emitLine(";");
   ctx.emitLine();
