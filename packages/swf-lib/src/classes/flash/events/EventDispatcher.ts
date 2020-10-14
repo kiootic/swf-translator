@@ -1,3 +1,4 @@
+import { AVMObject } from "../../__internal/avm2/AVMObject";
 import { Event } from "./Event";
 
 export type ListenerFn<T extends Event> = (event: T) => void;
@@ -10,7 +11,7 @@ interface Listener {
 const forBroadcast = Symbol();
 const broadcastEvents: Array<string | symbol> = [Event.ENTER_FRAME];
 
-export class EventDispatcher {
+export class EventDispatcher extends AVMObject {
   [forBroadcast] = false;
 
   #parent: EventDispatcher | null = null;

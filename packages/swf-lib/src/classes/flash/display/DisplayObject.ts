@@ -19,33 +19,46 @@ interface CharacterInit<T> {
 let charInit: CharacterInit<any> | null = null;
 
 export class DisplayObject extends EventDispatcher {
-  __character: CharacterInstance | null = null;
-  __depth: number = -1;
-  __clipDepth: number = -1;
+  private __parent!: DisplayObjectContainer | null;
+  __character!: CharacterInstance | null;
+  __depth!: number;
+  __clipDepth!: number;
+  transform!: Transform;
+  name!: string;
+  private __mask!: DisplayObject | null;
+  private __maskRefs!: number;
+  private __filters!: BitmapFilter[];
 
-  readonly __node = new SceneNode(this);
+  __node!: SceneNode;
 
   static __initChar<T>(fn: () => T, init: (char: T) => void): T {
     charInit = { fn: init };
     return fn();
   }
 
+  // @ts-ignore
   constructor() {
-    super();
-    this.transform = new Transform();
-    this.transform.__setNode(this.__node);
-
     const initChar = charInit;
     charInit = null;
-    this.__preInit();
+    super();
     initChar?.fn(this);
   }
 
-  __preInit() {}
+  __preInit() {
+    this.__character = null;
+    this.__depth = -1;
+    this.__clipDepth = -1;
+    this.__parent = null;
+    this.name = "";
+    this.__mask = null;
+    this.__maskRefs = 0;
+    this.__filters = [];
 
-  readonly transform: Transform;
-
-  name: string = "";
+    this.__node = new SceneNode(this);
+    this.transform = new Transform();
+    this.transform.__setNode(this.__node);
+    super.__preInit();
+  }
 
   get visible() {
     return this.__node.visible;
@@ -53,8 +66,6 @@ export class DisplayObject extends EventDispatcher {
   set visible(value) {
     this.__node.visible = value;
   }
-
-  private __parent: DisplayObjectContainer | null = null;
 
   get parent() {
     return this.__parent;
@@ -75,9 +86,6 @@ export class DisplayObject extends EventDispatcher {
     return this.parent?.stage ?? null;
   }
 
-  private __mask: DisplayObject | null = null;
-  private __maskRefs = 0;
-
   get mask() {
     return this.__mask;
   }
@@ -97,8 +105,6 @@ export class DisplayObject extends EventDispatcher {
       this.__mask.__node.isMask = this.__mask.__maskRefs > 0;
     }
   }
-
-  private __filters: BitmapFilter[] = [];
 
   get filters() {
     return this.__filters;

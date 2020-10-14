@@ -5,9 +5,9 @@ import { Stage } from "./Stage";
 export class DisplayObjectContainer extends InteractiveObject {
   __children!: DisplayObject[];
 
-  constructor() {
-    super();
-    this.__children = this.__children ?? [];
+  __preInit() {
+    this.__children = [];
+    super.__preInit();
   }
 
   get numChildren(): number {

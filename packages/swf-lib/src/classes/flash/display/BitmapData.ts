@@ -1,4 +1,5 @@
 import { mat2d, vec4 } from "gl-matrix";
+import { AVMObject } from "../../__internal/avm2/AVMObject";
 import { DisplayObject } from "./DisplayObject";
 import { Matrix } from "../geom/Matrix";
 import { ColorTransform } from "../geom/ColorTransform";
@@ -11,7 +12,7 @@ import { Stage } from "./Stage";
 import { rect } from "../../../internal/math/rect";
 import { RenderObject } from "../../../internal/render2/RenderObject";
 
-export class BitmapData {
+export class BitmapData extends AVMObject {
   private __root = new SceneNode(null);
   private __needRender = false;
   private __needPixel = false;
@@ -27,6 +28,7 @@ export class BitmapData {
     readonly transparent = true,
     readonly fillColor = 0xffffffff
   ) {
+    super();
     this.rect = new Rectangle(0, 0, width, height);
   }
 

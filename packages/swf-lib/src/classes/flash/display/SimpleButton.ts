@@ -15,15 +15,6 @@ export class SimpleButton extends InteractiveObject {
   constructor() {
     super();
 
-    this.addEventListener(MouseEvent.MOUSE_OVER, this.#handleMouseEvent);
-    this.addEventListener(MouseEvent.MOUSE_OUT, this.#handleMouseEvent);
-    this.addEventListener(MouseEvent.MOUSE_DOWN, this.#handleMouseEvent);
-    this.addEventListener(MouseEvent.MOUSE_UP, this.#handleMouseEvent);
-    this.addEventListener(MouseEvent.MOUSE_MOVE, this.#handleMouseEvent);
-  }
-
-  __preInit() {
-    this.__soundContext = new SoundContext();
     this.__state = ButtonState.Up;
     this.__states = [
       new DisplayObject(),
@@ -41,12 +32,16 @@ export class SimpleButton extends InteractiveObject {
     this.__character?.applyTo(this);
     this.__node.buttonState = this.__state;
 
-    super.__preInit();
+    this.addEventListener(MouseEvent.MOUSE_OVER, this.#handleMouseEvent);
+    this.addEventListener(MouseEvent.MOUSE_OUT, this.#handleMouseEvent);
+    this.addEventListener(MouseEvent.MOUSE_DOWN, this.#handleMouseEvent);
+    this.addEventListener(MouseEvent.MOUSE_UP, this.#handleMouseEvent);
+    this.addEventListener(MouseEvent.MOUSE_MOVE, this.#handleMouseEvent);
   }
 
-  __soundContext!: SoundContext;
+  readonly __soundContext = new SoundContext();
   private __state = ButtonState.Up;
-  private __states!: DisplayObject[];
+  private __states: DisplayObject[];
 
   get __activeState() {
     switch (this.__state) {

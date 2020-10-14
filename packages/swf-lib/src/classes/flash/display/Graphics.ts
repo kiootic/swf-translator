@@ -1,9 +1,10 @@
+import { AVMObject } from "../../__internal/avm2/AVMObject";
 import { SceneNode } from "../../../internal/render2/SceneNode";
 import { preMultiplyAlpha } from "../../../internal/math/color";
 import { RenderObject } from "../../../internal/render2/RenderObject";
 import { rect } from "../../../internal/math/rect";
 
-export class Graphics {
+export class Graphics extends AVMObject {
   private __x = 0;
   private __y = 0;
   private __lineThickness = -1;
@@ -11,7 +12,9 @@ export class Graphics {
   private readonly __bounds = rect.create();
   private readonly __renderObjects: RenderObject[] = [];
 
-  constructor(readonly __node: SceneNode) {}
+  constructor(readonly __node: SceneNode) {
+    super();
+  }
 
   clear() {
     this.__x = 0;

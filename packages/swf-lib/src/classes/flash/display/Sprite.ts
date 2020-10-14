@@ -18,12 +18,10 @@ export class Sprite extends DisplayObjectContainer {
   }
 
   __preInit() {
+    super.__preInit();
     this.__soundContext = new SoundContext();
-    this.__children = [];
     this.__character = (this.constructor as typeof Sprite).__character ?? null;
     this.__character?.applyTo(this, 1, 1);
-
-    super.__preInit();
   }
 
   buttonMode = false;

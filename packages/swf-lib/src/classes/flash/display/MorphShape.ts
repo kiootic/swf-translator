@@ -8,15 +8,10 @@ export class MorphShape extends DisplayObject {
 
   constructor() {
     super();
-  }
 
-  __preInit() {
-    this.__ratio = 0;
     this.__character =
       (this.constructor as typeof MorphShape).__character ?? null;
     this.__character?.applyTo(this);
-
-    super.__preInit();
   }
 
   private ___ratio = 0;
