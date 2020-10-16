@@ -15,6 +15,11 @@ declare module "*.png" {
   export default path;
 }
 
+declare module "*.mp3" {
+  const path: string;
+  export default path;
+}
+
 `);
 
   ctx.file("index.ts").content = fileContent(`
