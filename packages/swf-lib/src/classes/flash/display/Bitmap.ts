@@ -5,7 +5,7 @@ import { rect } from "../../../internal/math/rect";
 import { Texture } from "../../../internal/render2/gl/Texture";
 
 export class Bitmap extends DisplayObject {
-  constructor(readonly bitmapData: BitmapData) {
+  constructor(public bitmapData: BitmapData) {
     super();
 
     const { width, height } = this.bitmapData;
