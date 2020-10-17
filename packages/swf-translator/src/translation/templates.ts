@@ -24,7 +24,7 @@ declare module "*.mp3" {
 
   ctx.file("index.ts").content = fileContent(`
 
-import lib from "@swf/lib";
+import lib from "swf-lib";
 import bundle from "./characters";
 
 import * as classes from "./classes";

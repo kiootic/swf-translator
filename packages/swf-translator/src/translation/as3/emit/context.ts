@@ -56,7 +56,7 @@ export class EmitContext {
     let text = "";
 
     if (this.importLib) {
-      text += `import lib from "@swf/lib";\n`;
+      text += `import lib from "swf-lib";\n`;
     }
 
     const imports = new Set<string>();

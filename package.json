@@ -1,9 +1,11 @@
 {
   "name": "swf",
   "private": true,
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "yarn workspace @swf/translator dev",
+    "dev": "yarn workspace @kiootic/swf-translator dev",
     "build": "yarn workspaces run build",
     "format": "yarn workspaces run format"
   }

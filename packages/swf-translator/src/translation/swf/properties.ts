@@ -20,7 +20,7 @@ export async function generateProperties(ctx: OutputContext, swf: SWFFile) {
   const properties = ctx.file("properties.ts");
   properties.tsSource.addImportDeclaration({
     defaultImport: "lib",
-    moduleSpecifier: "@swf/lib",
+    moduleSpecifier: "swf-lib",
   });
   properties.tsSource
     .addVariableStatement({

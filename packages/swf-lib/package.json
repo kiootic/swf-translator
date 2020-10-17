@@ -1,11 +1,23 @@
 {
-  "name": "@swf/lib",
-  "version": "1.0.0",
+  "name": "@kiootic/swf-lib",
+  "version": "0.1.0",
   "main": "dist/index.js",
   "license": "MIT",
   "scripts": {
     "build": "tsc --build",
     "format": "prettier --write -l 'src/**/*.ts'"
+  },
+  "files": [
+    "/dist",
+    "/src"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "ssh://git@github.com/kiootic/swf-translator.git",
+    "directory": "packages/swf-lib"
   },
   "devDependencies": {
     "prettier": "2.0.5",

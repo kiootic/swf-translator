@@ -1,6 +1,6 @@
 {
-  "name": "@swf/translator",
-  "version": "1.0.0",
+  "name": "@kiootic/swf-translator",
+  "version": "0.1.0",
   "main": "dist/index.js",
   "license": "MIT",
   "scripts": {

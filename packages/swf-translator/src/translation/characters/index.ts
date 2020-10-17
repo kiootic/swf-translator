@@ -17,7 +17,7 @@ export async function generateCharacters(ctx: OutputContext, swf: SWFFile) {
   const index = ctx.file("characters", "index.ts");
   index.tsSource.addImportDeclaration({
     defaultImport: "lib",
-    moduleSpecifier: "@swf/lib",
+    moduleSpecifier: "swf-lib",
   });
   index.tsSource.addVariableStatement({
     declarationKind: VariableDeclarationKind.Const,
