@@ -7,16 +7,16 @@ export class GLState {
   hasContext = true;
 
   maxTextures: number = 1;
-  readonly clearColor = vec4.create();
-  readonly viewport = vec4.create();
+  readonly clearColor = vec4.fromValues(NaN, NaN, NaN, NaN);
+  readonly viewport = vec4.fromValues(NaN, NaN, NaN, NaN);
   readonly bindings = new Map<GLenum, unknown>();
   readonly textureUnits = new Map<number, WebGLTexture | null>();
-  activeTexture: GLenum = 0;
+  activeTexture: GLenum = NaN;
   vertexArray: WebGLVertexArrayObject | null = null;
   program: WebGLProgram | null = null;
-  capacity: number = 0;
-  readonly blendEquation: [GLenum, GLenum] = [0, 0];
-  readonly blendFuncs: [GLenum, GLenum, GLenum, GLenum] = [0, 0, 0, 0];
+  capacity: number = NaN;
+  readonly blendEquation: [GLenum, GLenum] = [NaN, NaN];
+  readonly blendFuncs: [GLenum, GLenum, GLenum, GLenum] = [NaN, NaN, NaN, NaN];
 
   constructor(
     readonly canvas: HTMLCanvasElement,
@@ -54,16 +54,16 @@ export class GLState {
       16,
       this.gl.getParameter(this.gl.MAX_TEXTURE_IMAGE_UNITS)
     );
-    vec4.set(this.clearColor, 0, 0, 0, 0);
-    vec4.set(this.viewport, 0, 0, 0, 0);
+    vec4.set(this.clearColor, NaN, NaN, NaN, NaN);
+    vec4.set(this.viewport, NaN, NaN, NaN, NaN);
     this.bindings.clear();
     this.textureUnits.clear();
-    this.activeTexture = 0;
+    this.activeTexture = NaN;
     this.vertexArray = null;
     this.program = null;
-    this.capacity = 0;
-    this.blendEquation.fill(0);
-    this.blendFuncs.fill(0);
+    this.capacity = NaN;
+    this.blendEquation.fill(NaN);
+    this.blendFuncs.fill(NaN);
   }
 
   // FIXME: Disabled bound texture unit memorization since it's crashy on macOS.
