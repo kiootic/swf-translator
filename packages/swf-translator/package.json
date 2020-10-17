@@ -8,6 +8,7 @@
     "start": "node dist/index.js",
     "dev": "tsc --build && node dist/index.js",
     "format": "prettier --write -l 'src/**/*.ts'",
+    "format:check": "prettier --check 'src/**/*.ts'",
     "generate": "lezer-generator src/as3/as3.grammar -o src/as3/parser"
   },
   "dependencies": {

@@ -6,7 +6,8 @@
   "license": "MIT",
   "scripts": {
     "build": "rm -r dist && tsc --build",
-    "format": "prettier --write -l 'src/**/*.ts'"
+    "format": "prettier --write -l 'src/**/*.ts'",
+    "format:check": "prettier --check 'src/**/*.ts'"
   },
   "files": [
     "/dist",
