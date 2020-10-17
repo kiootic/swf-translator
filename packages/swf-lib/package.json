@@ -2,9 +2,10 @@
   "name": "@kiootic/swf-lib",
   "version": "0.1.0",
   "main": "dist/index.js",
+  "module": "dist/index.js",
   "license": "MIT",
   "scripts": {
-    "build": "tsc --build",
+    "build": "rm -r dist && tsc --build",
     "format": "prettier --write -l 'src/**/*.ts'"
   },
   "files": [
