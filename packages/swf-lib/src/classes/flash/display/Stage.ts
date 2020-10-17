@@ -212,7 +212,8 @@ export class Stage extends DisplayObjectContainer {
 
   #handleKeyboardEvent = this.__withContext(
     (sourceEvent: globalThis.KeyboardEvent) => {
-      const keyCode = Keyboard.codeMap[sourceEvent.code];
+      const keyCode =
+        Keyboard.codeMap[sourceEvent.key] ?? Keyboard.codeMap[sourceEvent.code];
       if (!keyCode) {
         return;
       }
