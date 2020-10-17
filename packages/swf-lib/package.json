@@ -5,7 +5,7 @@
   "module": "dist/index.js",
   "license": "MIT",
   "scripts": {
-    "build": "rm -r dist && tsc --build",
+    "build": "rm -rf dist && tsc --build",
     "format": "prettier --write -l 'src/**/*.ts'",
     "format:check": "prettier --check 'src/**/*.ts'"
   },
