@@ -122,8 +122,8 @@ export class MovieClip extends Sprite {
     this.isPlaying = false;
   }
 
-  __onAddToStage(stage: Stage) {
-    super.__onAddToStage(stage);
+  __onAddedToStage(stage: Stage) {
+    super.__onAddedToStage(stage);
     stage.__constructionQueue.push(this);
   }
 }

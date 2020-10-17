@@ -1,6 +1,7 @@
 export class Event {
   static readonly ENTER_FRAME = "ENTER_FRAME";
   static readonly ADDED_TO_STAGE = "ADDED_TO_STAGE";
+  static readonly REMOVED_FROM_STAGE = "REMOVED_FROM_STAGE";
   static readonly SOUND_COMPLETE = "SOUND_COMPLETE";
   static readonly DEACTIVATE = "DEACTIVATE";
 

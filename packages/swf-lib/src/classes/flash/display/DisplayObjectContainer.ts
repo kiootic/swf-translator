@@ -75,11 +75,18 @@ export class DisplayObjectContainer extends InteractiveObject {
     return this.__children.includes(child);
   }
 
-  __onAddToStage(stage: Stage) {
+  __onAddedToStage(stage: Stage) {
     for (const child of this.__children) {
-      child.__onAddToStage(stage);
+      child.__onAddedToStage(stage);
     }
-    super.__onAddToStage(stage);
+    super.__onAddedToStage(stage);
+  }
+
+  __onRemovedFromStage(stage: Stage) {
+    super.__onRemovedFromStage(stage);
+    for (const child of this.__children) {
+      child.__onRemovedFromStage(stage);
+    }
   }
 
   __onRender() {

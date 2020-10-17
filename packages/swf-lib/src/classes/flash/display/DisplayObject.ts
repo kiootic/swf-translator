@@ -75,9 +75,13 @@ export class DisplayObject extends EventDispatcher {
     this.__parent = value;
     const newStage = this.stage;
 
-    if (newStage && newStage !== oldStage) {
-      newStage.__displayListDirty = true;
-      this.__onAddToStage(newStage);
+    if (newStage !== oldStage) {
+      if (newStage) {
+        newStage.__displayListDirty = true;
+        this.__onAddedToStage(newStage);
+      } else if (oldStage) {
+        this.__onRemovedFromStage(oldStage);
+      }
     }
     this.__setEventParent(this.parent);
   }
@@ -269,7 +273,11 @@ export class DisplayObject extends EventDispatcher {
 
   __onRender() {}
 
-  __onAddToStage(stage: Stage) {
+  __onAddedToStage(stage: Stage) {
     this.dispatchEvent(new Event(Event.ADDED_TO_STAGE, false, false));
+  }
+
+  __onRemovedFromStage(stage: Stage) {
+    this.dispatchEvent(new Event(Event.REMOVED_FROM_STAGE, false, false));
   }
 }
