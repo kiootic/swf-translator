@@ -374,6 +374,9 @@ export class SceneNode {
     if (this.buttonState >= 0) {
       return this.children[3].hitTest(worldPt, true);
     }
+    if (this.mask && !this.mask.hitTest(worldPt, exact)) {
+      return false;
+    }
 
     if (!exact) {
       this.ensureLayout();
