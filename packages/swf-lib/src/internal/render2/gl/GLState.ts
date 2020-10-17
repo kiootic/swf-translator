@@ -4,9 +4,13 @@ import { Signal } from "../../signal";
 export class GLState {
   readonly gl: WebGL2RenderingContext;
   readonly contextLost = new Signal();
-  hasContext = true;
+  readonly resetRender = new Signal();
 
-  maxTextures: number = 1;
+  maxTextures = 1;
+  textureLimit = 16;
+  maxSamples = 0;
+  sampleLimit = 4;
+
   readonly clearColor = vec4.fromValues(NaN, NaN, NaN, NaN);
   readonly viewport = vec4.fromValues(NaN, NaN, NaN, NaN);
   readonly bindings = new Map<GLenum, unknown>();
@@ -32,7 +36,6 @@ export class GLState {
       (e) => {
         e.preventDefault();
         this.contextLost.emit();
-        this.hasContext = false;
       },
       false
     );
@@ -40,7 +43,6 @@ export class GLState {
       "webglcontextrestored",
       (e) => {
         e.preventDefault();
-        this.hasContext = true;
         this.reset();
       },
       false
@@ -51,8 +53,12 @@ export class GLState {
 
   reset() {
     this.maxTextures = Math.min(
-      16,
+      this.textureLimit,
       this.gl.getParameter(this.gl.MAX_TEXTURE_IMAGE_UNITS)
+    );
+    this.maxSamples = Math.min(
+      this.sampleLimit,
+      this.gl.getParameter(this.gl.MAX_SAMPLES)
     );
     vec4.set(this.clearColor, NaN, NaN, NaN, NaN);
     vec4.set(this.viewport, NaN, NaN, NaN, NaN);
@@ -64,6 +70,11 @@ export class GLState {
     this.capacity = NaN;
     this.blendEquation.fill(NaN);
     this.blendFuncs.fill(NaN);
+  }
+
+  resetContext() {
+    this.reset();
+    this.resetRender.emit();
   }
 
   // FIXME: Disabled bound texture unit memorization since it's crashy on macOS.

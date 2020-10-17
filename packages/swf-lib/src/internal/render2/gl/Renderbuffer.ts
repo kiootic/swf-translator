@@ -37,18 +37,28 @@ export class Renderbuffer {
 
     const rb = gl.createRenderbuffer();
     state.bindRenderbuffer(gl.RENDERBUFFER, rb);
-    gl.renderbufferStorageMultisample(
-      gl.RENDERBUFFER,
-      Math.min(gl.getParameter(gl.MAX_SAMPLES), 4),
-      glFormat,
-      this.width,
-      this.height
-    );
+    if (state.maxSamples > 0) {
+      gl.renderbufferStorageMultisample(
+        gl.RENDERBUFFER,
+        state.maxSamples,
+        glFormat,
+        this.width,
+        this.height
+      );
+    } else {
+      gl.renderbufferStorage(
+        gl.RENDERBUFFER,
+        glFormat,
+        this.width,
+        this.height
+      );
+    }
 
     this.state = state;
     this.renderbuffer = rb;
 
     state.contextLost.subscribe(this.onContextLost);
+    state.resetRender.subscribe(this.onResetRender);
   }
 
   delete() {
@@ -57,6 +67,7 @@ export class Renderbuffer {
     }
     this.state.gl.deleteRenderbuffer(this.renderbuffer);
     this.state.contextLost.unsubscribe(this.onContextLost);
+    this.state.resetRender.unsubscribe(this.onResetRender);
     this.state = null;
     this.renderbuffer = null;
   }
@@ -64,8 +75,13 @@ export class Renderbuffer {
   private onContextLost = () => {
     if (this.state) {
       this.state.contextLost.unsubscribe(this.onContextLost);
+      this.state.resetRender.unsubscribe(this.onResetRender);
       this.state = null;
     }
     this.renderbuffer = null;
+  };
+
+  private onResetRender = () => {
+    this.delete();
   };
 }

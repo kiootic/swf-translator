@@ -105,6 +105,7 @@ export class BitmapData extends AVMObject {
 
       const glState = this.__renderer!.glState;
       const gl = glState.gl;
+      this.__target!.framebuffer.ensure(glState);
       glState.bindFramebuffer(
         gl.READ_FRAMEBUFFER,
         this.__target!.framebuffer.framebuffer
@@ -153,6 +154,8 @@ export class BitmapData extends AVMObject {
     const dstX = destPoint.x,
       dstY = this.height - destPoint.y - sourceRect.height;
 
+    src.framebuffer.ensure(glState);
+    dst.framebuffer.ensure(glState);
     glState.bindFramebuffer(gl.READ_FRAMEBUFFER, src.framebuffer.framebuffer);
     glState.bindFramebuffer(gl.DRAW_FRAMEBUFFER, dst.framebuffer.framebuffer);
     gl.blitFramebuffer(
@@ -179,6 +182,8 @@ export class BitmapData extends AVMObject {
       const dst = this.__target.framebuffer;
       const glState = this.__renderer!.glState;
       const gl = glState.gl;
+      src.ensure(glState);
+      dst.ensure(glState);
       glState.bindFramebuffer(gl.READ_FRAMEBUFFER, src.framebuffer);
       glState.bindFramebuffer(gl.DRAW_FRAMEBUFFER, dst.framebuffer);
       gl.blitFramebuffer(

@@ -34,7 +34,7 @@ export class Stage extends DisplayObjectContainer {
   __mouseTrackTarget: InteractiveObject | null = null;
 
   focus: InteractiveObject | null = null;
-  quality: string = "HIGH";
+  private __quality: string = "HIGH";
 
   get loaderInfo() {
     return {
@@ -46,6 +46,22 @@ export class Stage extends DisplayObjectContainer {
 
   get stage() {
     return this;
+  }
+
+  get quality() {
+    return this.__quality;
+  }
+  set quality(value) {
+    if (this.__quality === value) {
+      return;
+    }
+    this.__quality = value;
+    if (this.__quality === "HIGH") {
+      this.__renderer.glState.sampleLimit = 4;
+    } else {
+      this.__renderer.glState.sampleLimit = 0;
+    }
+    this.__renderer.glState.resetContext();
   }
 
   constructor(properties?: Properties) {
@@ -84,16 +100,12 @@ export class Stage extends DisplayObjectContainer {
 
   __onFrame = this.__withContext(() => {
     runFrame(true, this);
-    if (this.__renderer.glState.hasContext) {
-      this.__onRender();
-      this.__renderer.renderFrame(this.__node);
-    }
+    this.__onRender();
+    this.__renderer.renderFrame(this.__node);
   });
 
   __doRender = this.__withContext(() => {
-    if (this.__renderer.glState.hasContext) {
-      this.__renderer.blitFrame();
-    }
+    this.__renderer.blitFrame();
   });
 
   __withContext<T extends Function>(fn: T): T {

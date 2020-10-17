@@ -160,9 +160,14 @@ export class Renderer {
   }
 
   blitFrame() {
+    if (this.glState.gl.isContextLost()) {
+      return;
+    }
+
     const { width, height } = this.defaultFramebuffer.colorAttachment;
     const gl = this.glState.gl;
 
+    this.defaultFramebuffer.ensure(this.glState);
     this.glState.bindFramebuffer(
       gl.READ_FRAMEBUFFER,
       this.defaultFramebuffer.framebuffer
@@ -189,6 +194,10 @@ export class Renderer {
     logicalHeight: number,
     clearFb: () => void
   ) {
+    if (this.glState.gl.isContextLost()) {
+      return;
+    }
+
     const { width, height } = fb.colorAttachment;
     const bounds = rect.fromValues(0, 0, width, height);
     const ctx = new RenderContext(bounds);
