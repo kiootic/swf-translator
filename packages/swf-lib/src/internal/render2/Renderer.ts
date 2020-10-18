@@ -823,8 +823,8 @@ export class Renderer {
         let vx = viewA * x + viewC * y + viewTX;
         let vy = viewB * x + viewD * y + viewTY;
         if (roundVertex) {
-          vx = Math.round(vx * 2) / 2;
-          vy = Math.round(vy * 2) / 2;
+          vx = Math.round(vx);
+          vy = Math.round(vy);
         }
         attrFloat[base + i * 14 + 0] = projA * vx + projC * vy + projTX;
         attrFloat[base + i * 14 + 1] = projB * vx + projD * vy + projTY;
