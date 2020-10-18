@@ -104,11 +104,11 @@ export class Stage extends DisplayObjectContainer {
 
   __onFrame = this.__withContext(() => {
     runFrame(true, this);
-    this.__onRender();
-    this.__renderer.renderFrame(this.__node);
   });
 
   __doRender = this.__withContext(() => {
+    this.__onRender();
+    this.__renderer.renderFrame(this.__node);
     this.__renderer.blitFrame();
   });
 
