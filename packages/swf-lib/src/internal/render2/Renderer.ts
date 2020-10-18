@@ -823,8 +823,9 @@ export class Renderer {
         let vx = viewA * x + viewC * y + viewTX;
         let vy = viewB * x + viewD * y + viewTY;
         if (roundVertex) {
-          vx = Math.round(vx);
-          vy = Math.round(vy);
+          const samples = Math.max(1, this.glState.maxSamples);
+          vx = Math.round(vx * samples) / samples;
+          vy = Math.round(vy * samples) / samples;
         }
         attrFloat[base + i * 14 + 0] = projA * vx + projC * vy + projTX;
         attrFloat[base + i * 14 + 1] = projB * vx + projD * vy + projTY;
