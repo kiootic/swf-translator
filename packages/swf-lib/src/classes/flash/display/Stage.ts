@@ -61,7 +61,11 @@ export class Stage extends DisplayObjectContainer {
     } else {
       this.__renderer.glState.sampleLimit = 0;
     }
-    this.__renderer.glState.resetContext();
+    this.__renderer.glState.resetRenderState();
+
+    // Re-render after resetting render state
+    this.__onRender();
+    this.__renderer.renderFrame(this.__node);
   }
 
   constructor(properties?: Properties) {

@@ -72,7 +72,7 @@ export class GLState {
     this.blendFuncs.fill(NaN);
   }
 
-  resetContext() {
+  resetRenderState() {
     this.reset();
     this.resetRender.emit();
   }
