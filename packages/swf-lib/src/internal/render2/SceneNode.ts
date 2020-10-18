@@ -6,6 +6,10 @@ import { RenderContext } from "./RenderContext";
 import { Texture } from "./gl/Texture";
 import { CachedRender } from "./CachedRender";
 
+export function roundTwips(value: number) {
+  return Math.round(value * 20) / 20;
+}
+
 const enum Flags {
   DirtyBounds = 1,
   DirtyTransform = 2,

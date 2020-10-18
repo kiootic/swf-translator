@@ -8,7 +8,7 @@ import { Event } from "../events/Event";
 import { Transform } from "../geom/Transform";
 import { Point } from "../geom/Point";
 import { BitmapFilter } from "../filters/BitmapFilter";
-import { SceneNode } from "../../../internal/render2/SceneNode";
+import { SceneNode, roundTwips } from "../../../internal/render2/SceneNode";
 
 const tmpRect = rect.create();
 const tmpVec2 = vec2.create();
@@ -133,6 +133,7 @@ export class DisplayObject extends EventDispatcher {
     return this.__node.transformLocal[4];
   }
   set x(value: number) {
+    value = roundTwips(value);
     if (this.__node.transformLocal[4] !== value) {
       this.__node.transformLocal[4] = value;
       this.__node.markLayoutDirty();
@@ -143,6 +144,7 @@ export class DisplayObject extends EventDispatcher {
     return this.__node.transformLocal[5];
   }
   set y(value: number) {
+    value = roundTwips(value);
     if (this.__node.transformLocal[5] !== value) {
       this.__node.transformLocal[5] = value;
       this.__node.markLayoutDirty();
