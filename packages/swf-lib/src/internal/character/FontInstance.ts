@@ -25,6 +25,7 @@ export class FontInstance implements CharacterInstance {
       );
       return {
         renderObjects: RenderObject.merge(
+          "text",
           renderObjects.map((renderObject) => ({
             renderObject,
             transform: mat2d.identity(mat2d.create()),

@@ -55,7 +55,7 @@ export class StaticTextInstance implements CharacterInstance {
       }
     }
 
-    this.renderObjects = RenderObject.merge(instances);
+    this.renderObjects = RenderObject.merge("text", instances);
   }
 
   applyTo(staticText: StaticText) {

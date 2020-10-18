@@ -194,6 +194,6 @@ function layoutLine(line: Line, y: number, bounds: rect): LayoutResult {
 
   return {
     bounds: rect.fromValues(0, y, x, y + leading),
-    renderObjects: RenderObject.merge(instances),
+    renderObjects: RenderObject.merge("text", instances),
   };
 }

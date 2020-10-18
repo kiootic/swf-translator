@@ -30,6 +30,7 @@ const indexLimit = 0x80000;
 const atlasSize = 1024;
 
 const tmpRect = rect.create();
+const tmpMat2d = mat2d.create();
 
 function renderTextureSize(n: number) {
   if (n < 128) {
@@ -202,14 +203,17 @@ export class Renderer {
     const bounds = rect.fromValues(0, 0, width, height);
     const ctx = new RenderContext(bounds);
     node.render(ctx);
-    ctx.applyProjection(
-      projection(mat2d.create(), logicalWidth, logicalHeight, true)
+    const projectionMat = projection(
+      mat2d.create(),
+      logicalWidth,
+      logicalHeight,
+      true
     );
 
     this.textureReturnBox.length = 0;
     this.renderbufferReturnBox.length = 0;
     try {
-      this.render(ctx.renders, fb, clearFb);
+      this.render(ctx.renders, fb, projectionMat, clearFb);
     } finally {
       for (const texture of this.textureReturnBox) {
         this.renderPool.returnTexture(texture);
@@ -239,6 +243,7 @@ export class Renderer {
   private render(
     renders: DeferredRender[],
     framebuffer: Framebuffer,
+    projectionMat: mat2d,
     clearFb: () => void
   ) {
     const textures: DeferredRenderTexture[] = [];
@@ -280,7 +285,12 @@ export class Renderer {
         classifyRenders(renders);
       }
     } while (resolved);
-    this.renderObjects(renders as DeferredRenderObject[], framebuffer, clearFb);
+    this.renderObjects(
+      renders as DeferredRenderObject[],
+      framebuffer,
+      projectionMat,
+      clearFb
+    );
   }
 
   private renderTextures(
@@ -302,7 +312,6 @@ export class Renderer {
         atlas.height,
         false
       );
-      atlasContext.applyProjection(projectionMat);
 
       const texItem = this.renderPool.takeTexture(atlas.width, atlas.height);
       const rbItem = this.renderPool.takeRenderbuffer(
@@ -312,10 +321,15 @@ export class Renderer {
       this.textureReturnBox.push(texItem);
       this.renderbufferReturnBox.push(rbItem);
 
-      this.render(atlasContext.renders, rbItem.framebuffer, () => {
-        this.glState.setClearColor(0, 0, 0, 0);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-      });
+      this.render(
+        atlasContext.renders,
+        rbItem.framebuffer,
+        projectionMat,
+        () => {
+          this.glState.setClearColor(0, 0, 0, 0);
+          gl.clear(gl.COLOR_BUFFER_BIT);
+        }
+      );
 
       texItem.framebuffer.ensure(this.glState);
       this.glState.bindFramebuffer(
@@ -526,6 +540,7 @@ export class Renderer {
   private renderObjects(
     objects: DeferredRenderObject[],
     framebuffer: Framebuffer,
+    projectionMat: mat2d,
     clearFb: () => void
   ) {
     const gl = this.glState.gl;
@@ -622,7 +637,7 @@ export class Renderer {
             maskFb.framebuffer.framebuffer
           );
           gl.clear(gl.COLOR_BUFFER_BIT);
-          this.doRenderObjects(group.renders, true);
+          this.doRenderObjects(group.renders, true, projectionMat);
 
           group.target.framebuffer.ensure(this.glState);
           this.glState.bindFramebuffer(
@@ -667,7 +682,7 @@ export class Renderer {
           render,
         });
       }
-      this.doRenderObjects(idRenders, false);
+      this.doRenderObjects(idRenders, false, projectionMat);
     } finally {
       for (const i of returnRbs) {
         this.renderPool.returnRenderbuffer(i);
@@ -678,12 +693,23 @@ export class Renderer {
     }
   }
 
-  private doRenderObjects(objects: MaskRenderObject[], renderMask: boolean) {
+  private doRenderObjects(
+    objects: MaskRenderObject[],
+    renderMask: boolean,
+    projectionMat: mat2d
+  ) {
     const gl = this.glState.gl;
 
     this.glState.enable(gl.BLEND);
     this.glState.setBlendEquation(gl.FUNC_ADD);
     this.glState.setBlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+
+    const projA = projectionMat[0];
+    const projB = projectionMat[1];
+    const projC = projectionMat[2];
+    const projD = projectionMat[3];
+    const projTX = projectionMat[4];
+    const projTY = projectionMat[5];
 
     let numVertex = 0;
     let numIndex = 0;
@@ -722,7 +748,7 @@ export class Renderer {
     const attrFloat = this.attrFloat;
     const attrUint = this.attrUint;
     for (const { render, maskTex, maskID } of objects) {
-      const { vertices, indices, uvMatrix, colors } = render.object;
+      const { kind, vertices, indices, uvMatrix, colors } = render.object;
       const objectNumVertex = vertices.length / 2;
       const objectNumIndex = indices.length;
       if (numVertex + objectNumVertex >= vertexLimit) {
@@ -763,6 +789,10 @@ export class Renderer {
       }
       const mode = maskID * 0x10000 + maskMode * 0x100 + fillMode;
 
+      // Round vertices to nearest pixel in view space to maintain temporal stability.
+      // Do not do this for texts, since they have intricate contours.
+      const roundVertex = kind === "shape";
+
       const base = numVertex * 14;
       const viewA = view[0];
       const viewB = view[1];
@@ -790,8 +820,14 @@ export class Renderer {
         const y = vertices[i * 2 + 1];
         const color = colors[i];
 
-        attrFloat[base + i * 14 + 0] = viewA * x + viewC * y + viewTX;
-        attrFloat[base + i * 14 + 1] = viewB * x + viewD * y + viewTY;
+        let vx = viewA * x + viewC * y + viewTX;
+        let vy = viewB * x + viewD * y + viewTY;
+        if (roundVertex) {
+          vx = Math.round(vx * 2) / 2;
+          vy = Math.round(vy * 2) / 2;
+        }
+        attrFloat[base + i * 14 + 0] = projA * vx + projC * vy + projTX;
+        attrFloat[base + i * 14 + 1] = projB * vx + projD * vy + projTY;
 
         attrFloat[base + i * 14 + 2] = uvA * x + uvC * y + uvTX;
         attrFloat[base + i * 14 + 3] = uvB * x + uvD * y + uvTY;

@@ -153,12 +153,6 @@ export class RenderContext {
     this.transformStack.pop();
   }
 
-  applyProjection(projection: mat2d) {
-    for (const { view } of this.allTransforms) {
-      mat2d.multiply(view, projection, view);
-    }
-  }
-
   renderContext(ctx: RenderContext) {
     const { view, colorMul, colorAdd } = this.transform;
     for (const transform of ctx.allTransforms) {

@@ -62,6 +62,7 @@ export function makeShapeRenderObject(
   colors.fill(color);
 
   return new RenderObject(
+    "shape",
     vertices,
     colors,
     indices,

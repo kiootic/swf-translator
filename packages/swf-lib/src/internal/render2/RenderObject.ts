@@ -14,8 +14,11 @@ interface RenderObjectRectOptions {
   texHeight?: number;
 }
 
+export type RenderObjectKind = "shape" | "text";
+
 export class RenderObject {
   constructor(
+    readonly kind: RenderObjectKind,
     readonly vertices: Float32Array,
     readonly colors: Uint32Array,
     readonly indices: Uint16Array,
@@ -66,6 +69,7 @@ export class RenderObject {
     mat2d.translate(uvMatrix, uvMatrix, [bounds[0], bounds[1]]);
 
     return new RenderObject(
+      "shape",
       vertices,
       colors,
       indices,
@@ -116,6 +120,7 @@ export class RenderObject {
     bounds[3] = Math.max(ay, by) - bounds[1];
 
     return new RenderObject(
+      "shape",
       vertices,
       colors,
       indices,
@@ -159,7 +164,10 @@ export class RenderObject {
     return false;
   }
 
-  static merge(input: RenderObjectMerge[]): RenderObject[] {
+  static merge(
+    kind: RenderObjectKind,
+    input: RenderObjectMerge[]
+  ): RenderObject[] {
     let numVertex = 0;
     let numIndex = 0;
     const subInput: RenderObjectMerge[] = [];
@@ -167,7 +175,7 @@ export class RenderObject {
 
     for (const i of input) {
       if (numIndex + i.renderObject.indices.length >= 0x10000) {
-        result.push(doMerge(subInput, numVertex, numIndex));
+        result.push(doMerge(kind, subInput, numVertex, numIndex));
         numVertex = 0;
         numIndex = 0;
         subInput.length = 0;
@@ -179,13 +187,14 @@ export class RenderObject {
     }
 
     if (numIndex > 0) {
-      result.push(doMerge(subInput, numVertex, numIndex));
+      result.push(doMerge(kind, subInput, numVertex, numIndex));
     }
     return result;
   }
 }
 
 function doMerge(
+  kind: RenderObjectKind,
   input: RenderObjectMerge[],
   numVertex: number,
   numIndex: number
@@ -222,6 +231,7 @@ function doMerge(
   }
 
   return new RenderObject(
+    kind,
     vertices,
     colors,
     indices,
