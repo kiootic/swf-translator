@@ -22,8 +22,6 @@ import { MorphGradient, Gradient } from "../../format/structs/gradient";
 import { translateShape } from "./shape";
 
 export async function translateMorphShapes(ctx: OutputContext, swf: SWFFile) {
-  const morphShapes: Record<number, unknown> = {};
-
   const ratios = extractRatios(swf);
   for (const tag of swf.characters.values()) {
     let morphShape: MorphShape;
@@ -34,20 +32,14 @@ export async function translateMorphShapes(ctx: OutputContext, swf: SWFFile) {
     }
 
     const char = ctx.file("characters", `${tag.characterId}.json`);
-    char.content = Buffer.from(JSON.stringify(morphShape, null, 4));
+    char.content.push(Buffer.from(JSON.stringify(morphShape, null, 4)));
 
-    const index = ctx.file("characters", `index.ts`);
-    index.tsSource.addImportDeclaration({
-      defaultImport: `character${tag.characterId}`,
-      moduleSpecifier: `./${tag.characterId}.json`,
-    });
-    index.tsSource.addStatements(
-      `bundle.morphShapes[${tag.characterId}] = character${tag.characterId} as any;`
-    );
-
-    morphShapes[tag.characterId] = morphShape;
+    const index = ctx.file("characters", `index.js`);
+    index.content.push(`
+      import character${tag.characterId} from "./${tag.characterId}.json";
+      bundle.morphShapes[${tag.characterId}] = character${tag.characterId};
+    `);
   }
-  return morphShapes;
 }
 
 function extractRatios(swf: SWFFile): Map<number, number[]> {

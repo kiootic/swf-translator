@@ -3,19 +3,15 @@ import { OutputContext } from "../../output";
 import { SymbolClassTag } from "../../format/tags/symbol-class";
 
 export async function translateLinkages(ctx: OutputContext, swf: SWFFile) {
-  const linkage: Record<number, string> = {};
-  const index = ctx.file("characters", `index.ts`);
+  const index = ctx.file("characters", `index.js`);
   for (const tag of swf.tags) {
     if (tag instanceof SymbolClassTag) {
       for (const symbol of tag.symbols) {
-        index.tsSource.addStatements(
-          `bundle.linkages[${symbol.characterId}] = ${JSON.stringify(
-            symbol.name
-          )};`
-        );
-        linkage[symbol.characterId] = symbol.name;
+        index.content.push(`
+          bundle.linkages[${symbol.characterId}] = ${JSON.stringify(
+          symbol.name
+        )};`);
       }
     }
   }
-  return linkage;
 }

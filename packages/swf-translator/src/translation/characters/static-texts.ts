@@ -6,7 +6,6 @@ import { DefineText2Tag } from "../../format/tags/define-text-2";
 import { color, matrix, rect } from "../../models/primitives";
 
 export async function translateStaticTexts(ctx: OutputContext, swf: SWFFile) {
-  const staticTexts: Record<number, unknown> = {};
   for (const tag of swf.characters.values()) {
     let text: unknown;
     if (tag instanceof DefineTextTag || tag instanceof DefineText2Tag) {
@@ -16,20 +15,14 @@ export async function translateStaticTexts(ctx: OutputContext, swf: SWFFile) {
     }
 
     const char = ctx.file("characters", `${tag.characterId}.json`);
-    char.content = Buffer.from(JSON.stringify(text, null, 4));
+    char.content.push(Buffer.from(JSON.stringify(text, null, 4)));
 
-    const index = ctx.file("characters", `index.ts`);
-    index.tsSource.addImportDeclaration({
-      defaultImport: `character${tag.characterId}`,
-      moduleSpecifier: `./${tag.characterId}.json`,
-    });
-    index.tsSource.addStatements(
-      `bundle.staticTexts[${tag.characterId}] = character${tag.characterId} as any;`
-    );
-    staticTexts[tag.characterId] = text;
+    const index = ctx.file("characters", `index.js`);
+    index.content.push(`
+      import character${tag.characterId} from "./${tag.characterId}.json";
+      bundle.staticTexts[${tag.characterId}] = character${tag.characterId};
+    `);
   }
-
-  return staticTexts;
 }
 
 function translateStaticText(tag: DefineTextTag | DefineText2Tag): StaticText {

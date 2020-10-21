@@ -15,27 +15,23 @@ import { StartSoundTag } from "../../format/tags/start-sound";
 
 export async function translateSprites(ctx: OutputContext, swf: SWFFile) {
   const sprites: Record<number, unknown> = {};
+  sprites[0] = translateDocumentSprite(swf);
   for (const tag of swf.characters.values()) {
     if (tag instanceof DefineSpriteTag) {
       sprites[tag.characterId] = translateSprite(tag);
     }
   }
-  sprites[0] = translateDocumentSprite(swf);
 
   for (const [characterId, sprite] of Object.entries(sprites)) {
     const char = ctx.file("characters", `${characterId}.json`);
-    char.content = Buffer.from(JSON.stringify(sprite, null, 4));
+    char.content.push(Buffer.from(JSON.stringify(sprite, null, 4)));
 
-    const index = ctx.file("characters", `index.ts`);
-    index.tsSource.addImportDeclaration({
-      defaultImport: `character${characterId}`,
-      moduleSpecifier: `./${characterId}.json`,
-    });
-    index.tsSource.addStatements(
-      `bundle.sprites[${characterId}] = character${characterId} as any;`
-    );
+    const index = ctx.file("characters", `index.js`);
+    index.content.push(`
+      import character${characterId} from "./${characterId}.json";
+      bundle.sprites[${characterId}] = character${characterId};
+    `);
   }
-  return sprites;
 }
 
 function translateSprite(sprite: DefineSpriteTag): Sprite {

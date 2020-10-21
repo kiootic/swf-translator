@@ -5,5 +5,6 @@ export * as avm2 from "./avm2";
 export * from "./AssetLibrary";
 export * from "./Properties";
 export * from "./AssetBundle";
+export * from "./Manifest";
 export * from "./FontRegistry";
 export * from "./ClassRegistry";

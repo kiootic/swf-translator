@@ -1,5 +1,5 @@
 export interface SoundCharacter {
-  path: string;
+  id: string;
 }
 
 export interface SoundEnvelope {

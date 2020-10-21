@@ -8,7 +8,6 @@ import { filter } from "../../models/filter";
 import { DefineButtonSoundTag } from "../../format/tags/define-button-sound";
 
 export async function translateButtons(ctx: OutputContext, swf: SWFFile) {
-  const buttons: Record<number, unknown> = {};
   for (const tag of swf.characters.values()) {
     let button: unknown;
     if (tag instanceof DefineButton2Tag) {
@@ -18,20 +17,14 @@ export async function translateButtons(ctx: OutputContext, swf: SWFFile) {
     }
 
     const char = ctx.file("characters", `${tag.characterId}.json`);
-    char.content = Buffer.from(JSON.stringify(button, null, 4));
+    char.content.push(Buffer.from(JSON.stringify(button, null, 4)));
 
-    const index = ctx.file("characters", `index.ts`);
-    index.tsSource.addImportDeclaration({
-      defaultImport: `character${tag.characterId}`,
-      moduleSpecifier: `./${tag.characterId}.json`,
-    });
-    index.tsSource.addStatements(
-      `bundle.buttons[${tag.characterId}] = character${tag.characterId} as any;`
-    );
-    buttons[tag.characterId] = button;
+    const index = ctx.file("characters", `index.js`);
+    index.content.push(`
+      import character${tag.characterId} from "./${tag.characterId}.json";
+      bundle.buttons[${tag.characterId}] = character${tag.characterId};
+    `);
   }
-
-  return buttons;
 }
 
 function translateButton(tag: DefineButton2Tag, tags: Tag[]): Button {

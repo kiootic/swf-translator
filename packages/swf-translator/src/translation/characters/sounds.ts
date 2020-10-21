@@ -12,14 +12,18 @@ export async function translateSounds(ctx: OutputContext, swf: SWFFile) {
       continue;
     }
 
-    const index = ctx.file("characters", "index.ts");
-    index.tsSource.addImportDeclaration({
-      defaultImport: `character${tag.characterId}`,
-      moduleSpecifier: index.relPathTo(assetFile),
-    });
-    index.tsSource.addStatements(
-      `bundle.sounds[${tag.characterId}] = { path: character${tag.characterId} };`
-    );
+    const charIndex = ctx.file("characters", "index.js");
+    charIndex.content.push(`
+      bundle.sounds[${tag.characterId}] = { id: "character${tag.characterId}" };
+    `);
+
+    const assetIndex = ctx.file("assets", "index.js");
+    assetIndex.content.push(`
+      import character${tag.characterId} from "${assetIndex.relPathTo(
+      assetFile
+    )}";
+      assets["character${tag.characterId}"] = character${tag.characterId};
+    `);
   }
 }
 
@@ -36,6 +40,6 @@ async function translateSound(ctx: OutputContext, tag: DefineSoundTag) {
   }
 
   const file = ctx.file("assets", `${tag.characterId}.${format}`);
-  file.content = data;
+  file.content.push(data);
   return file;
 }

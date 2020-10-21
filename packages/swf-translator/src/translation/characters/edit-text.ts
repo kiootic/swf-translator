@@ -5,7 +5,6 @@ import { DefineEditTextTag } from "../../format/tags/define-edit-text";
 import { color, rect } from "../../models/primitives";
 
 export async function translateEditTexts(ctx: OutputContext, swf: SWFFile) {
-  const editTexts: Record<number, unknown> = {};
   for (const tag of swf.characters.values()) {
     let text: unknown;
     if (tag instanceof DefineEditTextTag) {
@@ -15,20 +14,14 @@ export async function translateEditTexts(ctx: OutputContext, swf: SWFFile) {
     }
 
     const char = ctx.file("characters", `${tag.characterId}.json`);
-    char.content = Buffer.from(JSON.stringify(text, null, 4));
+    char.content.push(Buffer.from(JSON.stringify(text, null, 4)));
 
-    const index = ctx.file("characters", `index.ts`);
-    index.tsSource.addImportDeclaration({
-      defaultImport: `character${tag.characterId}`,
-      moduleSpecifier: `./${tag.characterId}.json`,
-    });
-    index.tsSource.addStatements(
-      `bundle.editTexts[${tag.characterId}] = character${tag.characterId} as any;`
-    );
-    editTexts[tag.characterId] = text;
+    const index = ctx.file("characters", `index.js`);
+    index.content.push(`
+      import character${tag.characterId} from "./${tag.characterId}.json";
+      bundle.editTexts[${tag.characterId}] = character${tag.characterId};
+    `);
   }
-
-  return editTexts;
 }
 
 function translateEditText(tag: DefineEditTextTag): EditText {

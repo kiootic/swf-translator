@@ -1,13 +1,3 @@
-import { ImageCharacter } from "./character/Image";
-import { SoundCharacter } from "./character/Sound";
-import { ShapeCharacter } from "./character/Shape";
-import { FontCharacter } from "./character/Font";
-import { StaticTextCharacter } from "./character/StaticText";
-import { EditTextCharacter } from "./character/EditText";
-import { SpriteCharacter } from "./character/Sprite";
-import { MorphShapeCharacter } from "./character/MorphShape";
-import { ButtonCharacter } from "./character/Button";
-import type { DisplayObject } from "../flash/display/DisplayObject";
 import { Shape } from "../flash/display/Shape";
 import { MorphShape } from "../flash/display/MorphShape";
 import { Sprite } from "../flash/display/Sprite";
@@ -29,170 +19,174 @@ import { FontRegistry } from "./FontRegistry";
 import { SimpleButton } from "../flash/display";
 import { ClassRegistry } from "./ClassRegistry";
 import { Audio } from "../../internal/audio";
+import { Manifest } from "./Manifest";
+import { Properties } from "./Properties";
 
-export interface AssetLibrary {
-  readonly gradientCache: Map<string, HTMLCanvasElement>;
-  resolveImage(id: number): HTMLImageElement;
-  resolveFont(id: number): FontInstance;
+const defaultFileSize = 50000;
 
-  instantiateCharacter<T>(id: number): T;
+async function fetchData(
+  url: string,
+  progress: (loaded: number, size: number) => void
+): Promise<Uint8Array> {
+  progress(0, defaultFileSize);
+
+  const resp = await fetch(url);
+  const size = Number(resp.headers.get("Content-Length"));
+  const reader = resp.body!.getReader();
+
+  const chunks: Uint8Array[] = [];
+  let received = 0;
+  while (true) {
+    const result = await reader.read();
+
+    if (result.done) {
+      break;
+    }
+
+    chunks.push(result.value);
+    received += result.value.length;
+    if (size) {
+      progress(received, size);
+    }
+  }
+
+  const result = new Uint8Array(received);
+  let i = 0;
+  for (const chunk of chunks) {
+    result.set(chunk, i);
+    i += chunk.length;
+  }
+
+  progress(received, received);
+  return result;
 }
 
-export class AssetLibraryBuilder {
-  private readonly images = new Map<number, ImageCharacter>();
-  private readonly sounds = new Map<number, SoundCharacter>();
-  private readonly shapes = new Map<number, ShapeCharacter>();
-  private readonly sprites = new Map<number, SpriteCharacter>();
-  private readonly fonts = new Map<number, FontCharacter>();
-  private readonly staticTexts = new Map<number, StaticTextCharacter>();
-  private readonly editTexts = new Map<number, EditTextCharacter>();
-  private readonly morphShapes = new Map<number, MorphShapeCharacter>();
-  private readonly buttons = new Map<number, ButtonCharacter>();
-  private readonly linkages = new Map<number, string>();
-
-  registerImage(id: number, char: ImageCharacter) {
-    this.images.set(id, char);
+export async function loadManifest(
+  manifest: Manifest,
+  progress?: (value: number) => void
+): Promise<AssetLibrary> {
+  const progresses = new Map<string, [number, number]>();
+  for (const id of Object.keys(manifest.assets)) {
+    progresses.set(id, [0, defaultFileSize]);
   }
-
-  registerSound(id: number, char: SoundCharacter) {
-    this.sounds.set(id, char);
-  }
-
-  registerShape(id: number, char: ShapeCharacter) {
-    this.shapes.set(id, char);
-  }
-
-  registerMorphShape(id: number, char: MorphShapeCharacter) {
-    this.morphShapes.set(id, char);
-  }
-
-  registerSprite(id: number, char: SpriteCharacter) {
-    this.sprites.set(id, char);
-  }
-
-  registerFont(id: number, char: FontCharacter) {
-    this.fonts.set(id, char);
-  }
-
-  registerStaticText(id: number, char: StaticTextCharacter) {
-    this.staticTexts.set(id, char);
-  }
-
-  registerEditText(id: number, char: EditTextCharacter) {
-    this.editTexts.set(id, char);
-  }
-
-  registerButton(id: number, char: ButtonCharacter) {
-    this.buttons.set(id, char);
-  }
-
-  registerLinkage(id: number, className: string) {
-    this.linkages.set(id, className);
-  }
-
-  registerBundle(bundle: AssetBundle) {
-    for (const [id, char] of Object.entries(bundle.images)) {
-      this.registerImage(Number(id), char);
+  const reportProgress = (id: string) => (loaded: number, size: number) => {
+    progresses.set(id, [loaded, size]);
+    let allLoaded = 0;
+    let allSize = 0;
+    for (const [l, s] of progresses.values()) {
+      allLoaded += l;
+      allSize += s;
     }
-    for (const [id, char] of Object.entries(bundle.sounds)) {
-      this.registerSound(Number(id), char);
-    }
-    for (const [id, char] of Object.entries(bundle.shapes)) {
-      this.registerShape(Number(id), char);
-    }
-    for (const [id, char] of Object.entries(bundle.morphShapes)) {
-      this.registerMorphShape(Number(id), char);
-    }
-    for (const [id, char] of Object.entries(bundle.fonts)) {
-      this.registerFont(Number(id), char);
-    }
-    for (const [id, char] of Object.entries(bundle.staticTexts)) {
-      this.registerStaticText(Number(id), char);
-    }
-    for (const [id, char] of Object.entries(bundle.editTexts)) {
-      this.registerEditText(Number(id), char);
-    }
-    for (const [id, char] of Object.entries(bundle.sprites)) {
-      this.registerSprite(Number(id), char);
-    }
-    for (const [id, char] of Object.entries(bundle.buttons)) {
-      this.registerButton(Number(id), char);
-    }
-    for (const [id, className] of Object.entries(bundle.linkages)) {
-      this.registerLinkage(Number(id), className);
-    }
-  }
+    progress?.(allLoaded / allSize);
+  };
 
-  async instantiate(): Promise<AssetLibrary> {
-    const library = new InstantiatedLibrary();
+  const dataURL = manifest.assets[manifest.data];
+  const data = await fetchData(
+    dataURL.toString(),
+    reportProgress(manifest.data)
+  );
+  const bundle: AssetBundle = JSON.parse(new TextDecoder().decode(data));
 
-    await Promise.all([
-      ...Array.from(this.images.entries()).map(async ([id, image]) => {
+  const library = new AssetLibrary(manifest.properties);
+
+  await Promise.all([
+    ...Array.from(Object.entries(bundle.images)).map(
+      async ([charId, { id }]) => {
         const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+          const report = reportProgress(id);
+          report(0, defaultFileSize);
+          let loaded = 0;
+
           const img = new Image();
-          img.onload = () => resolve(img);
+          img.onload = () => {
+            report(loaded, loaded);
+            resolve(img);
+          };
           img.onerror = (e) => reject(e);
-          img.src = image.path;
+          img.onprogress = (e) => {
+            loaded = e.loaded;
+            if (e.lengthComputable) {
+              report(loaded, e.total);
+            }
+          };
+          img.src = manifest.assets[id].toString();
         });
-        library.images.set(id, new ImageInstance(id, img));
-      }),
-      ...Array.from(this.sounds.entries()).map(async ([id, image]) => {
-        const data = await fetch(image.path).then((resp) => resp.arrayBuffer());
-        const buf = await Audio.decodeAudioData(data);
-        library.sounds.set(id, new SoundInstance(id, buf));
-      }),
-    ]);
-
-    for (const [id, shape] of this.shapes) {
-      library.shapes.set(id, new ShapeInstance(id, shape, library));
-    }
-
-    for (const [id, morphShape] of this.morphShapes) {
-      library.morphShapes.set(
-        id,
-        new MorphShapeInstance(id, morphShape, library)
-      );
-    }
-
-    for (const [id, sprite] of this.sprites) {
-      library.sprites.set(id, new SpriteInstance(id, sprite, library));
-    }
-
-    for (const [id, font] of this.fonts) {
-      const instance = new FontInstance(id, font, library);
-      library.fonts.set(id, instance);
-      FontRegistry.instance.registerFont(instance);
-    }
-
-    for (const [id, staticText] of this.staticTexts) {
-      library.staticTexts.set(
-        id,
-        new StaticTextInstance(id, staticText, library)
-      );
-    }
-
-    for (const [id, editText] of this.editTexts) {
-      library.editTexts.set(id, new EditTextInstance(id, editText, library));
-    }
-
-    for (const [id, button] of this.buttons) {
-      library.buttons.set(id, new ButtonInstance(id, button, library));
-    }
-
-    for (const [id, className] of this.linkages) {
-      const classFn = ClassRegistry.instance.classes.get(className);
-      if (!classFn) {
-        throw new Error(`Linked class ${className} not found`);
+        library.images.set(
+          Number(charId),
+          new ImageInstance(Number(charId), img)
+        );
       }
-      library.linkedClasses.set(id, classFn);
-    }
+    ),
+    ...Array.from(Object.entries(bundle.sounds)).map(
+      async ([charId, { id }]) => {
+        const data = await fetchData(
+          manifest.assets[id].toString(),
+          reportProgress(id)
+        );
+        const buf = await Audio.decodeAudioData(data.buffer);
+        library.sounds.set(
+          Number(charId),
+          new SoundInstance(Number(charId), buf)
+        );
+      }
+    ),
+  ]);
 
-    library.linkCharacters();
-    return library;
+  for (const [id, shape] of Object.entries(bundle.shapes)) {
+    const charId = Number(id);
+    library.shapes.set(charId, new ShapeInstance(charId, shape, library));
   }
+
+  for (const [id, morphShape] of Object.entries(bundle.morphShapes)) {
+    const charId = Number(id);
+    const instance = new MorphShapeInstance(charId, morphShape, library);
+    library.morphShapes.set(charId, instance);
+  }
+
+  for (const [id, sprite] of Object.entries(bundle.sprites)) {
+    const charId = Number(id);
+    library.sprites.set(charId, new SpriteInstance(charId, sprite, library));
+  }
+
+  for (const [id, font] of Object.entries(bundle.fonts)) {
+    const charId = Number(id);
+    const instance = new FontInstance(charId, font, library);
+    library.fonts.set(charId, instance);
+    FontRegistry.instance.registerFont(instance);
+  }
+
+  for (const [id, staticText] of Object.entries(bundle.staticTexts)) {
+    const charId = Number(id);
+    const instance = new StaticTextInstance(charId, staticText, library);
+    library.staticTexts.set(charId, instance);
+  }
+
+  for (const [id, editText] of Object.entries(bundle.editTexts)) {
+    const charId = Number(id);
+    const instance = new EditTextInstance(charId, editText, library);
+    library.editTexts.set(charId, instance);
+  }
+
+  for (const [id, button] of Object.entries(bundle.buttons)) {
+    const charId = Number(id);
+    const instance = new ButtonInstance(charId, button, library);
+    library.buttons.set(charId, instance);
+  }
+
+  for (const [id, className] of Object.entries(bundle.linkages)) {
+    const classFn = ClassRegistry.instance.classes.get(className);
+    if (!classFn) {
+      throw new Error(`Linked class ${className} not found`);
+    }
+    const charId = Number(id);
+    library.linkedClasses.set(charId, classFn);
+  }
+
+  library.linkCharacters();
+  return library;
 }
 
-class InstantiatedLibrary implements AssetLibrary {
+export class AssetLibrary {
   readonly images = new Map<number, ImageInstance>();
   readonly sounds = new Map<number, SoundInstance>();
   readonly shapes = new Map<number, ShapeInstance>();
@@ -205,6 +199,8 @@ class InstantiatedLibrary implements AssetLibrary {
   readonly linkedClasses = new Map<number, Function>();
 
   readonly gradientCache = new Map<string, HTMLCanvasElement>();
+
+  constructor(readonly properties: Properties) {}
 
   resolveImage(id: number): HTMLImageElement {
     const instance = this.images.get(id);

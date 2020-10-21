@@ -6,7 +6,6 @@ import { DefineBitsJPEG2Tag } from "../../format/tags/define-bits-jpeg-2";
 import { DefineBitsJPEG3Tag } from "../../format/tags/define-bits-jpeg-3";
 import { DefineBitsLossless2Tag } from "../../format/tags/define-bits-loseless-2";
 import { File } from "../../output";
-import { VariableDeclarationKind } from "ts-morph";
 
 export async function translateImages(ctx: OutputContext, swf: SWFFile) {
   for (const tag of swf.characters.values()) {
@@ -23,14 +22,18 @@ export async function translateImages(ctx: OutputContext, swf: SWFFile) {
       continue;
     }
 
-    const index = ctx.file("characters", "index.ts");
-    index.tsSource.addImportDeclaration({
-      defaultImport: `character${tag.characterId}`,
-      moduleSpecifier: index.relPathTo(assetFile),
-    });
-    index.tsSource.addStatements(
-      `bundle.images[${tag.characterId}] = { path: character${tag.characterId} };`
-    );
+    const charIndex = ctx.file("characters", "index.js");
+    charIndex.content.push(`
+      bundle.images[${tag.characterId}] = { id: "character${tag.characterId}" };
+    `);
+
+    const assetIndex = ctx.file("assets", "index.js");
+    assetIndex.content.push(`
+      import character${tag.characterId} from "${assetIndex.relPathTo(
+      assetFile
+    )}";
+      assets["character${tag.characterId}"] = character${tag.characterId};
+    `);
   }
 }
 
@@ -40,7 +43,7 @@ async function translateBits(ctx: OutputContext, tag: DefineBitsTag) {
   const data = await image.toBuffer();
 
   const file = ctx.file("assets", `${tag.characterId}.${format}`);
-  file.content = data;
+  file.content.push(data);
   return file;
 }
 
@@ -50,7 +53,7 @@ async function translateBitsJPEG2(ctx: OutputContext, tag: DefineBitsJPEG2Tag) {
   const data = await image.toBuffer();
 
   const file = ctx.file("assets", `${tag.characterId}.${format}`);
-  file.content = data;
+  file.content.push(data);
   return file;
 }
 
@@ -69,7 +72,7 @@ async function translateBitsJPEG3(ctx: OutputContext, tag: DefineBitsJPEG3Tag) {
   const data = await image.png().toBuffer();
 
   const file = ctx.file("assets", `${tag.characterId}.png`);
-  file.content = data;
+  file.content.push(data);
   return file;
 }
 
@@ -99,7 +102,7 @@ async function translateBitsLossless2(
   image = await unMultiplyAlpha(image);
   const data = await image.png().toBuffer();
   const file = ctx.file("assets", `${tag.characterId}.png`);
-  file.content = data;
+  file.content.push(data);
   return file;
 }
 

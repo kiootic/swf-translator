@@ -8,7 +8,6 @@ import { Shape } from "../../models/shape";
 import { translateShape } from "./shape";
 
 export async function translateShapes(ctx: OutputContext, swf: SWFFile) {
-  const shapes: Record<number, unknown> = {};
   for (const tag of swf.characters.values()) {
     let shape: Shape;
     if (
@@ -23,18 +22,12 @@ export async function translateShapes(ctx: OutputContext, swf: SWFFile) {
     }
 
     const char = ctx.file("characters", `${tag.characterId}.json`);
-    char.content = Buffer.from(JSON.stringify(shape, null, 4));
+    char.content.push(Buffer.from(JSON.stringify(shape, null, 4)));
 
-    const index = ctx.file("characters", `index.ts`);
-    index.tsSource.addImportDeclaration({
-      defaultImport: `character${tag.characterId}`,
-      moduleSpecifier: `./${tag.characterId}.json`,
-    });
-    index.tsSource.addStatements(
-      `bundle.shapes[${tag.characterId}] = character${tag.characterId} as any;`
-    );
-
-    shapes[tag.characterId] = shape;
+    const index = ctx.file("characters", `index.js`);
+    index.content.push(`
+      import character${tag.characterId} from "./${tag.characterId}.json";
+      bundle.shapes[${tag.characterId}] = character${tag.characterId};
+    `);
   }
-  return shapes;
 }

@@ -1,3 +1,3 @@
 export interface ImageCharacter {
-  path: string;
+  id: string;
 }
