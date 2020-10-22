@@ -29,10 +29,10 @@ export async function translateImages(ctx: OutputContext, swf: SWFFile) {
 
     const assetIndex = ctx.file("assets", "index.js");
     assetIndex.content.push(`
-      import character${tag.characterId} from "${assetIndex.relPathTo(
-      assetFile
-    )}";
-      assets["character${tag.characterId}"] = character${tag.characterId};
+      assets["character${tag.characterId}"] = {
+        url: new URL("${assetIndex.relPathTo(assetFile)}", import.meta.url),
+        size: ${assetFile.content[0].length},
+      };
     `);
   }
 }

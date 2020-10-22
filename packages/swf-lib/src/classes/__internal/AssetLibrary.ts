@@ -22,16 +22,14 @@ import { Audio } from "../../internal/audio";
 import { Manifest } from "./Manifest";
 import { Properties } from "./Properties";
 
-const defaultFileSize = 50000;
-
 async function fetchData(
   url: string,
+  size: number,
   progress: (loaded: number, size: number) => void
 ): Promise<Uint8Array> {
-  progress(0, defaultFileSize);
+  progress(0, size);
 
   const resp = await fetch(url);
-  const size = Number(resp.headers.get("Content-Length"));
   const reader = resp.body!.getReader();
 
   const chunks: Uint8Array[] = [];
@@ -45,9 +43,7 @@ async function fetchData(
 
     chunks.push(result.value);
     received += result.value.length;
-    if (size) {
-      progress(received, size);
-    }
+    progress(received, size);
   }
 
   const result = new Uint8Array(received);
@@ -66,8 +62,8 @@ export async function loadManifest(
   progress?: (value: number) => void
 ): Promise<AssetLibrary> {
   const progresses = new Map<string, [number, number]>();
-  for (const id of Object.keys(manifest.assets)) {
-    progresses.set(id, [0, defaultFileSize]);
+  for (const [id, { size }] of Object.entries(manifest.assets)) {
+    progresses.set(id, [0, size]);
   }
   const reportProgress = (id: string) => (loaded: number, size: number) => {
     progresses.set(id, [loaded, size]);
@@ -80,9 +76,10 @@ export async function loadManifest(
     progress?.(allLoaded / allSize);
   };
 
-  const dataURL = manifest.assets[manifest.data];
+  const dataAsset = manifest.assets[manifest.data];
   const data = await fetchData(
-    dataURL.toString(),
+    dataAsset.url.toString(),
+    dataAsset.size,
     reportProgress(manifest.data)
   );
   const bundle: AssetBundle = JSON.parse(new TextDecoder().decode(data));
@@ -92,9 +89,10 @@ export async function loadManifest(
   await Promise.all([
     ...Array.from(Object.entries(bundle.images)).map(
       async ([charId, { id }]) => {
+        const asset = manifest.assets[id];
         const img = await new Promise<HTMLImageElement>((resolve, reject) => {
           const report = reportProgress(id);
-          report(0, defaultFileSize);
+          report(0, asset.size);
           let loaded = 0;
 
           const img = new Image();
@@ -105,11 +103,9 @@ export async function loadManifest(
           img.onerror = (e) => reject(e);
           img.onprogress = (e) => {
             loaded = e.loaded;
-            if (e.lengthComputable) {
-              report(loaded, e.total);
-            }
+            report(loaded, asset.size);
           };
-          img.src = manifest.assets[id].toString();
+          img.src = asset.url.toString();
         });
         library.images.set(
           Number(charId),
@@ -119,8 +115,10 @@ export async function loadManifest(
     ),
     ...Array.from(Object.entries(bundle.sounds)).map(
       async ([charId, { id }]) => {
+        const asset = manifest.assets[id];
         const data = await fetchData(
-          manifest.assets[id].toString(),
+          asset.url.toString(),
+          asset.size,
           reportProgress(id)
         );
         const buf = await Audio.decodeAudioData(data.buffer);
