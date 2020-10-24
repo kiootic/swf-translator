@@ -43,13 +43,13 @@ export class SoundChannel extends EventDispatcher {
       this.__beginTime + Math.min(Math.max(1, loops) * this.__duration, 1000000)
     );
 
-    this.__audioNode.onended = () => {
+    this.__audioNode.onended = stage.__withContext(() => {
       this.__volumeNode.disconnect();
       this.__audioNode.disconnect();
       if (!this.isStopped) {
         this.dispatchEvent(new Event(Event.SOUND_COMPLETE, false, false));
       }
-    };
+    });
   }
 
   get soundTransform() {
