@@ -1,18 +1,19 @@
 import { Event } from "../events/Event";
 import { EventDispatcher } from "../events/EventDispatcher";
+import { Stage } from "../display/Stage";
 import { SoundTransform } from "./SoundTransform";
-import { Audio, globalVolumeNode } from "../../../internal/audio";
-import { channels } from "./channels";
 
 export class SoundChannel extends EventDispatcher {
   private __soundTransform: SoundTransform;
   private isStopped = false;
+  private readonly __context: AudioContext;
   private readonly __audioNode: AudioBufferSourceNode;
   private readonly __volumeNode: GainNode;
   private readonly __beginTime: number;
   private readonly __duration: number;
 
   constructor(
+    stage: Stage,
     buffer: AudioBuffer,
     soundTransform: SoundTransform,
     startTime: number,
@@ -20,20 +21,18 @@ export class SoundChannel extends EventDispatcher {
   ) {
     super();
 
-    this.__audioNode = Audio.createBufferSource();
-    this.__volumeNode = Audio.createGain();
+    this.__context = stage.__audio.context;
+    this.__audioNode = this.__context.createBufferSource();
+    this.__volumeNode = this.__context.createGain();
     this.__audioNode.buffer = buffer;
     this.__audioNode.connect(this.__volumeNode);
-    this.__volumeNode.connect(globalVolumeNode);
-    if (Audio.state === "suspended") {
-      Audio.resume();
-    }
+    this.__volumeNode.connect(stage.__audio.rootNode);
 
     this.__soundTransform = soundTransform;
     this.__soundTransform.__source = this;
     this.__updateSoundTransform();
 
-    const currentTime = Audio.currentTime;
+    const currentTime = this.__context.currentTime;
     this.__beginTime = currentTime - startTime;
     this.__duration = buffer.duration;
 
@@ -47,13 +46,10 @@ export class SoundChannel extends EventDispatcher {
     this.__audioNode.onended = () => {
       this.__volumeNode.disconnect();
       this.__audioNode.disconnect();
-      channels.delete(this);
       if (!this.isStopped) {
         this.dispatchEvent(new Event(Event.SOUND_COMPLETE, false, false));
       }
     };
-
-    channels.add(this);
   }
 
   get soundTransform() {
@@ -68,7 +64,9 @@ export class SoundChannel extends EventDispatcher {
   }
 
   get position(): number {
-    return ((Audio.currentTime - this.__beginTime) % this.__duration) * 1000;
+    return (
+      ((this.__context.currentTime - this.__beginTime) % this.__duration) * 1000
+    );
   }
 
   stop() {
@@ -79,7 +77,7 @@ export class SoundChannel extends EventDispatcher {
   __updateSoundTransform() {
     this.__volumeNode.gain.setValueAtTime(
       this.__soundTransform.volume,
-      Audio.currentTime
+      this.__context.currentTime
     );
   }
 }

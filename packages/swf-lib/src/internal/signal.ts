@@ -1,9 +1,9 @@
-interface ListenerSlot<T extends (...args: unknown[]) => void> {
+interface ListenerSlot<T extends (...args: any[]) => void> {
   disabled: boolean;
   handler: T;
 }
 
-export class Signal<T extends (...args: unknown[]) => void> {
+export class Signal<T extends (...args: any[]) => void> {
   private listeners: ListenerSlot<T>[] = [];
 
   subscribe(handler: T) {
@@ -17,6 +17,10 @@ export class Signal<T extends (...args: unknown[]) => void> {
       }
     }
     this.listeners = this.listeners.filter((h) => !h.disabled);
+  }
+
+  reset() {
+    this.listeners = [];
   }
 
   emit(...args: Parameters<T>) {

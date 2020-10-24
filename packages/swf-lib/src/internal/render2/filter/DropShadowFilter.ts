@@ -80,18 +80,14 @@ export class DropShadowFilter implements Filter<DropShadowFilterInstance> {
             mode += 2;
           }
 
-          passFront.framebuffer.ensure(state);
-          state.bindFramebuffer(
-            gl.FRAMEBUFFER,
-            passFront.framebuffer.framebuffer
-          );
+          const frontFb = passFront.framebuffer.ensure(state);
+          state.bindFramebuffer(gl.FRAMEBUFFER, frontFb);
 
-          blurProgram.ensure(state);
+          const program = blurProgram.ensure(state);
           vertexArray.ensure(state);
-          passBack.ensure(state);
 
-          state.useProgram(blurProgram.program);
-          const texUnit = state.bindTextures([passBack.texture])[0];
+          state.useProgram(program);
+          const texUnit = state.bindTextures([passBack.ensure(state)])[0];
           blurProgram.uniform(state, "uTexture", texUnit);
           blurProgram.uniform(state, "uMode", mode);
           vertexArray.bind(state);
@@ -130,14 +126,14 @@ export class DropShadowFilter implements Filter<DropShadowFilterInstance> {
         }
         attrs.update(state, 0, numRect * 4 * 17);
 
-        out.framebuffer.ensure(state);
-        state.bindFramebuffer(gl.FRAMEBUFFER, out.framebuffer.framebuffer);
+        const outFb = out.framebuffer.ensure(state);
+        state.bindFramebuffer(gl.FRAMEBUFFER, outFb);
 
-        programShadow.ensure(state);
-        state.useProgram(programShadow.program);
+        const program = programShadow.ensure(state);
+        state.useProgram(program);
         const texUnits = state.bindTextures([
-          back.texture.texture,
-          texture.texture,
+          back.texture.ensure(state),
+          texture.ensure(state),
         ]);
         programShadow.uniform(state, "uTextures[0]", texUnits);
         gl.drawElements(gl.TRIANGLES, numRect * 6, gl.UNSIGNED_SHORT, 0);

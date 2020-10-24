@@ -105,11 +105,8 @@ export class BitmapData extends AVMObject {
 
       const glState = this.__renderer!.glState;
       const gl = glState.gl;
-      this.__target!.framebuffer.ensure(glState);
-      glState.bindFramebuffer(
-        gl.READ_FRAMEBUFFER,
-        this.__target!.framebuffer.framebuffer
-      );
+      const fb = this.__target!.framebuffer.ensure(glState);
+      glState.bindFramebuffer(gl.READ_FRAMEBUFFER, fb);
       const pixels = new Uint8Array(this.__pixels.buffer);
       gl.readPixels(
         0,
@@ -154,10 +151,10 @@ export class BitmapData extends AVMObject {
     const dstX = destPoint.x,
       dstY = this.height - destPoint.y - sourceRect.height;
 
-    src.framebuffer.ensure(glState);
-    dst.framebuffer.ensure(glState);
-    glState.bindFramebuffer(gl.READ_FRAMEBUFFER, src.framebuffer.framebuffer);
-    glState.bindFramebuffer(gl.DRAW_FRAMEBUFFER, dst.framebuffer.framebuffer);
+    const srcFb = src.framebuffer.ensure(glState);
+    const dstFb = dst.framebuffer.ensure(glState);
+    glState.bindFramebuffer(gl.READ_FRAMEBUFFER, srcFb);
+    glState.bindFramebuffer(gl.DRAW_FRAMEBUFFER, dstFb);
     gl.blitFramebuffer(
       srcX,
       srcY,
@@ -182,10 +179,10 @@ export class BitmapData extends AVMObject {
       const dst = this.__target.framebuffer;
       const glState = this.__renderer!.glState;
       const gl = glState.gl;
-      src.ensure(glState);
-      dst.ensure(glState);
-      glState.bindFramebuffer(gl.READ_FRAMEBUFFER, src.framebuffer);
-      glState.bindFramebuffer(gl.DRAW_FRAMEBUFFER, dst.framebuffer);
+      const srcFb = src.ensure(glState);
+      const dstFb = dst.ensure(glState);
+      glState.bindFramebuffer(gl.READ_FRAMEBUFFER, srcFb);
+      glState.bindFramebuffer(gl.DRAW_FRAMEBUFFER, dstFb);
       gl.blitFramebuffer(
         0,
         0,
@@ -262,12 +259,10 @@ export class BitmapData extends AVMObject {
         this.height,
         clearFb
       );
-      this.__target.framebuffer.ensure(glState);
-      glState.bindFramebuffer(gl.READ_FRAMEBUFFER, fb.framebuffer.framebuffer);
-      glState.bindFramebuffer(
-        gl.DRAW_FRAMEBUFFER,
-        this.__target.framebuffer.framebuffer
-      );
+      const renderFb = fb.framebuffer.ensure(glState);
+      const targetFb = this.__target.framebuffer.ensure(glState);
+      glState.bindFramebuffer(gl.READ_FRAMEBUFFER, renderFb);
+      glState.bindFramebuffer(gl.DRAW_FRAMEBUFFER, targetFb);
       gl.blitFramebuffer(
         0,
         0,

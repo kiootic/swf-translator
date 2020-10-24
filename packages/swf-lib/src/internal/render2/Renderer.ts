@@ -56,7 +56,7 @@ export class Renderer {
   readonly glState: GLState;
 
   private readonly textureMap = new Map<unknown, Texture>();
-  readonly renderPool = new RenderPool();
+  readonly renderPool: RenderPool;
   readonly textureReturnBox: TextureTarget[] = [];
   readonly renderbufferReturnBox: RenderbufferTarget[] = [];
 
@@ -131,6 +131,7 @@ export class Renderer {
       premultipliedAlpha: false,
       antialias: false,
     });
+    this.renderPool = new RenderPool(this.glState);
 
     this.renderProgram = new Program(
       renderVertexShader,
@@ -168,11 +169,8 @@ export class Renderer {
     const { width, height } = this.defaultFramebuffer.colorAttachment;
     const gl = this.glState.gl;
 
-    this.defaultFramebuffer.ensure(this.glState);
-    this.glState.bindFramebuffer(
-      gl.READ_FRAMEBUFFER,
-      this.defaultFramebuffer.framebuffer
-    );
+    const fb = this.defaultFramebuffer.ensure(this.glState);
+    this.glState.bindFramebuffer(gl.READ_FRAMEBUFFER, fb);
     this.glState.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
     gl.blitFramebuffer(
       0,
@@ -331,15 +329,10 @@ export class Renderer {
         }
       );
 
-      texItem.framebuffer.ensure(this.glState);
-      this.glState.bindFramebuffer(
-        gl.READ_FRAMEBUFFER,
-        rbItem.framebuffer.framebuffer
-      );
-      this.glState.bindFramebuffer(
-        gl.DRAW_FRAMEBUFFER,
-        texItem.framebuffer.framebuffer
-      );
+      const rbFb = rbItem.framebuffer.ensure(this.glState);
+      const texFb = texItem.framebuffer.ensure(this.glState);
+      this.glState.bindFramebuffer(gl.READ_FRAMEBUFFER, rbFb);
+      this.glState.bindFramebuffer(gl.DRAW_FRAMEBUFFER, texFb);
       gl.blitFramebuffer(
         0,
         0,
@@ -428,17 +421,11 @@ export class Renderer {
 
       const tmpFramebuffer = new Framebuffer(texture);
       try {
-        tmpFramebuffer.ensure(this.glState);
-        cacheTexture.framebuffer.ensure(this.glState);
+        const tmpFb = tmpFramebuffer.ensure(this.glState);
+        const texFb = cacheTexture.framebuffer.ensure(this.glState);
 
-        this.glState.bindFramebuffer(
-          gl.READ_FRAMEBUFFER,
-          tmpFramebuffer.framebuffer
-        );
-        this.glState.bindFramebuffer(
-          gl.DRAW_FRAMEBUFFER,
-          cacheTexture.framebuffer.framebuffer
-        );
+        this.glState.bindFramebuffer(gl.READ_FRAMEBUFFER, tmpFb);
+        this.glState.bindFramebuffer(gl.DRAW_FRAMEBUFFER, texFb);
         gl.blitFramebuffer(
           bounds[0],
           bounds[1],
@@ -452,7 +439,7 @@ export class Renderer {
           gl.NEAREST
         );
       } finally {
-        tmpFramebuffer.delete();
+        tmpFramebuffer.delete(this.glState);
       }
 
       then(
@@ -625,29 +612,20 @@ export class Renderer {
       }
 
       if (maskGroups.length > 0) {
-        const maskFb = this.renderPool.takeRenderbuffer(width, height);
-        returnRbs.push(maskFb);
+        const maskFramebuffer = this.renderPool.takeRenderbuffer(width, height);
+        returnRbs.push(maskFramebuffer);
 
-        maskFb.framebuffer.ensure(this.glState);
+        const maskFb = maskFramebuffer.framebuffer.ensure(this.glState);
         this.glState.setClearColor(0, 0, 0, 0);
 
         for (const group of maskGroups) {
-          this.glState.bindFramebuffer(
-            gl.FRAMEBUFFER,
-            maskFb.framebuffer.framebuffer
-          );
+          this.glState.bindFramebuffer(gl.FRAMEBUFFER, maskFb);
           gl.clear(gl.COLOR_BUFFER_BIT);
           this.doRenderObjects(group.renders, true, projectionMat);
 
-          group.target.framebuffer.ensure(this.glState);
-          this.glState.bindFramebuffer(
-            gl.READ_FRAMEBUFFER,
-            maskFb.framebuffer.framebuffer
-          );
-          this.glState.bindFramebuffer(
-            gl.DRAW_FRAMEBUFFER,
-            group.target.framebuffer.framebuffer
-          );
+          const targetFb = group.target.framebuffer.ensure(this.glState);
+          this.glState.bindFramebuffer(gl.READ_FRAMEBUFFER, maskFb);
+          this.glState.bindFramebuffer(gl.DRAW_FRAMEBUFFER, targetFb);
           gl.blitFramebuffer(
             0,
             0,
@@ -663,8 +641,8 @@ export class Renderer {
         }
       }
 
-      framebuffer.ensure(this.glState);
-      this.glState.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.framebuffer);
+      const fb = framebuffer.ensure(this.glState);
+      this.glState.bindFramebuffer(gl.FRAMEBUFFER, fb);
       clearFb();
 
       const idRenders: MaskRenderObject[] = [];
@@ -722,20 +700,18 @@ export class Renderer {
       this.indices.update(this.glState, 0, numIndex);
       this.attributes.update(this.glState, 0, numVertex * 14);
 
-      for (const tex of textures) {
-        tex.ensure(this.glState);
-      }
       const boundUnits = this.glState.bindTextures(
-        textures.map((tex) => tex.texture)
+        textures.map((tex) => tex.ensure(this.glState))
       );
       this.textureUnits.fill(boundUnits[0]);
       this.textureUnits.set(boundUnits);
+      const program = this.renderProgram.ensure(this.glState);
       this.renderProgram.uniform(
         this.glState,
         "uTextures[0]",
         this.textureUnits
       );
-      this.glState.useProgram(this.renderProgram.program);
+      this.glState.useProgram(program);
       this.renderVertexArray.bind(this.glState);
       gl.drawElements(gl.TRIANGLES, numIndex, gl.UNSIGNED_SHORT, 0);
 

@@ -10,9 +10,6 @@ export class Texture {
   readonly width: number;
   readonly height: number;
 
-  state: GLState | null = null;
-  texture: WebGLTexture | null = null;
-
   static readonly WHITE: Texture = (() => {
     const canvas = document.createElement("canvas");
     canvas.width = 16;
@@ -40,61 +37,43 @@ export class Texture {
   }
 
   ensure(state: GLState) {
-    if (this.texture) {
-      return;
-    }
-    const gl = state.gl;
+    return state.ensureInstance(this, (gl) => {
+      const tex = gl.createTexture();
+      state.bindTexture(0, tex);
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+      if (this.data instanceof HTMLElement) {
+        gl.texImage2D(
+          gl.TEXTURE_2D,
+          0,
+          gl.RGBA,
+          gl.RGBA,
+          gl.UNSIGNED_BYTE,
+          this.data
+        );
+      } else {
+        gl.texImage2D(
+          gl.TEXTURE_2D,
+          0,
+          gl.RGBA,
+          this.width,
+          this.height,
+          0,
+          gl.RGBA,
+          gl.UNSIGNED_BYTE,
+          null
+        );
+      }
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 
-    const tex = gl.createTexture();
-    state.bindTexture(0, tex);
-    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-    if (this.data instanceof HTMLElement) {
-      gl.texImage2D(
-        gl.TEXTURE_2D,
-        0,
-        gl.RGBA,
-        gl.RGBA,
-        gl.UNSIGNED_BYTE,
-        this.data
-      );
-    } else {
-      gl.texImage2D(
-        gl.TEXTURE_2D,
-        0,
-        gl.RGBA,
-        this.width,
-        this.height,
-        0,
-        gl.RGBA,
-        gl.UNSIGNED_BYTE,
-        null
-      );
-    }
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-
-    this.state = state;
-    this.texture = tex;
-
-    state.contextLost.subscribe(this.onContextLost);
+      return tex;
+    });
   }
 
-  delete() {
-    if (!this.state) {
-      return;
-    }
-    this.state.gl.deleteTexture(this.texture);
-    this.state.contextLost.unsubscribe(this.onContextLost);
-    this.state = null;
-    this.texture = null;
+  delete(state: GLState) {
+    state.deleteInstance<WebGLTexture>(this, (gl, tex) => {
+      gl.deleteTexture(tex);
+    });
   }
-
-  private onContextLost = () => {
-    if (this.state) {
-      this.state.contextLost.unsubscribe(this.onContextLost);
-      this.state = null;
-    }
-    this.texture = null;
-  };
 }

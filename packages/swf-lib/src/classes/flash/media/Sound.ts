@@ -2,7 +2,7 @@ import { EventDispatcher } from "../events/EventDispatcher";
 import { SoundInstance } from "../../../internal/character/SoundInstance";
 import { SoundChannel } from "./SoundChannel";
 import { SoundTransform } from "./SoundTransform";
-import { Audio } from "../../../internal/audio";
+import { Stage } from "../display/Stage";
 
 export class Sound extends EventDispatcher {
   static __character?: SoundInstance;
@@ -26,9 +26,12 @@ export class Sound extends EventDispatcher {
   ): SoundChannel {
     if (!this.__character) {
       throw new Error("Sound character not exist");
+    } else if (!Stage.__current) {
+      throw new Error("No stage in context");
     }
 
     return new SoundChannel(
+      Stage.__current,
       this.__character.audio,
       transform ?? new SoundTransform(),
       playTime / 1000,

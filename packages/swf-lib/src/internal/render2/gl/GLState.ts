@@ -3,8 +3,7 @@ import { Signal } from "../../signal";
 
 export class GLState {
   readonly gl: WebGL2RenderingContext;
-  readonly contextLost = new Signal();
-  readonly resetRender = new Signal();
+  readonly resetRender = new Signal<(state: GLState) => void>();
 
   maxTextures = 1;
   textureLimit = 16;
@@ -22,6 +21,8 @@ export class GLState {
   readonly blendEquation: [GLenum, GLenum] = [NaN, NaN];
   readonly blendFuncs: [GLenum, GLenum, GLenum, GLenum] = [NaN, NaN, NaN, NaN];
 
+  readonly instances = new Map<unknown, unknown>();
+
   constructor(
     readonly canvas: HTMLCanvasElement,
     readonly attrs: WebGLContextAttributes
@@ -35,7 +36,6 @@ export class GLState {
       "webglcontextlost",
       (e) => {
         e.preventDefault();
-        this.contextLost.emit();
       },
       false
     );
@@ -43,6 +43,8 @@ export class GLState {
       "webglcontextrestored",
       (e) => {
         e.preventDefault();
+        this.instances.clear();
+        this.resetRender.reset();
         this.reset();
       },
       false
@@ -74,7 +76,35 @@ export class GLState {
 
   resetRenderState() {
     this.reset();
-    this.resetRender.emit();
+    this.resetRender.emit(this);
+  }
+
+  lookupInstance<T>(key: unknown): T | undefined {
+    return this.instances.get(key) as T;
+  }
+
+  ensureInstance<T>(
+    key: unknown,
+    factory: (gl: WebGL2RenderingContext) => T
+  ): T {
+    let value = this.instances.get(key) as T;
+    if (!value) {
+      value = factory(this.gl);
+      this.instances.set(key, value);
+    }
+    return value;
+  }
+
+  deleteInstance<T>(
+    key: unknown,
+    deleteFn: (gl: WebGL2RenderingContext, obj: T) => void
+  ) {
+    let value = this.instances.get(key) as T;
+    if (!value) {
+      return;
+    }
+    deleteFn(this.gl, value);
+    this.instances.delete(key);
   }
 
   // FIXME: Disabled bound texture unit memorization since it's crashy on macOS.

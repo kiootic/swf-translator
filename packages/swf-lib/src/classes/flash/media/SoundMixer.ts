@@ -1,6 +1,5 @@
 import { SoundTransform } from "./SoundTransform";
-import { channels } from "./channels";
-import { Audio, globalVolumeNode } from "../../../internal/audio";
+import { Stage } from "../display/Stage";
 
 export class SoundMixer {
   private static __soundTransform = new SoundTransform();
@@ -17,15 +16,19 @@ export class SoundMixer {
   }
 
   static stopAll() {
-    for (const channel of channels) {
-      channel.stop();
+    if (!Stage.__current) {
+      throw new Error("No stage in context");
     }
+    Stage.__current.__audio.reset();
   }
 
   static __updateSoundTransform() {
-    globalVolumeNode.gain.setValueAtTime(
+    if (!Stage.__current) {
+      throw new Error("No stage in context");
+    }
+    Stage.__current.__audio.rootNode.gain.setValueAtTime(
       this.soundTransform.volume,
-      Audio.currentTime
+      Stage.__current.__audio.context.currentTime
     );
   }
 }

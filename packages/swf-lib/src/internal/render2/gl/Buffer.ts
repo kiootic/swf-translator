@@ -4,9 +4,6 @@ import { TypedArray } from "./typed-array";
 export class Buffer<T extends TypedArray = TypedArray> {
   readonly data: T;
 
-  state: GLState | null = null;
-  buffer: WebGLBuffer | null = null;
-
   get length() {
     return this.data.length;
   }
@@ -28,24 +25,18 @@ export class Buffer<T extends TypedArray = TypedArray> {
   }
 
   ensure(state: GLState) {
-    if (this.buffer) {
-      return;
-    }
-    const gl = state.gl;
+    return state.ensureInstance(this, (gl) => {
+      const buffer = gl.createBuffer();
+      state.bindBuffer(gl[this.binding], buffer);
+      gl.bufferData(gl[this.binding], this.data, gl[this.usage]);
 
-    const buffer = gl.createBuffer();
-    state.bindBuffer(gl[this.binding], buffer);
-    gl.bufferData(gl[this.binding], this.data, gl[this.usage]);
-
-    this.state = state;
-    this.buffer = buffer;
-
-    state.contextLost.subscribe(this.onContextLost);
+      return buffer;
+    });
   }
 
   bind(state: GLState) {
-    this.ensure(state);
-    state.bindBuffer(state.gl[this.binding], this.buffer);
+    const buffer = this.ensure(state);
+    state.bindBuffer(state.gl[this.binding], buffer);
   }
 
   update(state: GLState, offset: number, length: number) {
@@ -54,12 +45,4 @@ export class Buffer<T extends TypedArray = TypedArray> {
     gl.bufferSubData(gl[this.binding], 0, this.data, offset, length);
     return this;
   }
-
-  private onContextLost = () => {
-    if (this.state) {
-      this.state.contextLost.unsubscribe(this.onContextLost);
-      this.state = null;
-    }
-    this.buffer = null;
-  };
 }

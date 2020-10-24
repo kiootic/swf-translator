@@ -4,9 +4,6 @@ export class Renderbuffer {
   readonly width: number;
   readonly height: number;
 
-  state: GLState | null = null;
-  renderbuffer: WebGLRenderbuffer | null = null;
-
   constructor(
     width: number,
     height: number,
@@ -17,71 +14,52 @@ export class Renderbuffer {
   }
 
   ensure(state: GLState) {
-    if (this.renderbuffer) {
-      return;
-    }
-    const gl = state.gl;
+    return state.ensureInstance(this, (gl) => {
+      let glFormat: GLenum;
+      switch (this.type) {
+        case "depth":
+          glFormat = gl.DEPTH_COMPONENT16;
+          break;
+        case "rgba":
+          glFormat = gl.RGBA8;
+          break;
+        case "rgb":
+          glFormat = gl.RGB8;
+          break;
+      }
 
-    let glFormat: GLenum;
-    switch (this.type) {
-      case "depth":
-        glFormat = gl.DEPTH_COMPONENT16;
-        break;
-      case "rgba":
-        glFormat = gl.RGBA8;
-        break;
-      case "rgb":
-        glFormat = gl.RGB8;
-        break;
-    }
+      const rb = gl.createRenderbuffer();
+      state.bindRenderbuffer(gl.RENDERBUFFER, rb);
+      if (state.maxSamples > 0) {
+        gl.renderbufferStorageMultisample(
+          gl.RENDERBUFFER,
+          state.maxSamples,
+          glFormat,
+          this.width,
+          this.height
+        );
+      } else {
+        gl.renderbufferStorage(
+          gl.RENDERBUFFER,
+          glFormat,
+          this.width,
+          this.height
+        );
+      }
 
-    const rb = gl.createRenderbuffer();
-    state.bindRenderbuffer(gl.RENDERBUFFER, rb);
-    if (state.maxSamples > 0) {
-      gl.renderbufferStorageMultisample(
-        gl.RENDERBUFFER,
-        state.maxSamples,
-        glFormat,
-        this.width,
-        this.height
-      );
-    } else {
-      gl.renderbufferStorage(
-        gl.RENDERBUFFER,
-        glFormat,
-        this.width,
-        this.height
-      );
-    }
-
-    this.state = state;
-    this.renderbuffer = rb;
-
-    state.contextLost.subscribe(this.onContextLost);
-    state.resetRender.subscribe(this.onResetRender);
+      state.resetRender.subscribe(this.onResetRender);
+      return rb;
+    });
   }
 
-  delete() {
-    if (!this.state) {
-      return;
-    }
-    this.state.gl.deleteRenderbuffer(this.renderbuffer);
-    this.state.contextLost.unsubscribe(this.onContextLost);
-    this.state.resetRender.unsubscribe(this.onResetRender);
-    this.state = null;
-    this.renderbuffer = null;
+  delete(state: GLState) {
+    state.deleteInstance<WebGLRenderbuffer>(this, (gl, rb) => {
+      gl.deleteRenderbuffer(rb);
+      state.resetRender.unsubscribe(this.onResetRender);
+    });
   }
 
-  private onContextLost = () => {
-    if (this.state) {
-      this.state.contextLost.unsubscribe(this.onContextLost);
-      this.state.resetRender.unsubscribe(this.onResetRender);
-      this.state = null;
-    }
-    this.renderbuffer = null;
-  };
-
-  private onResetRender = () => {
-    this.delete();
+  private onResetRender = (state: GLState) => {
+    this.delete(state);
   };
 }

@@ -18,7 +18,7 @@ import { AssetBundle } from "./AssetBundle";
 import { FontRegistry } from "./FontRegistry";
 import { SimpleButton } from "../flash/display";
 import { ClassRegistry } from "./ClassRegistry";
-import { Audio } from "../../internal/audio";
+import { decodeAudioData } from "../../internal/audio";
 import { Manifest } from "./Manifest";
 import { Properties } from "./Properties";
 
@@ -121,7 +121,7 @@ export async function loadManifest(
           asset.size,
           reportProgress(id)
         );
-        const buf = await Audio.decodeAudioData(data.buffer);
+        const buf = await decodeAudioData(data.buffer);
         library.sounds.set(
           Number(charId),
           new SoundInstance(Number(charId), buf)

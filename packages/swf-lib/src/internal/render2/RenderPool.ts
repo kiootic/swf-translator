@@ -2,6 +2,7 @@ import { Texture } from "./gl/Texture";
 import { Renderbuffer } from "./gl/Renderbuffer";
 import { Framebuffer } from "./gl/Framebuffer";
 import { TextureTarget, RenderbufferTarget } from "./gl/targets";
+import { GLState } from "./gl/GLState";
 
 interface CacheItem<T> {
   item: T;
@@ -14,6 +15,8 @@ export class RenderPool {
     string,
     CacheItem<RenderbufferTarget>[]
   >();
+
+  constructor(readonly state: GLState) {}
 
   takeTexture(width: number, height: number): TextureTarget {
     const key = `${width}:${height}`;
@@ -61,8 +64,8 @@ export class RenderPool {
     for (const [key, items] of this.renderbufferPool) {
       const toBeDeleted = items.filter((item) => item.insertAt < threshold);
       for (const { item } of toBeDeleted) {
-        item.renderbuffer.delete();
-        item.framebuffer.delete();
+        item.renderbuffer.delete(this.state);
+        item.framebuffer.delete(this.state);
       }
       this.renderbufferPool.set(
         key,
@@ -72,8 +75,8 @@ export class RenderPool {
     for (const [key, items] of this.texturePool) {
       const toBeDeleted = items.filter((item) => item.insertAt < threshold);
       for (const { item } of toBeDeleted) {
-        item.texture.delete();
-        item.framebuffer.delete();
+        item.texture.delete(this.state);
+        item.framebuffer.delete(this.state);
       }
       this.texturePool.set(
         key,

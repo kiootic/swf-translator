@@ -6,6 +6,7 @@ import { Properties } from "../../__internal/Properties";
 import { Canvas } from "../../../internal/render2/Canvas";
 import { Renderer } from "../../../internal/render2/Renderer";
 import { Ticker } from "../../../internal/Ticker";
+import { AudioController } from "../../../internal/audio";
 import { Event } from "../events/Event";
 import { MouseEvent } from "../events/MouseEvent";
 import { KeyboardEvent } from "../events/KeyboardEvent";
@@ -24,6 +25,7 @@ export class Stage extends DisplayObjectContainer {
   readonly __canvas: Canvas;
   readonly __ticker: Ticker;
   readonly __renderer: Renderer;
+  readonly __audio = new AudioController();
 
   __displayListDirty = false;
   readonly __displayList: DisplayObject[] = [];

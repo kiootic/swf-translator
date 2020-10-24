@@ -1,5 +1,21 @@
-export const Audio = new AudioContext();
+const audioDecodeContext = new AudioContext();
 
-export const globalVolumeNode = Audio.createGain();
+export function decodeAudioData(data: ArrayBuffer) {
+  return audioDecodeContext.decodeAudioData(data);
+}
 
-globalVolumeNode.connect(Audio.destination);
+export class AudioController {
+  readonly context = new AudioContext();
+  rootNode: GainNode;
+
+  constructor() {
+    this.rootNode = this.context.createGain();
+    this.rootNode.connect(this.context.destination);
+  }
+
+  reset() {
+    this.rootNode.disconnect();
+    this.rootNode = this.context.createGain();
+    this.rootNode.connect(this.context.destination);
+  }
+}

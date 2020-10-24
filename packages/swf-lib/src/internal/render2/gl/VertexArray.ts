@@ -13,9 +13,6 @@ interface VertexArrayAttribute {
 }
 
 export class VertexArray {
-  state: GLState | null = null;
-  vertexArray: WebGLVertexArrayObject | null = null;
-
   attributes: VertexArrayAttribute[];
   indexBuffer: Buffer | null = null;
 
@@ -28,83 +25,69 @@ export class VertexArray {
   }
 
   ensure(state: GLState) {
-    if (this.vertexArray) {
-      return;
-    }
-    const gl = state.gl;
+    return state.ensureInstance(this, (gl) => {
+      const vertexArray = gl.createVertexArray();
+      state.bindVertexArray(vertexArray);
 
-    const vertexArray = gl.createVertexArray();
-    state.bindVertexArray(vertexArray);
-
-    if (this.indexBuffer) {
-      this.indexBuffer.ensure(state);
-      state.bindBuffer(gl[this.indexBuffer.binding], this.indexBuffer.buffer);
-    }
-
-    for (const attr of this.attributes) {
-      const {
-        index,
-        buffer,
-        type,
-        components,
-        normalized = false,
-        stride = 0,
-        offset = 0,
-        integer = false,
-      } = attr;
-
-      let glType: GLenum;
-      switch (type) {
-        case "byte":
-          glType = gl.UNSIGNED_BYTE;
-          break;
-        case "ushort":
-          glType = gl.UNSIGNED_SHORT;
-          break;
-        case "uint":
-          glType = gl.UNSIGNED_INT;
-          break;
-        case "float":
-          glType = gl.FLOAT;
-          break;
+      if (this.indexBuffer) {
+        const buf = this.indexBuffer.ensure(state);
+        state.bindBuffer(gl[this.indexBuffer.binding], buf);
       }
 
-      buffer.ensure(state);
-      state.bindBuffer(gl[buffer.binding], buffer.buffer);
-      if (integer) {
-        gl.vertexAttribIPointer(index, components, glType, stride, offset);
-      } else {
-        gl.vertexAttribPointer(
+      for (const attr of this.attributes) {
+        const {
           index,
+          buffer,
+          type,
           components,
-          glType,
-          normalized,
-          stride,
-          offset
-        );
+          normalized = false,
+          stride = 0,
+          offset = 0,
+          integer = false,
+        } = attr;
+
+        let glType: GLenum;
+        switch (type) {
+          case "byte":
+            glType = gl.UNSIGNED_BYTE;
+            break;
+          case "ushort":
+            glType = gl.UNSIGNED_SHORT;
+            break;
+          case "uint":
+            glType = gl.UNSIGNED_INT;
+            break;
+          case "float":
+            glType = gl.FLOAT;
+            break;
+        }
+
+        const buf = buffer.ensure(state);
+        state.bindBuffer(gl[buffer.binding], buf);
+        if (integer) {
+          gl.vertexAttribIPointer(index, components, glType, stride, offset);
+        } else {
+          gl.vertexAttribPointer(
+            index,
+            components,
+            glType,
+            normalized,
+            stride,
+            offset
+          );
+        }
+        gl.enableVertexAttribArray(index);
       }
-      gl.enableVertexAttribArray(index);
-    }
 
-    this.vertexArray = vertexArray;
-    this.state = state;
-
-    state.contextLost.subscribe(this.onContextLost);
+      return vertexArray;
+    });
   }
 
   bind(state: GLState) {
-    this.ensure(state);
-    state.bindVertexArray(this.vertexArray);
+    const vao = this.ensure(state);
+    state.bindVertexArray(vao);
     // HACK: Always rebind index buffer due to driver bugs:
     // ref: https://stackoverflow.com/a/11261922
     this.indexBuffer?.bind(state);
   }
-
-  private onContextLost = () => {
-    if (this.state) {
-      this.state.contextLost.unsubscribe(this.onContextLost);
-      this.state = null;
-    }
-    this.vertexArray = null;
-  };
 }

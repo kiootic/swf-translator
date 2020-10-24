@@ -69,18 +69,15 @@ export class BlurFilter implements Filter<BlurFilterInstance> {
             passFront = out;
           }
 
-          passFront.framebuffer.ensure(state);
-          state.bindFramebuffer(
-            gl.FRAMEBUFFER,
-            passFront.framebuffer.framebuffer
-          );
+          const frontFb = passFront.framebuffer.ensure(state);
+          state.bindFramebuffer(gl.FRAMEBUFFER, frontFb);
 
-          blurProgram.ensure(state);
+          const program = blurProgram.ensure(state);
           vertexArray.ensure(state);
           passBack.ensure(state);
 
-          state.useProgram(blurProgram.program);
-          const texUnit = state.bindTextures([passBack.texture])[0];
+          state.useProgram(program);
+          const texUnit = state.bindTextures([passBack.ensure(state)])[0];
           blurProgram.uniform(state, "uTexture", texUnit);
           blurProgram.uniform(state, "uMode", mode);
           vertexArray.bind(state);
