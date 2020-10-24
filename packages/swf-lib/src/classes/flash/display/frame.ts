@@ -1,9 +1,6 @@
 import type { Stage } from "./Stage";
-import type { DisplayObject } from "./DisplayObject";
-import type { MovieClip } from "./MovieClip";
 import { Event } from "../events/Event";
-import { __broadcastDispatcher } from "../events/EventDispatcher";
-import { SceneNode } from "../../../internal/render2/SceneNode";
+import { EventDispatcher } from "../events/EventDispatcher";
 
 const frameScriptQueue: Array<() => void> = [];
 
@@ -19,7 +16,7 @@ export function runFrame(isRoot: boolean, stage: Stage) {
       o.__initFrame(stage);
     }
 
-    __broadcastDispatcher.dispatchEvent(
+    EventDispatcher.__broadcastDispatcher.dispatchEvent(
       new Event(Event.ENTER_FRAME, false, false)
     );
   }

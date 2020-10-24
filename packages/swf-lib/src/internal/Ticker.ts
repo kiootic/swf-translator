@@ -12,13 +12,13 @@ export class Ticker {
 
   constructor(readonly fps: number) {
     this.targetMS = 1000 / fps;
-    this.channel.port1.onmessage = () => {
-      this._onFrame();
-    };
   }
 
   begin() {
     this.end();
+    this.channel.port1.onmessage = () => {
+      this._onFrame();
+    };
     this.animationHandle = requestAnimationFrame(this._onRender);
   }
 
@@ -27,6 +27,7 @@ export class Ticker {
       cancelAnimationFrame(this.animationHandle);
       this.animationHandle = undefined;
     }
+    this.channel.port1.onmessage = null;
   }
 
   private _onFrame = () => {

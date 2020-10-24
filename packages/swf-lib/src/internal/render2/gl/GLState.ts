@@ -32,21 +32,10 @@ export class GLState {
       throw new Error("Cannot create WebGL2 context");
     }
     this.gl = gl;
-    canvas.addEventListener(
-      "webglcontextlost",
-      (e) => {
-        e.preventDefault();
-      },
-      false
-    );
+    canvas.addEventListener("webglcontextlost", this.onContextLost, false);
     canvas.addEventListener(
       "webglcontextrestored",
-      (e) => {
-        e.preventDefault();
-        this.instances.clear();
-        this.resetRender.reset();
-        this.reset();
-      },
+      this.onContextRestored,
       false
     );
 
@@ -72,6 +61,21 @@ export class GLState {
     this.capacity = NaN;
     this.blendEquation.fill(NaN);
     this.blendFuncs.fill(NaN);
+  }
+
+  dispose() {
+    this.resetRenderState();
+    this.gl.getExtension("WEBGL_lose_context")?.loseContext();
+    this.canvas.removeEventListener(
+      "webglcontextlost",
+      this.onContextLost,
+      false
+    );
+    this.canvas.removeEventListener(
+      "webglcontextrestored",
+      this.onContextRestored,
+      false
+    );
   }
 
   resetRenderState() {
@@ -106,6 +110,17 @@ export class GLState {
     deleteFn(this.gl, value);
     this.instances.delete(key);
   }
+
+  private onContextLost = (e: Event) => {
+    e.preventDefault();
+  };
+
+  private onContextRestored = (e: Event) => {
+    e.preventDefault();
+    this.instances.clear();
+    this.resetRender.reset();
+    this.reset();
+  };
 
   // FIXME: Disabled bound texture unit memorization since it's crashy on macOS.
   // ref: https://stackoverflow.com/questions/34277156/webgl-on-osx-using-wrong-texture-in-all-browsers

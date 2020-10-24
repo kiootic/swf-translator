@@ -10,16 +10,32 @@ interface Listener {
 
 const forBroadcast = Symbol();
 const broadcastEvents: Array<string | symbol> = [Event.ENTER_FRAME];
+const broadcastEventDispatchers = new WeakMap<object, EventDispatcher>();
 
 export class EventDispatcher extends AVMObject {
   [forBroadcast] = false;
 
-  #parent: EventDispatcher | null = null;
-  #captureListeners = new Map<string | symbol, Listener[]>();
-  #bubbleListeners = new Map<string | symbol, Listener[]>();
+  static __eventContext: object | null = null;
+  static get __broadcastDispatcher() {
+    if (!this.__eventContext) {
+      throw new Error("Event context not present");
+    }
+
+    let dispatcher = broadcastEventDispatchers.get(this.__eventContext);
+    if (!dispatcher) {
+      dispatcher = new EventDispatcher();
+      dispatcher[forBroadcast] = true;
+      broadcastEventDispatchers.set(this.__eventContext, dispatcher);
+    }
+    return dispatcher;
+  }
+
+  __eventParent: EventDispatcher | null = null;
+  __captureListeners = new Map<string | symbol, Listener[]>();
+  __bubbleListeners = new Map<string | symbol, Listener[]>();
 
   __setEventParent(parent: EventDispatcher | null) {
-    this.#parent = parent;
+    this.__eventParent = parent;
   }
 
   addEventListener<T extends Event>(
@@ -30,7 +46,7 @@ export class EventDispatcher extends AVMObject {
     useWeakReference = false
   ) {
     if (broadcastEvents.includes(type) && !this[forBroadcast]) {
-      __broadcastDispatcher.addEventListener(
+      EventDispatcher.__broadcastDispatcher.addEventListener(
         type,
         listener,
         useCapture,
@@ -42,9 +58,9 @@ export class EventDispatcher extends AVMObject {
 
     let listeners: Map<string | symbol, Listener[]>;
     if (useCapture) {
-      listeners = this.#captureListeners;
+      listeners = this.__captureListeners;
     } else {
-      listeners = this.#bubbleListeners;
+      listeners = this.__bubbleListeners;
     }
 
     const oldListeners = listeners.get(type) || [];
@@ -68,7 +84,7 @@ export class EventDispatcher extends AVMObject {
     useWeakReference = false
   ) {
     if (broadcastEvents.includes(type) && !this[forBroadcast]) {
-      __broadcastDispatcher.removeEventListener(
+      EventDispatcher.__broadcastDispatcher.removeEventListener(
         type,
         listener,
         useCapture,
@@ -80,9 +96,9 @@ export class EventDispatcher extends AVMObject {
 
     let listeners: Map<string | symbol, Listener[]>;
     if (useCapture) {
-      listeners = this.#captureListeners;
+      listeners = this.__captureListeners;
     } else {
-      listeners = this.#bubbleListeners;
+      listeners = this.__bubbleListeners;
     }
 
     const oldListeners = listeners.get(type) || [];
@@ -92,12 +108,12 @@ export class EventDispatcher extends AVMObject {
     }
   }
 
-  #dispatchEvent = (event: Event, isCapturing: boolean) => {
+  __dispatchEvent = (event: Event, isCapturing: boolean) => {
     let listeners: Map<string | symbol, Listener[]>;
     if (isCapturing) {
-      listeners = this.#captureListeners;
+      listeners = this.__captureListeners;
     } else {
-      listeners = this.#bubbleListeners;
+      listeners = this.__bubbleListeners;
     }
 
     for (const { listener } of listeners.get(event.type) || []) {
@@ -109,27 +125,24 @@ export class EventDispatcher extends AVMObject {
     event.target = this;
     if (!event.bubbles) {
       event.currentTarget = this;
-      this.#dispatchEvent(event, false);
+      this.__dispatchEvent(event, false);
       return;
     }
 
     const path: EventDispatcher[] = [this];
     let current: EventDispatcher | null = this;
-    while (current && current.#parent) {
-      current = current.#parent;
+    while (current && current.__eventParent) {
+      current = current.__eventParent;
       path.push(current);
     }
 
     for (let i = path.length - 1; i > 0; i--) {
       event.currentTarget = path[i];
-      path[i].#dispatchEvent(event, true);
+      path[i].__dispatchEvent(event, true);
     }
     for (let i = 0; i < path.length; i++) {
       event.currentTarget = path[i];
-      path[i].#dispatchEvent(event, false);
+      path[i].__dispatchEvent(event, false);
     }
   }
 }
-
-export const __broadcastDispatcher = new EventDispatcher();
-__broadcastDispatcher[forBroadcast] = true;

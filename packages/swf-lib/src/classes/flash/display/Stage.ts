@@ -8,6 +8,7 @@ import { Renderer } from "../../../internal/render2/Renderer";
 import { Ticker } from "../../../internal/Ticker";
 import { AudioController } from "../../../internal/audio";
 import { Event } from "../events/Event";
+import { EventDispatcher } from "../events/EventDispatcher";
 import { MouseEvent } from "../events/MouseEvent";
 import { KeyboardEvent } from "../events/KeyboardEvent";
 import { Keyboard } from "../ui/Keyboard";
@@ -37,6 +38,27 @@ export class Stage extends DisplayObjectContainer {
 
   focus: InteractiveObject | null = null;
   private __quality: string = "HIGH";
+
+  private __isDisposed = false;
+  private __isActiveValue = true;
+
+  get __isActive() {
+    return this.__isActiveValue;
+  }
+  set __isActive(value) {
+    if (this.__isDisposed) {
+      throw new Error("Stage is disposed");
+    } else if (this.__isActiveValue === value) {
+      return;
+    }
+    this.__isActiveValue = value;
+
+    if (value) {
+      this.__audio.context.resume();
+    } else {
+      this.__audio.context.suspend();
+    }
+  }
 
   get loaderInfo() {
     return {
@@ -105,6 +127,9 @@ export class Stage extends DisplayObjectContainer {
   }
 
   __onFrame = this.__withContext(() => {
+    if (!this.__isActiveValue) {
+      return;
+    }
     runFrame(true, this);
   });
 
@@ -116,14 +141,38 @@ export class Stage extends DisplayObjectContainer {
 
   __withContext<T extends Function>(fn: T): T {
     return (((...args: unknown[]) => {
-      const p = Stage.__current;
+      const ps = Stage.__current;
+      const pe = EventDispatcher.__eventContext;
       Stage.__current = this;
+      EventDispatcher.__eventContext = this;
       try {
         return fn(...args);
       } finally {
-        Stage.__current = p;
+        Stage.__current = ps;
+        EventDispatcher.__eventContext = pe;
       }
     }) as unknown) as T;
+  }
+
+  __dispose() {
+    this.__isActive = false;
+
+    this.__audio.context.close();
+    this.__renderer.glState.dispose();
+    this.__ticker.end();
+
+    const canvas = this.__canvas.element;
+    canvas.removeEventListener("mouseenter", this.#handleMouseEvent);
+    canvas.removeEventListener("mousemove", this.#handleMouseEvent);
+    canvas.removeEventListener("mousedown", this.#handleMouseEvent);
+    canvas.removeEventListener("mouseup", this.#handleMouseEvent);
+    canvas.removeEventListener("mouseleave", this.#handleMouseEvent);
+    canvas.removeEventListener("click", this.#handleMouseEvent);
+    canvas.removeEventListener("keydown", this.#handleKeyboardEvent);
+    canvas.removeEventListener("keyup", this.#handleKeyboardEvent);
+    canvas.removeEventListener("blur", this.#handleFocusEvent);
+
+    this.__isDisposed = true;
   }
 
   __hitTestObject(pt: vec2): InteractiveObject | null {
@@ -162,6 +211,10 @@ export class Stage extends DisplayObjectContainer {
 
   #handleMouseEvent = this.__withContext(
     (sourceEvent: globalThis.MouseEvent) => {
+      if (!this.__isActiveValue) {
+        return;
+      }
+
       this.__canvas.resolveCoords(
         this.__mousePosition,
         sourceEvent.clientX,
@@ -230,6 +283,10 @@ export class Stage extends DisplayObjectContainer {
 
   #handleKeyboardEvent = this.__withContext(
     (sourceEvent: globalThis.KeyboardEvent) => {
+      if (!this.__isActiveValue) {
+        return;
+      }
+
       const keyCode =
         Keyboard.codeMap[sourceEvent.key] ?? Keyboard.codeMap[sourceEvent.code];
       if (!keyCode) {
@@ -254,6 +311,10 @@ export class Stage extends DisplayObjectContainer {
 
   #handleFocusEvent = this.__withContext(
     (sourceEvent: globalThis.FocusEvent) => {
+      if (!this.__isActiveValue) {
+        return;
+      }
+
       let event: Event;
       switch (sourceEvent.type) {
         case "blur":
