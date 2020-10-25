@@ -58,6 +58,7 @@ export class Stage extends DisplayObjectContainer {
     } else {
       this.__audio.context.suspend();
     }
+    this.#updateCursor();
   }
 
   get loaderInfo() {
@@ -131,6 +132,7 @@ export class Stage extends DisplayObjectContainer {
       return;
     }
     runFrame(true, this);
+    this.#updateCursor();
   });
 
   __doRender = this.__withContext(() => {
@@ -273,16 +275,18 @@ export class Stage extends DisplayObjectContainer {
           dispatchMouseEvent(MouseEvent.CLICK, this.__mouseOn);
           break;
       }
-
-      if (this.__mouseOn) {
-        this.__canvas.cursor = this.__mouseOn.__isPointerCursor
-          ? "pointer"
-          : "default";
-      } else {
-        this.__canvas.cursor = "default";
-      }
     }
   );
+
+  #updateCursor = () => {
+    if (this.__mouseOn && this.__isActiveValue) {
+      this.__canvas.cursor = this.__mouseOn.__isPointerCursor
+        ? "pointer"
+        : "default";
+    } else {
+      this.__canvas.cursor = "default";
+    }
+  };
 
   #handleKeyboardEvent = this.__withContext(
     (sourceEvent: globalThis.KeyboardEvent) => {
