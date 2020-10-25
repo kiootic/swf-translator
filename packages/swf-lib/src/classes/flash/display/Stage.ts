@@ -134,6 +134,9 @@ export class Stage extends DisplayObjectContainer {
   });
 
   __doRender = this.__withContext(() => {
+    if (!this.__isActiveValue) {
+      return;
+    }
     this.__onRender();
     this.__renderer.renderFrame(this.__node);
     this.__renderer.blitFrame();
