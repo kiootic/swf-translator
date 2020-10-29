@@ -196,6 +196,9 @@ export class DisplayObject extends EventDispatcher {
     return Math.abs(this.__node.boundsLocal[2] * this.__node.transformLocal[0]);
   }
   set width(value: number) {
+    if (value < 0) {
+      return;
+    }
     this.__node.ensureLayout();
     let scaleX =
       this.__node.boundsLocal[2] === 0 ? 1 : value / this.__node.boundsLocal[2];
@@ -213,6 +216,9 @@ export class DisplayObject extends EventDispatcher {
     return this.__node.boundsLocal[3] * this.__node.transformLocal[3];
   }
   set height(value: number) {
+    if (value < 0) {
+      return;
+    }
     this.__node.ensureLayout();
     let scaleY =
       this.__node.boundsLocal[3] === 0 ? 1 : value / this.__node.boundsLocal[3];
