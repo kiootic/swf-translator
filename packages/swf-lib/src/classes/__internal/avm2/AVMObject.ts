@@ -1,4 +1,4 @@
-const classMethods = new Map<unknown, [string, Function][]>();
+const classMethods = new WeakMap<object, [string, Function][]>();
 
 export class AVMObject {
   constructor() {
