@@ -49,6 +49,7 @@ export class SoundChannel extends EventDispatcher {
       if (!this.isStopped) {
         this.dispatchEvent(new Event(Event.SOUND_COMPLETE, false, false));
       }
+      this.__audioNode.onended = null;
     });
   }
 
