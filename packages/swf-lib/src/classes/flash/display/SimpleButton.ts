@@ -32,11 +32,11 @@ export class SimpleButton extends InteractiveObject {
     this.__character?.applyTo(this);
     this.__node.buttonState = this.__state;
 
-    this.addEventListener(MouseEvent.MOUSE_OVER, this.#handleMouseEvent);
-    this.addEventListener(MouseEvent.MOUSE_OUT, this.#handleMouseEvent);
-    this.addEventListener(MouseEvent.MOUSE_DOWN, this.#handleMouseEvent);
-    this.addEventListener(MouseEvent.MOUSE_UP, this.#handleMouseEvent);
-    this.addEventListener(MouseEvent.MOUSE_MOVE, this.#handleMouseEvent);
+    this.addEventListener(MouseEvent.MOUSE_OVER, this.__handleMouseEvent);
+    this.addEventListener(MouseEvent.MOUSE_OUT, this.__handleMouseEvent);
+    this.addEventListener(MouseEvent.MOUSE_DOWN, this.__handleMouseEvent);
+    this.addEventListener(MouseEvent.MOUSE_UP, this.__handleMouseEvent);
+    this.addEventListener(MouseEvent.MOUSE_MOVE, this.__handleMouseEvent);
   }
 
   readonly __soundContext = new SoundContext();
@@ -98,7 +98,7 @@ export class SimpleButton extends InteractiveObject {
     return this.useHandCursor || super.__isPointerCursor;
   }
 
-  #handleMouseEvent = (event: MouseEvent) => {
+  private __handleMouseEvent = (event: MouseEvent) => {
     let newState: ButtonState = this.__state;
     let isMouseDown = event.type !== MouseEvent.MOUSE_OUT && event.buttonDown;
     if (event.type === MouseEvent.MOUSE_OUT) {

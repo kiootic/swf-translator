@@ -58,7 +58,7 @@ export class Stage extends DisplayObjectContainer {
     } else {
       this.__audio.context.suspend();
     }
-    this.#updateCursor();
+    this.__updateCursor();
   }
 
   get loaderInfo() {
@@ -116,15 +116,15 @@ export class Stage extends DisplayObjectContainer {
     this.__ticker.begin();
 
     const canvas = this.__canvas.element;
-    canvas.addEventListener("mouseenter", this.#handleMouseEvent);
-    canvas.addEventListener("mousemove", this.#handleMouseEvent);
-    canvas.addEventListener("mousedown", this.#handleMouseEvent);
-    canvas.addEventListener("mouseup", this.#handleMouseEvent);
-    canvas.addEventListener("mouseleave", this.#handleMouseEvent);
-    canvas.addEventListener("click", this.#handleMouseEvent);
-    canvas.addEventListener("keydown", this.#handleKeyboardEvent);
-    canvas.addEventListener("keyup", this.#handleKeyboardEvent);
-    canvas.addEventListener("blur", this.#handleFocusEvent);
+    canvas.addEventListener("mouseenter", this.__handleMouseEvent);
+    canvas.addEventListener("mousemove", this.__handleMouseEvent);
+    canvas.addEventListener("mousedown", this.__handleMouseEvent);
+    canvas.addEventListener("mouseup", this.__handleMouseEvent);
+    canvas.addEventListener("mouseleave", this.__handleMouseEvent);
+    canvas.addEventListener("click", this.__handleMouseEvent);
+    canvas.addEventListener("keydown", this.__handleKeyboardEvent);
+    canvas.addEventListener("keyup", this.__handleKeyboardEvent);
+    canvas.addEventListener("blur", this.__handleFocusEvent);
   }
 
   __onFrame = this.__withContext(() => {
@@ -132,7 +132,7 @@ export class Stage extends DisplayObjectContainer {
       return;
     }
     runFrame(true, this);
-    this.#updateCursor();
+    this.__updateCursor();
   });
 
   __doRender = this.__withContext(() => {
@@ -167,15 +167,15 @@ export class Stage extends DisplayObjectContainer {
     this.__ticker.end();
 
     const canvas = this.__canvas.element;
-    canvas.removeEventListener("mouseenter", this.#handleMouseEvent);
-    canvas.removeEventListener("mousemove", this.#handleMouseEvent);
-    canvas.removeEventListener("mousedown", this.#handleMouseEvent);
-    canvas.removeEventListener("mouseup", this.#handleMouseEvent);
-    canvas.removeEventListener("mouseleave", this.#handleMouseEvent);
-    canvas.removeEventListener("click", this.#handleMouseEvent);
-    canvas.removeEventListener("keydown", this.#handleKeyboardEvent);
-    canvas.removeEventListener("keyup", this.#handleKeyboardEvent);
-    canvas.removeEventListener("blur", this.#handleFocusEvent);
+    canvas.removeEventListener("mouseenter", this.__handleMouseEvent);
+    canvas.removeEventListener("mousemove", this.__handleMouseEvent);
+    canvas.removeEventListener("mousedown", this.__handleMouseEvent);
+    canvas.removeEventListener("mouseup", this.__handleMouseEvent);
+    canvas.removeEventListener("mouseleave", this.__handleMouseEvent);
+    canvas.removeEventListener("click", this.__handleMouseEvent);
+    canvas.removeEventListener("keydown", this.__handleKeyboardEvent);
+    canvas.removeEventListener("keyup", this.__handleKeyboardEvent);
+    canvas.removeEventListener("blur", this.__handleFocusEvent);
 
     this.__isDisposed = true;
   }
@@ -214,7 +214,7 @@ export class Stage extends DisplayObjectContainer {
     return hitTest(this);
   }
 
-  #handleMouseEvent = this.__withContext(
+  __handleMouseEvent = this.__withContext(
     (sourceEvent: globalThis.MouseEvent) => {
       if (!this.__isActiveValue) {
         return;
@@ -278,7 +278,7 @@ export class Stage extends DisplayObjectContainer {
     }
   );
 
-  #updateCursor = () => {
+  __updateCursor = () => {
     if (this.__mouseOn && this.__isActiveValue) {
       this.__canvas.cursor = this.__mouseOn.__isPointerCursor
         ? "pointer"
@@ -288,7 +288,7 @@ export class Stage extends DisplayObjectContainer {
     }
   };
 
-  #handleKeyboardEvent = this.__withContext(
+  __handleKeyboardEvent = this.__withContext(
     (sourceEvent: globalThis.KeyboardEvent) => {
       if (!this.__isActiveValue) {
         return;
@@ -316,7 +316,7 @@ export class Stage extends DisplayObjectContainer {
     }
   );
 
-  #handleFocusEvent = this.__withContext(
+  __handleFocusEvent = this.__withContext(
     (sourceEvent: globalThis.FocusEvent) => {
       if (!this.__isActiveValue) {
         return;

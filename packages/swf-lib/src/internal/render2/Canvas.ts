@@ -3,7 +3,7 @@ import { vec2 } from "gl-matrix";
 export class Canvas {
   readonly container = document.createElement("div");
   readonly element = document.createElement("canvas");
-  #cursor = "";
+  private __cursor = "";
 
   constructor(readonly width: number, readonly height: number) {
     this.container.style.setProperty("width", `${width}px`);
@@ -22,13 +22,13 @@ export class Canvas {
   }
 
   get cursor(): string {
-    return this.#cursor;
+    return this.__cursor;
   }
 
   set cursor(value: string) {
-    if (value !== this.#cursor) {
+    if (value !== this.__cursor) {
       this.element.style.cursor = value;
-      this.#cursor = value;
+      this.__cursor = value;
     }
   }
 
