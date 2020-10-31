@@ -7,6 +7,7 @@ import { EventDispatcher } from "../events/EventDispatcher";
 import { Event } from "../events/Event";
 import { Transform } from "../geom/Transform";
 import { Point } from "../geom/Point";
+import { Rectangle } from "../geom/Rectangle";
 import { BitmapFilter } from "../filters/BitmapFilter";
 import { SceneNode, roundTwips } from "../../../internal/render2/SceneNode";
 
@@ -275,6 +276,18 @@ export class DisplayObject extends EventDispatcher {
     this.__node.ensureLayout();
     obj.__node.ensureLayout();
     return rect.intersects(obj.__node.boundsWorld, this.__node.boundsWorld);
+  }
+
+  getBounds(obj: DisplayObject): Rectangle {
+    this.__node.ensureLayout();
+    obj.__node.ensureLayout();
+    const result = new Rectangle();
+    rect.apply(
+      result.__rect,
+      this.__node.boundsWorld,
+      obj.__node.transformWorldInvert
+    );
+    return result;
   }
 
   __initFrame(stage: Stage) {}
