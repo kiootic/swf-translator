@@ -20,6 +20,7 @@ export class SoundMixer {
       throw new Error("No stage in context");
     }
     Stage.__current.__audio.reset();
+    SoundMixer.__updateSoundTransform();
   }
 
   static __updateSoundTransform() {
