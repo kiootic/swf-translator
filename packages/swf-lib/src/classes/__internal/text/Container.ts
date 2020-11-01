@@ -184,6 +184,6 @@ export class Container {
       this.wordWrap,
       this.multiline
     );
-    this.node.setRenderObjects(result.renderObjects, this.layoutBounds);
+    this.node.setRenderObjects(result.renderObjects, result.bounds);
   }
 }
