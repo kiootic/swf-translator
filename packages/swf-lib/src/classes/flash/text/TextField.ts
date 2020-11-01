@@ -73,7 +73,7 @@ export class TextField extends InteractiveObject {
     super.__onRender();
     const layoutScale =
       this.__node.transformWorld[0] / this.__node.transformWorld[3];
-    if (this.__container.layoutScale !== layoutScale) {
+    if (layoutScale && this.__container.layoutScale !== layoutScale) {
       this.__container.layoutScale = layoutScale;
       this.__internalNode.transformLocal[0] = 1 / layoutScale;
       this.__container.layout();
