@@ -193,7 +193,7 @@ function layoutLine(line: Line, y: number, bounds: rect): LayoutResult {
   }
 
   return {
-    bounds: rect.fromValues(0, y, x, y + leading),
+    bounds: rect.fromValues(0, y, x, leading),
     renderObjects: RenderObject.merge("text", instances),
   };
 }
