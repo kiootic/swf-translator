@@ -120,7 +120,13 @@ export class BitmapData extends AVMObject {
       this.__needPixel = false;
     }
 
-    const offset = Math.floor(x) + (this.height - Math.floor(y)) * this.width;
+    const intX = Math.floor(x);
+    const intY = Math.floor(y);
+    if (intX < 0 || intY < 0 || intX > this.width || intY > this.height) {
+      return 0;
+    }
+
+    const offset = intX + (this.height - intY) * this.width;
     const pixel = this.__pixels[offset];
     const a = (pixel >>> 24) & 0xff;
     const b = (pixel >>> 16) & 0xff;
