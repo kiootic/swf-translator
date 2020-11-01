@@ -346,7 +346,9 @@ export class Stage extends DisplayObjectContainer {
     while (i < this.__displayList.length) {
       const children = this.__displayList[i].__node.children;
       for (let j = 0; j < children.length; j++) {
-        this.__displayList.push(children[j].object as DisplayObject);
+        if (children[j].object) {
+          this.__displayList.push(children[j].object as DisplayObject);
+        }
       }
       i++;
     }

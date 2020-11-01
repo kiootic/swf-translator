@@ -6,6 +6,7 @@ import { rect } from "../../../internal/math/rect";
 import { SceneNode } from "../../../internal/render2/SceneNode";
 
 const htmlParser = new DOMParser();
+const tmpRect = rect.create();
 
 export class Container {
   segments: TextSegment[] = [];
@@ -20,6 +21,8 @@ export class Container {
   multiline = false;
 
   readonly layoutBounds = rect.create();
+
+  layoutScale = 1;
 
   constructor(readonly node: SceneNode) {}
 
@@ -173,9 +176,11 @@ export class Container {
   }
 
   layout() {
+    rect.copy(tmpRect, this.layoutBounds);
+    tmpRect[2] *= this.layoutScale;
     const result = layout(
       this.segments,
-      this.layoutBounds,
+      tmpRect,
       this.wordWrap,
       this.multiline
     );

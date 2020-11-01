@@ -1,4 +1,5 @@
 import { Container } from "../../__internal/text/Container";
+import { SceneNode } from "../../../internal/render2/SceneNode";
 import { InteractiveObject } from "../display/InteractiveObject";
 import { EditTextInstance } from "../../../internal/character/EditTextInstance";
 import { TextFieldType } from "./TextFieldType";
@@ -8,15 +9,19 @@ export class TextField extends InteractiveObject {
 
   declare __character: EditTextInstance | null;
 
+  __internalNode = new SceneNode(null);
+
   constructor() {
     super();
 
     this.__character =
       (this.constructor as typeof TextField).__character ?? null;
     this.__character?.applyTo(this);
+
+    this.__internalNode.setParent(this.__node, 0);
   }
 
-  readonly __container = new Container(this.__node);
+  readonly __container = new Container(this.__internalNode);
 
   type: TextFieldType = TextFieldType.DYNAMIC;
 
@@ -62,5 +67,16 @@ export class TextField extends InteractiveObject {
   }
   set htmlText(value) {
     this.__container.htmlText = value;
+  }
+
+  __onRender() {
+    super.__onRender();
+    const layoutScale =
+      this.__node.transformWorld[0] / this.__node.transformWorld[3];
+    if (this.__container.layoutScale !== layoutScale) {
+      this.__container.layoutScale = layoutScale;
+      this.__internalNode.transformLocal[0] = 1 / layoutScale;
+      this.__container.layout();
+    }
   }
 }
