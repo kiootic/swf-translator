@@ -98,27 +98,87 @@ function splitLines(
   wrap: boolean,
   multiline: boolean
 ): Line[] {
-  let currentLine: Line = { glyphs: [], width: 0 };
-  const lines = [currentLine];
+  interface TextRun {
+    isSpace: boolean;
+    text: string;
+    glyphs: Glyph[];
+    width: number;
+  }
+
+  let currentRun: TextRun | null = null;
+  const runs: TextRun[] = [];
 
   for (const { format, text } of segments) {
     for (const char of text) {
-      if (multiline && char === "\n") {
-        currentLine = { glyphs: [], width: 0 };
-        lines.push(currentLine);
-        continue;
+      const isSpace = /\s/.test(char);
+      if (!currentRun || currentRun.isSpace !== isSpace) {
+        currentRun = { isSpace, text: "", glyphs: [], width: 0 };
+        runs.push(currentRun);
       }
 
       const glyph = resolveGlyph(format, char);
       const advance = glyph.advance;
-      if (wrap && currentLine.width + advance > bounds[2]) {
-        currentLine = { glyphs: [], width: 0 };
-        lines.push(currentLine);
-      }
-      currentLine.glyphs.push(glyph);
-      currentLine.width += advance;
+      currentRun.glyphs.push(glyph);
+      currentRun.width += advance;
     }
   }
+
+  interface LineRuns {
+    runs: TextRun[];
+    isWrapped: boolean;
+  }
+
+  let currentLineWidth = 0;
+  let currentLineRuns: LineRuns = { runs: [], isWrapped: false };
+  const lineRuns = [currentLineRuns];
+  for (const run of runs) {
+    if (/\n/.test(run.text)) {
+      currentLineWidth = 0;
+      currentLineRuns = { runs: [], isWrapped: false };
+      lineRuns.push(currentLineRuns);
+      continue;
+    }
+    if (
+      wrap &&
+      currentLineWidth + run.width > bounds[2] &&
+      currentLineRuns.runs.length > 0
+    ) {
+      currentLineWidth = 0;
+      currentLineRuns = { runs: [], isWrapped: true };
+      lineRuns.push(currentLineRuns);
+    }
+
+    currentLineWidth += run.width;
+    currentLineRuns.runs.push(run);
+  }
+
+  const lines = lineRuns.map(
+    (lineRuns): Line => {
+      let runs = lineRuns.runs;
+
+      let numRuns = runs.length;
+      while (numRuns > 0 && runs[numRuns - 1].isSpace) {
+        numRuns--;
+      }
+      runs = runs.slice(0, numRuns);
+
+      if (lineRuns.isWrapped) {
+        let leadingSpaces = 0;
+        while (leadingSpaces < runs.length && runs[leadingSpaces].isSpace) {
+          leadingSpaces++;
+        }
+        runs = runs.slice(leadingSpaces);
+      }
+
+      const glyphs: Glyph[] = [];
+      let width = 0;
+      for (const run of runs) {
+        glyphs.push(...run.glyphs);
+        width += run.width;
+      }
+      return { glyphs, width };
+    }
+  );
   return lines;
 }
 
