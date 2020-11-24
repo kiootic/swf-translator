@@ -7,7 +7,8 @@ export class Renderbuffer {
   constructor(
     width: number,
     height: number,
-    readonly type: "depth" | "rgba" | "rgb"
+    readonly type: "depth" | "rgba" | "rgb",
+    readonly allowMultisampling = true
   ) {
     this.width = width;
     this.height = height;
@@ -30,7 +31,7 @@ export class Renderbuffer {
 
       const rb = gl.createRenderbuffer();
       state.bindRenderbuffer(gl.RENDERBUFFER, rb);
-      if (state.maxSamples > 0) {
+      if (state.maxSamples > 0 && this.allowMultisampling) {
         gl.renderbufferStorageMultisample(
           gl.RENDERBUFFER,
           state.maxSamples,

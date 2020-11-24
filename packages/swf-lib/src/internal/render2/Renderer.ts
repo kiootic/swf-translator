@@ -122,6 +122,7 @@ export class Renderer {
   );
 
   private readonly defaultFramebuffer: Framebuffer;
+  private readonly resolvedFramebuffer: Framebuffer;
 
   backgroundColor = 0x000000;
 
@@ -144,6 +145,17 @@ export class Renderer {
 
     this.defaultFramebuffer = new Framebuffer(
       new Renderbuffer(canvas.element.width, canvas.element.height, "rgb")
+    );
+    // FIXME: Firefox on Windows seems failing at resolving MSAA renderbuffer
+    // directly to screen. Resolve it to a intermediate renderbuffer before
+    // blitting to screen as workaround.
+    this.resolvedFramebuffer = new Framebuffer(
+      new Renderbuffer(
+        canvas.element.width,
+        canvas.element.height,
+        "rgb",
+        false
+      )
     );
   }
 
@@ -169,8 +181,24 @@ export class Renderer {
     const { width, height } = this.defaultFramebuffer.colorAttachment;
     const gl = this.glState.gl;
 
-    const fb = this.defaultFramebuffer.ensure(this.glState);
-    this.glState.bindFramebuffer(gl.READ_FRAMEBUFFER, fb);
+    const defaultFB = this.defaultFramebuffer.ensure(this.glState);
+    const resolvedFB = this.resolvedFramebuffer.ensure(this.glState);
+    this.glState.bindFramebuffer(gl.READ_FRAMEBUFFER, defaultFB);
+    this.glState.bindFramebuffer(gl.DRAW_FRAMEBUFFER, resolvedFB);
+    gl.blitFramebuffer(
+      0,
+      0,
+      width,
+      height,
+      0,
+      0,
+      width,
+      height,
+      gl.COLOR_BUFFER_BIT,
+      gl.NEAREST
+    );
+
+    this.glState.bindFramebuffer(gl.READ_FRAMEBUFFER, resolvedFB);
     this.glState.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
     gl.blitFramebuffer(
       0,
