@@ -6,24 +6,60 @@ export function gradientKey(gradient: Gradient) {
     .join(";")}`;
 }
 
+function lerpInt(ratio: number, a: number, b: number) {
+  return Math.round(a + (b - a) * ratio);
+}
+
 export function makeGradientTexture(gradient: Gradient): HTMLCanvasElement {
+  // NOTE: need to interploate colors using non-premultiplied alpha.
+  // canvas operations uses premultiplied alpha.
+  // manually render the gradient.
   const canvas = document.createElement("canvas");
   canvas.width = 256;
-  canvas.height = 256;
+  canvas.height = 1;
 
   const ctx = canvas.getContext("2d")!;
 
-  const lg = ctx.createLinearGradient(0, 0, canvas.width, 0);
-  for (const [ratio, color] of gradient.points) {
-    const a = (color >>> 24) & 0xff;
-    const r = (color >>> 16) & 0xff;
-    const g = (color >>> 8) & 0xff;
-    const b = (color >>> 0) & 0xff;
-    lg.addColorStop(ratio / 255, `rgba(${r}, ${g}, ${b}, ${a / 255})`);
+  const data = new Uint8ClampedArray(256 * 4);
+  for (let i = 0; i < 256; i++) {
+    let b = gradient.points.findIndex(([pt, _]) => pt >= i);
+    let a: number;
+    if (b === -1) {
+      a = gradient.points.length - 1;
+      b = gradient.points.length - 1;
+    } else if (b === 0) {
+      a = 0;
+    } else {
+      a = b - 1;
+    }
+
+    const [ptA, colorA] = gradient.points[a];
+    const [ptB, colorB] = gradient.points[b];
+    const ratio = ptA === ptB ? 1 : (i - ptA) / (ptB - ptA);
+
+    data[i * 4 + 3] = lerpInt(
+      ratio,
+      (colorA >>> 24) & 0xff,
+      (colorB >>> 24) & 0xff
+    );
+    data[i * 4 + 0] = lerpInt(
+      ratio,
+      (colorA >>> 16) & 0xff,
+      (colorB >>> 16) & 0xff
+    );
+    data[i * 4 + 1] = lerpInt(
+      ratio,
+      (colorA >>> 8) & 0xff,
+      (colorB >>> 8) & 0xff
+    );
+    data[i * 4 + 2] = lerpInt(
+      ratio,
+      (colorA >>> 0) & 0xff,
+      (colorB >>> 0) & 0xff
+    );
   }
 
-  ctx.fillStyle = lg;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.putImageData(new ImageData(data, 256, 1), 0, 0);
 
   return canvas;
 }
