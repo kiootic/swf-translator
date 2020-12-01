@@ -23,10 +23,10 @@ export const rect = {
   },
   intersects(a: rect, b: rect) {
     return (
-      a[0] - (b[0] + b[2]) < -epsilon &&
-      b[0] - (a[0] + a[2]) < -epsilon &&
-      a[1] - (b[1] + b[3]) < -epsilon &&
-      b[1] - (a[1] + a[3]) < -epsilon
+      a[0] - (b[0] + b[2]) <= epsilon &&
+      b[0] - (a[0] + a[2]) <= epsilon &&
+      a[1] - (b[1] + b[3]) <= epsilon &&
+      b[1] - (a[1] + a[3]) <= epsilon
     );
   },
   contains(rect: rect, x: number, y: number) {
