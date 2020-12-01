@@ -11,7 +11,7 @@ export function makeShapeRenderObject(
   contour: ShapeContour,
   lib: AssetLibrary
 ): RenderObject {
-  const vertices = new Float32Array(contour.vertices).map((v) => v / 20);
+  const vertices = new Float32Array(contour.vertices);
   const indices = new Uint16Array(contour.indices);
 
   let minX = Infinity,
@@ -81,7 +81,7 @@ function convertMatrix(
   offset: number
 ) {
   mat2d.invert(mat, mat);
-  mat2d.scale(mat, mat, [20 / width, 20 / height]);
+  mat2d.scale(mat, mat, [1 / width, 1 / height]);
   mat[4] = mat[4] / width + offset;
   mat[5] = mat[5] / height + offset;
 }

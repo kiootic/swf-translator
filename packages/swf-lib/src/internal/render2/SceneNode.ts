@@ -5,10 +5,7 @@ import { FilterInstance } from "./filter/Filter";
 import { RenderContext } from "./RenderContext";
 import { Texture } from "./gl/Texture";
 import { CachedRender } from "./CachedRender";
-
-export function roundTwips(value: number) {
-  return Math.round(value * 20) / 20;
-}
+import { pixelToTwips, TWIPS } from "../twips";
 
 const enum Flags {
   DirtyBounds = 1,
@@ -315,7 +312,8 @@ export class SceneNode {
       for (const filter of this.filters) {
         vec2.max(paddings, paddings, filter.paddings);
       }
-      vec2.ceil(paddings, paddings);
+      paddings[0] = Math.ceil(paddings[0]) * TWIPS;
+      paddings[1] = Math.ceil(paddings[1]) * TWIPS;
 
       const viewMat = ctx.transform.view;
 
@@ -335,9 +333,9 @@ export class SceneNode {
           ctx.renderCache(tex, bounds, viewMat, (render) => {
             this.cachedRender = render;
           });
-          ctx.renderObject(RenderObject.rect(bounds, tex));
+          ctx.renderObject(RenderObject.rect(bounds, tex, { scale: TWIPS }));
         } else {
-          ctx.renderObject(RenderObject.rect(bounds, tex));
+          ctx.renderObject(RenderObject.rect(bounds, tex, { scale: TWIPS }));
         }
       };
 
@@ -384,7 +382,9 @@ export class SceneNode {
 
     if (!exact) {
       this.ensureLayout();
-      vec2.transformMat2d(tmpVec2, worldPt, this.transformWorldInvert);
+      tmpVec2[0] = pixelToTwips(worldPt[0]);
+      tmpVec2[1] = pixelToTwips(worldPt[1]);
+      vec2.transformMat2d(tmpVec2, tmpVec2, this.transformWorldInvert);
       return rect.contains(this.boundsLocal, tmpVec2[0], tmpVec2[1]);
     }
 
@@ -392,7 +392,9 @@ export class SceneNode {
     let node: SceneNode | undefined;
     while ((node = nodes.pop())) {
       if (node.renderObjects.length > 0) {
-        vec2.transformMat2d(tmpVec2, worldPt, node.transformWorldInvert);
+        tmpVec2[0] = pixelToTwips(worldPt[0]);
+        tmpVec2[1] = pixelToTwips(worldPt[1]);
+        vec2.transformMat2d(tmpVec2, tmpVec2, node.transformWorldInvert);
         if (
           node.renderObjects.some((obj) =>
             obj.hitTest(tmpVec2[0], tmpVec2[1], exact)

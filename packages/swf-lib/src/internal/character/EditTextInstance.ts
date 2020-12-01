@@ -22,11 +22,7 @@ export class EditTextInstance implements CharacterInstance {
       indent: text.indent && text.indent / 20,
       leading: text.leading && text.leading / 20,
     };
-    this.layoutBounds = rect.scale(
-      rect.create(),
-      rect.fromValues(...text.bounds),
-      1 / 20
-    );
+    this.layoutBounds = rect.fromValues(...text.bounds);
   }
 
   applyTo(textField: TextField) {

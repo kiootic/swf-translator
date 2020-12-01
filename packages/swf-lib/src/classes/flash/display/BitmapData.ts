@@ -11,6 +11,7 @@ import { Renderer } from "../../../internal/render2/Renderer";
 import { Stage } from "./Stage";
 import { rect } from "../../../internal/math/rect";
 import { RenderObject } from "../../../internal/render2/RenderObject";
+import { pixelToTwips, TWIPS } from "../../../internal/twips";
 
 export class BitmapData extends AVMObject {
   private __root = new SceneNode(null);
@@ -68,10 +69,18 @@ export class BitmapData extends AVMObject {
         }
         const node = new SceneNode(null);
         node.setRenderObjects(
-          [RenderObject.rect(patch, target.texture, { invertY: true })],
-          rect.fromValues(0, 0, patch[2], patch[3])
+          [
+            RenderObject.rect(patch, target.texture, {
+              invertY: true,
+              scale: TWIPS,
+            }),
+          ],
+          rect.fromValues(0, 0, pixelToTwips(patch[2]), pixelToTwips(patch[3]))
         );
-        mat2d.fromTranslation(node.transformLocal, [patch[0], patch[1]]);
+        mat2d.fromTranslation(node.transformLocal, [
+          pixelToTwips(patch[0]),
+          pixelToTwips(patch[1]),
+        ]);
         if (apply) {
           vec4.copy(node.colorTransformLocalMul, trx.__mul);
           vec4.copy(node.colorTransformLocalAdd, trx.__add);

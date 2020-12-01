@@ -3,6 +3,7 @@ import { rect } from "../math/rect";
 import { RenderPool } from "./RenderPool";
 import { TextureTarget } from "./gl/targets";
 import { RenderObject } from "./RenderObject";
+import { TWIPS } from "../twips";
 
 export class CachedRender {
   private returned = false;
@@ -15,7 +16,9 @@ export class CachedRender {
     readonly view: mat2d,
     readonly bounds: rect
   ) {
-    this.renderObject = RenderObject.rect(bounds, target.texture);
+    this.renderObject = RenderObject.rect(bounds, target.texture, {
+      scale: TWIPS,
+    });
   }
 
   return() {

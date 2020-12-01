@@ -16,15 +16,9 @@ export class StaticTextInstance implements CharacterInstance {
     text: StaticTextCharacter,
     lib: AssetLibrary
   ) {
-    this.bounds = rect.scale(
-      rect.create(),
-      rect.fromValues(...text.bounds),
-      1 / 20
-    );
+    this.bounds = rect.fromValues(...text.bounds);
 
     const matrix = mat2d.fromValues(...text.matrix);
-    matrix[4] /= 20;
-    matrix[5] /= 20;
 
     interface GlyphInstance {
       renderObject: RenderObject;
@@ -38,7 +32,7 @@ export class StaticTextInstance implements CharacterInstance {
       const glyph = font.glyphs[g.index];
 
       const transform = mat2d.create();
-      mat2d.translate(transform, matrix, [g.x / 20, g.y / 20]);
+      mat2d.translate(transform, matrix, [g.x, g.y]);
       mat2d.scale(transform, transform, [
         g.size / 1024 / 20,
         g.size / 1024 / 20,

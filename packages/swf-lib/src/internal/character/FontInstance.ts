@@ -41,10 +41,10 @@ export class FontInstance implements CharacterInstance {
     }
 
     this.layout = font.layout && {
-      ascent: font.layout.ascent / 20 / 1024,
-      descent: font.layout.descent / 20 / 1024,
-      leading: font.layout.ascent / 20 / 1024,
-      advances: font.layout.advances.map((v) => v / 20 / 1024),
+      ascent: font.layout.ascent / 1024,
+      descent: font.layout.descent / 1024,
+      leading: font.layout.ascent / 1024,
+      advances: font.layout.advances.map((v) => v / 1024),
     };
   }
 }

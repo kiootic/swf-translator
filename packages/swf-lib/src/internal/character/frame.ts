@@ -113,8 +113,6 @@ function setupCharacter(
 ) {
   if (action.matrix != null) {
     mat2d.copy(character.__node.transformLocal, action.matrix);
-    character.__node.transformLocal[4] /= 20;
-    character.__node.transformLocal[5] /= 20;
     character.__node.markLayoutDirty();
   } else if (reset) {
     mat2d.identity(character.__node.transformLocal);

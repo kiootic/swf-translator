@@ -3,6 +3,7 @@ import { BitmapData } from "./BitmapData";
 import { RenderObject } from "../../../internal/render2/RenderObject";
 import { rect } from "../../../internal/math/rect";
 import { Texture } from "../../../internal/render2/gl/Texture";
+import { TWIPS } from "../../../internal/twips";
 
 export class Bitmap extends DisplayObject {
   constructor(public bitmapData: BitmapData) {
@@ -15,6 +16,7 @@ export class Bitmap extends DisplayObject {
         RenderObject.rect(bounds, Texture.WHITE, {
           texWidth: width,
           texHeight: height,
+          scale: TWIPS,
           invertY: true,
         }),
       ],

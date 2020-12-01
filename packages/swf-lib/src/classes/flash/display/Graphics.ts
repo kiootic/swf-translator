@@ -3,6 +3,7 @@ import { SceneNode } from "../../../internal/render2/SceneNode";
 import { preMultiplyAlpha } from "../../../internal/math/color";
 import { RenderObject } from "../../../internal/render2/RenderObject";
 import { rect } from "../../../internal/math/rect";
+import { pixelToTwips } from "../../../internal/twips";
 
 export class Graphics extends AVMObject {
   private __x = 0;
@@ -40,11 +41,11 @@ export class Graphics extends AVMObject {
 
   lineTo(x: number, y: number) {
     const line = RenderObject.line(
-      this.__x,
-      this.__y,
-      x,
-      y,
-      this.__lineThickness,
+      pixelToTwips(this.__x),
+      pixelToTwips(this.__y),
+      pixelToTwips(x),
+      pixelToTwips(y),
+      pixelToTwips(this.__lineThickness),
       this.__lineColor
     );
     this.__renderObjects.push(line);

@@ -1,5 +1,6 @@
 import { mat2d } from "gl-matrix";
-import { SceneNode, roundTwips } from "../../../internal/render2/SceneNode";
+import { SceneNode } from "../../../internal/render2/SceneNode";
+import { pixelToTwips, twipsToPixel } from "../../../internal/twips";
 
 export class Matrix {
   __node: SceneNode | null = null;
@@ -19,8 +20,8 @@ export class Matrix {
   }
 
   translate(dx: number, dy: number) {
-    this.__value[4] = roundTwips(this.__value[4] + dx);
-    this.__value[5] = roundTwips(this.__value[5] + dy);
+    this.__value[4] = pixelToTwips(twipsToPixel(this.__value[4]) + dx);
+    this.__value[5] = pixelToTwips(twipsToPixel(this.__value[5]) + dy);
     this.__node?.markLayoutDirty();
   }
 
@@ -29,8 +30,8 @@ export class Matrix {
     this.__value[1] *= sy;
     this.__value[2] *= sx;
     this.__value[3] *= sy;
-    this.__value[4] = roundTwips(this.__value[4] * sx);
-    this.__value[5] = roundTwips(this.__value[5] * sy);
+    this.__value[4] = pixelToTwips(twipsToPixel(this.__value[4]) * sx);
+    this.__value[5] = pixelToTwips(twipsToPixel(this.__value[5]) * sy);
     this.__node?.markLayoutDirty();
   }
 
@@ -47,8 +48,8 @@ export class Matrix {
     this.__value[1] = a * v + b * u;
     this.__value[2] = c * u - d * v;
     this.__value[3] = c * v + d * u;
-    this.__value[4] = roundTwips(tx * u - ty * v);
-    this.__value[5] = roundTwips(tx * v + ty * u);
+    this.__value[4] = pixelToTwips(twipsToPixel(tx) * u - twipsToPixel(ty) * v);
+    this.__value[5] = pixelToTwips(twipsToPixel(tx) * v + twipsToPixel(ty) * u);
     this.__node?.markLayoutDirty();
   }
 }

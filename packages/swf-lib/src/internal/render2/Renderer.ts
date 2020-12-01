@@ -24,6 +24,7 @@ import { Atlas } from "./Atlas";
 import { FilterInput, Filter, FilterInstance } from "./filter/Filter";
 import { projection } from "../math/matrix";
 import { CachedRender } from "./CachedRender";
+import { pixelToTwips, twipsToPixel } from "../twips";
 
 const vertexLimit = 0x10000;
 const indexLimit = 0x80000;
@@ -226,13 +227,18 @@ export class Renderer {
     }
 
     const { width, height } = fb.colorAttachment;
-    const bounds = rect.fromValues(0, 0, width, height);
+    const bounds = rect.fromValues(
+      0,
+      0,
+      pixelToTwips(width),
+      pixelToTwips(height)
+    );
     const ctx = new RenderContext(bounds);
     node.render(ctx);
     const projectionMat = projection(
       mat2d.create(),
-      logicalWidth,
-      logicalHeight,
+      pixelToTwips(logicalWidth),
+      pixelToTwips(logicalHeight),
       true
     );
 
@@ -334,8 +340,8 @@ export class Renderer {
       }
       const projectionMat = projection(
         mat2d.create(),
-        atlas.width,
-        atlas.height,
+        pixelToTwips(atlas.width),
+        pixelToTwips(atlas.height),
         false
       );
 
@@ -389,8 +395,8 @@ export class Renderer {
 
       const ctx = new RenderContext(null);
       const renderView = mat2d.fromTranslation(mat2d.create(), [
-        paddings[0] + translate[0] - Math.floor(translate[0]),
-        paddings[1] + translate[1] - Math.floor(translate[1]),
+        paddings[0] + pixelToTwips(translate[0] - Math.floor(translate[0])),
+        paddings[1] + pixelToTwips(translate[1] - Math.floor(translate[1])),
       ]);
       mat2d.scale(renderView, renderView, scale);
       mat2d.translate(renderView, renderView, [-bounds[0], -bounds[1]]);
@@ -402,10 +408,10 @@ export class Renderer {
       const renderBounds = ctx.bounds;
       // Left padding in renderBounds[0], add right paddings manually.
       const width = Math.ceil(
-        Math.abs(renderBounds[0]) + renderBounds[2] + paddings[0]
+        twipsToPixel(Math.abs(renderBounds[0]) + renderBounds[2] + paddings[0])
       );
       const height = Math.ceil(
-        Math.abs(renderBounds[1]) + renderBounds[3] + paddings[1]
+        twipsToPixel(Math.abs(renderBounds[1]) + renderBounds[3] + paddings[1])
       );
 
       let atlasBounds: rect | null;
@@ -425,7 +431,10 @@ export class Renderer {
         atlasBounds = atlas.add(width, height)!;
       }
 
-      mat2d.fromTranslation(renderView, [atlasBounds[0], atlasBounds[1]]);
+      mat2d.fromTranslation(renderView, [
+        pixelToTwips(atlasBounds[0]),
+        pixelToTwips(atlasBounds[1]),
+      ]);
       atlasContext.pushTransform(renderView);
       atlasContext.renderContext(ctx);
       atlasContext.popTransform();
@@ -443,8 +452,8 @@ export class Renderer {
     for (const render of caches) {
       const { texture, bounds, view, then } = render.cache;
 
-      const width = renderTextureSize(bounds[2]);
-      const height = renderTextureSize(bounds[3]);
+      const width = renderTextureSize(twipsToPixel(bounds[2]));
+      const height = renderTextureSize(twipsToPixel(bounds[3]));
       const cacheTexture = this.renderPool.takeTexture(width, height);
 
       const tmpFramebuffer = new Framebuffer(texture);

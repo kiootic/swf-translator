@@ -5,6 +5,7 @@ import { multiplyColorTransform } from "../math/color";
 import { Texture } from "./gl/Texture";
 import { FilterInstance } from "./filter/Filter";
 import { CachedRender } from "./CachedRender";
+import { TWIPS, twipsToPixel } from "../twips";
 
 export interface Transform {
   view: mat2d;
@@ -212,9 +213,12 @@ export class RenderContext {
     }
     mat2d.translate(viewMatrix, viewMatrix, [-paddings[0], -paddings[1]]);
 
-    const translate = vec2.fromValues(viewMatrix[4], viewMatrix[5]);
-    viewMatrix[4] = Math.floor(viewMatrix[4]);
-    viewMatrix[5] = Math.floor(viewMatrix[5]);
+    const translate = vec2.fromValues(
+      twipsToPixel(viewMatrix[4]),
+      twipsToPixel(viewMatrix[5])
+    );
+    viewMatrix[4] = Math.floor(viewMatrix[4] / TWIPS) * TWIPS;
+    viewMatrix[5] = Math.floor(viewMatrix[5] / TWIPS) * TWIPS;
 
     this.renders.push({
       transform: this.transform,

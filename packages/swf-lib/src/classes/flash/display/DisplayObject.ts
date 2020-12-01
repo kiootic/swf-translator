@@ -9,7 +9,8 @@ import { Transform } from "../geom/Transform";
 import { Point } from "../geom/Point";
 import { Rectangle } from "../geom/Rectangle";
 import { BitmapFilter } from "../filters/BitmapFilter";
-import { SceneNode, roundTwips } from "../../../internal/render2/SceneNode";
+import { SceneNode } from "../../../internal/render2/SceneNode";
+import { pixelToTwips, TWIPS, twipsToPixel } from "../../../internal/twips";
 
 const tmpRect = rect.create();
 const tmpVec2 = vec2.create();
@@ -131,10 +132,10 @@ export class DisplayObject extends EventDispatcher {
   }
 
   get x(): number {
-    return this.__node.transformLocal[4];
+    return twipsToPixel(this.__node.transformLocal[4]);
   }
   set x(value: number) {
-    value = roundTwips(value);
+    value = pixelToTwips(value);
     if (this.__node.transformLocal[4] !== value) {
       this.__node.transformLocal[4] = value;
       this.__node.markLayoutDirty();
@@ -142,10 +143,10 @@ export class DisplayObject extends EventDispatcher {
   }
 
   get y(): number {
-    return this.__node.transformLocal[5];
+    return twipsToPixel(this.__node.transformLocal[5]);
   }
   set y(value: number) {
-    value = roundTwips(value);
+    value = pixelToTwips(value);
     if (this.__node.transformLocal[5] !== value) {
       this.__node.transformLocal[5] = value;
       this.__node.markLayoutDirty();
@@ -194,7 +195,9 @@ export class DisplayObject extends EventDispatcher {
 
   get width(): number {
     this.__node.ensureLayout();
-    return Math.abs(this.__node.boundsLocal[2] * this.__node.transformLocal[0]);
+    return Math.abs(
+      twipsToPixel(this.__node.boundsLocal[2]) * this.__node.transformLocal[0]
+    );
   }
   set width(value: number) {
     if (value < 0) {
@@ -202,7 +205,9 @@ export class DisplayObject extends EventDispatcher {
     }
     this.__node.ensureLayout();
     let scaleX =
-      this.__node.boundsLocal[2] === 0 ? 1 : value / this.__node.boundsLocal[2];
+      twipsToPixel(this.__node.boundsLocal[2]) === 0
+        ? 1
+        : value / twipsToPixel(this.__node.boundsLocal[2]);
     if (this.__node.transformLocal[0] !== 0) {
       scaleX *= Math.sign(this.__node.transformLocal[0]);
     }
@@ -214,7 +219,9 @@ export class DisplayObject extends EventDispatcher {
 
   get height(): number {
     this.__node.ensureLayout();
-    return this.__node.boundsLocal[3] * this.__node.transformLocal[3];
+    return Math.abs(
+      twipsToPixel(this.__node.boundsLocal[3]) * this.__node.transformLocal[3]
+    );
   }
   set height(value: number) {
     if (value < 0) {
@@ -222,7 +229,9 @@ export class DisplayObject extends EventDispatcher {
     }
     this.__node.ensureLayout();
     let scaleY =
-      this.__node.boundsLocal[3] === 0 ? 1 : value / this.__node.boundsLocal[3];
+      twipsToPixel(this.__node.boundsLocal[3]) === 0
+        ? 1
+        : value / twipsToPixel(this.__node.boundsLocal[3]);
     if (this.__node.transformLocal[3] !== 0) {
       scaleY *= Math.sign(this.__node.transformLocal[3]);
     }
@@ -254,7 +263,11 @@ export class DisplayObject extends EventDispatcher {
     if (ensure) {
       this.__node.ensureLayout();
     }
-    vec2.transformMat2d(out, pt, this.__node.transformWorldInvert);
+    out[0] = pixelToTwips(pt[0]);
+    out[1] = pixelToTwips(pt[1]);
+    vec2.transformMat2d(out, out, this.__node.transformWorldInvert);
+    out[0] = twipsToPixel(out[0]);
+    out[1] = twipsToPixel(out[1]);
   }
 
   globalToLocal(point: Point): Point {
@@ -287,6 +300,7 @@ export class DisplayObject extends EventDispatcher {
       this.__node.boundsWorld,
       obj.__node.transformWorldInvert
     );
+    rect.scale(result.__rect, result.__rect, 1 / TWIPS);
     return result;
   }
 

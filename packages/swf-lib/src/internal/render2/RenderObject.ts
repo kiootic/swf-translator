@@ -12,6 +12,7 @@ interface RenderObjectRectOptions {
   invertY?: boolean;
   texWidth?: number;
   texHeight?: number;
+  scale?: number;
 }
 
 export type RenderObjectKind = "shape" | "text";
@@ -37,7 +38,11 @@ export class RenderObject {
       invertY = false,
       texWidth = texture.width,
       texHeight = texture.height,
+      scale = 1,
     } = opts ?? {};
+
+    bounds[2] *= scale;
+    bounds[3] *= scale;
 
     const vertices = new Float32Array(8);
     vertices[0] = bounds[2];
@@ -67,6 +72,7 @@ export class RenderObject {
       mat2d.translate(uvMatrix, uvMatrix, [0, -texHeight]);
     }
     mat2d.translate(uvMatrix, uvMatrix, [bounds[0], bounds[1]]);
+    mat2d.scale(uvMatrix, uvMatrix, [1 / scale, 1 / scale]);
 
     return new RenderObject(
       "shape",
