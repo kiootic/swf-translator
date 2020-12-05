@@ -5,7 +5,8 @@ import { Stage } from "./Stage";
 export type MovieClipT<T> = MovieClip & T;
 
 export class MovieClip extends Sprite {
-  __lastFrame = 1;
+  __lastConstructFrame = 1;
+  __lastInitFrame = 1;
   __constructed = false;
   __frameScripts = new Map<number, () => void>();
   __scriptFrame = 0;
@@ -25,7 +26,11 @@ export class MovieClip extends Sprite {
   __initFrame(stage: Stage) {
     super.__initFrame(stage);
 
-    if (this.isPlaying && this.__constructed) {
+    if (
+      this.isPlaying &&
+      this.__constructed &&
+      this.__lastInitFrame === this.currentFrame
+    ) {
       let newFrame = this.currentFrame + 1;
       if (newFrame > this.totalFrames || newFrame < 1) {
         newFrame = 1;
@@ -37,12 +42,17 @@ export class MovieClip extends Sprite {
     } else if (!this.__constructed) {
       stage.__constructionQueue.push(this);
     }
+    this.__lastInitFrame = this.currentFrame;
   }
 
   __constructFrame() {
-    if (this.__lastFrame !== this.currentFrame) {
-      this.__character?.applyTo(this, this.__lastFrame, this.currentFrame);
-      this.__lastFrame = this.currentFrame;
+    if (this.__lastConstructFrame !== this.currentFrame) {
+      this.__character?.applyTo(
+        this,
+        this.__lastConstructFrame,
+        this.currentFrame
+      );
+      this.__lastConstructFrame = this.currentFrame;
     }
     this.__constructed = true;
 
@@ -87,13 +97,10 @@ export class MovieClip extends Sprite {
     }
     this.isPlaying = true;
 
-    const stage = this.stage;
+    const stage = this.stage ?? Stage.__current;
     if (stage) {
       stage.__constructionQueue.push(this);
       runFrame(false, stage);
-    } else {
-      this.__constructFrame();
-      this.__runFrameScript();
     }
   }
 
@@ -104,13 +111,10 @@ export class MovieClip extends Sprite {
     }
     this.isPlaying = false;
 
-    const stage = this.stage;
+    const stage = this.stage ?? Stage.__current;
     if (stage) {
       stage.__constructionQueue.push(this);
       runFrame(false, stage);
-    } else {
-      this.__constructFrame();
-      this.__runFrameScript();
     }
   }
 
