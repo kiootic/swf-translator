@@ -1,4 +1,4 @@
-import { mat2d, vec2 } from "gl-matrix";
+import { vec2 } from "gl-matrix";
 import { CharacterInstance } from "../../../internal/character/CharacterInstance";
 import { rect } from "../../../internal/math/rect";
 import type { DisplayObjectContainer } from "./DisplayObjectContainer";
@@ -11,6 +11,11 @@ import { Rectangle } from "../geom/Rectangle";
 import { BitmapFilter } from "../filters/BitmapFilter";
 import { SceneNode } from "../../../internal/render2/SceneNode";
 import { pixelToTwips, TWIPS, twipsToPixel } from "../../../internal/twips";
+import {
+  compose,
+  MatrixComposition,
+  reduceAngle,
+} from "../../../internal/math/matrix";
 
 const tmpRect = rect.create();
 const tmpVec2 = vec2.create();
@@ -30,6 +35,12 @@ export class DisplayObject extends EventDispatcher {
   private __mask!: DisplayObject | null;
   private __maskRefs!: number;
   private __filters!: BitmapFilter[];
+  __scaleSkews: MatrixComposition = {
+    scaleX: 1,
+    scaleY: 1,
+    skewX: 0,
+    skewY: 0,
+  };
 
   __node!: SceneNode;
 
@@ -154,41 +165,33 @@ export class DisplayObject extends EventDispatcher {
   }
 
   get scaleX(): number {
-    return this.__node.transformLocal[0];
+    return this.__scaleSkews.scaleX;
   }
   set scaleX(value: number) {
-    if (this.__node.transformLocal[0] !== value) {
-      this.__node.transformLocal[0] = value;
+    this.__scaleSkews.scaleX = value;
+    if (compose(this.__node.transformLocal, this.__scaleSkews)) {
       this.__node.markLayoutDirty();
     }
   }
 
   get scaleY(): number {
-    return this.__node.transformLocal[3];
+    return this.__scaleSkews.scaleY;
   }
   set scaleY(value: number) {
-    if (this.__node.transformLocal[3] !== value) {
-      this.__node.transformLocal[3] = value;
+    this.__scaleSkews.scaleY = value;
+    if (compose(this.__node.transformLocal, this.__scaleSkews)) {
       this.__node.markLayoutDirty();
     }
   }
 
   get rotation(): number {
-    const angle = Math.atan2(
-      this.__node.transformLocal[1],
-      this.__node.transformLocal[3]
-    );
-    return (angle * 180) / Math.PI;
+    return reduceAngle((this.__scaleSkews.skewY * 180) / Math.PI);
   }
   set rotation(value: number) {
-    const rotation = this.rotation;
-    const delta = ((value - rotation) / 180) * Math.PI;
-    if (delta !== 0) {
-      mat2d.rotate(
-        this.__node.transformLocal,
-        this.__node.transformLocal,
-        delta
-      );
+    const delta = (value / 180) * Math.PI - this.__scaleSkews.skewY;
+    this.__scaleSkews.skewX += delta;
+    this.__scaleSkews.skewY += delta;
+    if (compose(this.__node.transformLocal, this.__scaleSkews)) {
       this.__node.markLayoutDirty();
     }
   }
@@ -196,7 +199,7 @@ export class DisplayObject extends EventDispatcher {
   get width(): number {
     this.__node.ensureLayout();
     return Math.abs(
-      twipsToPixel(this.__node.boundsLocal[2]) * this.__node.transformLocal[0]
+      twipsToPixel(this.__node.boundsLocal[2]) * this.__scaleSkews.scaleX
     );
   }
   set width(value: number) {
@@ -205,14 +208,14 @@ export class DisplayObject extends EventDispatcher {
     }
     this.__node.ensureLayout();
     let scaleX =
-      twipsToPixel(this.__node.boundsLocal[2]) === 0
+      this.__node.boundsLocal[2] === 0
         ? 1
         : value / twipsToPixel(this.__node.boundsLocal[2]);
-    if (this.__node.transformLocal[0] !== 0) {
-      scaleX *= Math.sign(this.__node.transformLocal[0]);
+    if (this.__scaleSkews.scaleX !== 0) {
+      scaleX *= Math.sign(this.__scaleSkews.scaleX);
     }
-    if (this.__node.transformLocal[0] !== scaleX) {
-      this.__node.transformLocal[0] = scaleX;
+    this.__scaleSkews.scaleX = scaleX;
+    if (compose(this.__node.transformLocal, this.__scaleSkews)) {
       this.__node.markLayoutDirty();
     }
   }
@@ -220,7 +223,7 @@ export class DisplayObject extends EventDispatcher {
   get height(): number {
     this.__node.ensureLayout();
     return Math.abs(
-      twipsToPixel(this.__node.boundsLocal[3]) * this.__node.transformLocal[3]
+      twipsToPixel(this.__node.boundsLocal[3]) * this.__scaleSkews.scaleY
     );
   }
   set height(value: number) {
@@ -229,14 +232,14 @@ export class DisplayObject extends EventDispatcher {
     }
     this.__node.ensureLayout();
     let scaleY =
-      twipsToPixel(this.__node.boundsLocal[3]) === 0
+      this.__node.boundsLocal[3] === 0
         ? 1
         : value / twipsToPixel(this.__node.boundsLocal[3]);
-    if (this.__node.transformLocal[3] !== 0) {
-      scaleY *= Math.sign(this.__node.transformLocal[3]);
+    if (this.__scaleSkews.scaleY !== 0) {
+      scaleY *= Math.sign(this.__scaleSkews.scaleY);
     }
-    if (this.__node.transformLocal[3] !== scaleY) {
-      this.__node.transformLocal[3] = scaleY;
+    this.__scaleSkews.scaleY = scaleY;
+    if (compose(this.__node.transformLocal, this.__scaleSkews)) {
       this.__node.markLayoutDirty();
     }
   }

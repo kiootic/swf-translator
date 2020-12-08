@@ -15,6 +15,7 @@ import { FilterID } from "../../classes/__internal/character/filter";
 import { AssetLibrary } from "../../classes/__internal/AssetLibrary";
 import { SoundContext } from "../../classes/flash/media/context";
 import { Sound } from "../../classes/flash/media";
+import { decompose } from "../math/matrix";
 
 // ref: https://github.com/mozilla/shumway/blob/16451d8836fa85f4b16eeda8b4bda2fa9e2b22b0/src/flash/display/DisplayObject.ts#L1137
 
@@ -90,6 +91,7 @@ export function executeActionStartSound(
 
 function copyCharacter(from: DisplayObject, to: DisplayObject) {
   mat2d.copy(to.__node.transformLocal, from.__node.transformLocal);
+  to.__scaleSkews = { ...from.__scaleSkews };
   vec4.copy(
     to.__node.colorTransformLocalMul,
     from.__node.colorTransformLocalMul
@@ -113,9 +115,11 @@ function setupCharacter(
 ) {
   if (action.matrix != null) {
     mat2d.copy(character.__node.transformLocal, action.matrix);
+    character.__scaleSkews = decompose(character.__node.transformLocal);
     character.__node.markLayoutDirty();
   } else if (reset) {
     mat2d.identity(character.__node.transformLocal);
+    character.__scaleSkews = decompose(character.__node.transformLocal);
     character.__node.markLayoutDirty();
   }
 
