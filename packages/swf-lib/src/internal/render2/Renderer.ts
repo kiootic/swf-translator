@@ -396,8 +396,8 @@ export class Renderer {
 
       const ctx = new RenderContext(null);
       const renderView = mat2d.fromTranslation(mat2d.create(), [
-        paddings[0] + pixelToTwips(translate[0] - Math.floor(translate[0])),
-        paddings[1] + pixelToTwips(translate[1] - Math.floor(translate[1])),
+        paddings[0] + pixelToTwips(translate[0] - Math.trunc(translate[0])),
+        paddings[1] + pixelToTwips(translate[1] - Math.trunc(translate[1])),
       ]);
       mat2d.scale(renderView, renderView, scale);
       mat2d.translate(renderView, renderView, [-bounds[0], -bounds[1]]);

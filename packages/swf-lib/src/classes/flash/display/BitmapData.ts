@@ -129,8 +129,8 @@ export class BitmapData extends AVMObject {
       this.__needPixel = false;
     }
 
-    const intX = Math.floor(x);
-    const intY = this.height - Math.floor(y);
+    const intX = Math.trunc(x);
+    const intY = this.height - Math.trunc(y);
     if (intX < 0 || intY < 0 || intX > this.width || intY > this.height) {
       return 0;
     }

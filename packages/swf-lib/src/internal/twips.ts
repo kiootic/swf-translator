@@ -5,5 +5,5 @@ export function twipsToPixel(value: number) {
 }
 
 export function pixelToTwips(value: number) {
-  return Math.floor(value * TWIPS);
+  return Math.trunc(value * TWIPS);
 }

@@ -217,8 +217,8 @@ export class RenderContext {
       twipsToPixel(viewMatrix[4]),
       twipsToPixel(viewMatrix[5])
     );
-    viewMatrix[4] = Math.floor(viewMatrix[4] / TWIPS) * TWIPS;
-    viewMatrix[5] = Math.floor(viewMatrix[5] / TWIPS) * TWIPS;
+    viewMatrix[4] = Math.trunc(viewMatrix[4] / TWIPS) * TWIPS;
+    viewMatrix[5] = Math.trunc(viewMatrix[5] / TWIPS) * TWIPS;
 
     this.renders.push({
       transform: this.transform,
