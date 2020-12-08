@@ -5,6 +5,7 @@ import { preMultiplyAlpha } from "../../../internal/math/color";
 import { rect } from "../../../internal/math/rect";
 import { FontRegistry } from "../FontRegistry";
 import { TextSegment } from "./TextSegment";
+import { pixelToTwips } from "../../../internal/twips";
 
 export interface LayoutResult {
   bounds: rect;
@@ -37,7 +38,7 @@ export function layout(
 
   const resultBounds = rect.create();
   const resultObjects: RenderObject[] = [];
-  let y = 0;
+  let y = bounds[1] + pixelToTwips(2);
   for (const line of lines) {
     const lineResult = layoutLine(line, y, bounds);
     resultObjects.push(...lineResult.renderObjects);
@@ -187,8 +188,8 @@ function layoutLine(line: Line, y: number, bounds: rect): LayoutResult {
     return { bounds: rect.create(), renderObjects: [] };
   }
 
-  const boundsX = bounds[0] + 2;
-  const boundsWidth = bounds[2] - 4;
+  const boundsX = bounds[0] + pixelToTwips(2);
+  const boundsWidth = bounds[2] - pixelToTwips(4);
 
   const alignment = line.glyphs[0].align;
   let spacing: number, x: number;
@@ -253,7 +254,7 @@ function layoutLine(line: Line, y: number, bounds: rect): LayoutResult {
   }
 
   return {
-    bounds: rect.fromValues(0, y, x, leading),
+    bounds: rect.fromValues(boundsX, y, x - boundsX, leading),
     renderObjects: RenderObject.merge("text", instances),
   };
 }
