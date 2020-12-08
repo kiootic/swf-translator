@@ -220,7 +220,8 @@ export class Renderer {
     fb: Framebuffer,
     logicalWidth: number,
     logicalHeight: number,
-    clearFb: () => void
+    clearFb: () => void,
+    invertY = true
   ) {
     if (this.glState.gl.isContextLost()) {
       return;
@@ -239,7 +240,7 @@ export class Renderer {
       mat2d.create(),
       pixelToTwips(logicalWidth),
       pixelToTwips(logicalHeight),
-      true
+      invertY
     );
 
     this.textureReturnBox.length = 0;
@@ -802,10 +803,6 @@ export class Renderer {
       }
       const mode = maskID * 0x10000 + maskMode * 0x100 + fillMode;
 
-      // Round vertices to nearest pixel in view space to maintain temporal stability.
-      // Do not do this for texts, since they have intricate contours.
-      const roundVertex = kind === "shape";
-
       const base = numVertex * 14;
       const viewA = view[0];
       const viewB = view[1];
@@ -835,11 +832,6 @@ export class Renderer {
 
         let vx = viewA * x + viewC * y + viewTX;
         let vy = viewB * x + viewD * y + viewTY;
-        if (roundVertex) {
-          const samples = Math.max(1, this.glState.maxSamples);
-          vx = Math.round(vx * samples) / samples;
-          vy = Math.round(vy * samples) / samples;
-        }
         attrFloat[base + i * 14 + 0] = projA * vx + projC * vy + projTX;
         attrFloat[base + i * 14 + 1] = projB * vx + projD * vy + projTY;
 

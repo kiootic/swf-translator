@@ -17,7 +17,7 @@ export class Bitmap extends DisplayObject {
           texWidth: width,
           texHeight: height,
           scale: TWIPS,
-          invertY: true,
+          invertY: false,
         }),
       ],
       bounds

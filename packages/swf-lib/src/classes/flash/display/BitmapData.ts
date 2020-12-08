@@ -71,7 +71,7 @@ export class BitmapData extends AVMObject {
         node.setRenderObjects(
           [
             RenderObject.rect(patch, target.texture, {
-              invertY: true,
+              invertY: false,
               scale: TWIPS,
             }),
           ],
@@ -130,7 +130,7 @@ export class BitmapData extends AVMObject {
     }
 
     const intX = Math.floor(x);
-    const intY = Math.floor(y);
+    const intY = this.height - Math.floor(y);
     if (intX < 0 || intY < 0 || intX > this.width || intY > this.height) {
       return 0;
     }
@@ -162,9 +162,9 @@ export class BitmapData extends AVMObject {
     const dst = this.__target!;
 
     const srcX = sourceRect.x,
-      srcY = this.height - sourceRect.y - sourceRect.height;
+      srcY = sourceRect.y;
     const dstX = destPoint.x,
-      dstY = this.height - destPoint.y - sourceRect.height;
+      dstY = destPoint.y;
 
     const srcFb = src.framebuffer.ensure(glState);
     const dstFb = dst.framebuffer.ensure(glState);
@@ -216,9 +216,9 @@ export class BitmapData extends AVMObject {
         this.width,
         this.height,
         x,
-        -y,
+        y,
         x + this.width,
-        -y + this.height,
+        y + this.height,
         gl.COLOR_BUFFER_BIT,
         gl.NEAREST
       );
@@ -272,7 +272,8 @@ export class BitmapData extends AVMObject {
         fb.framebuffer,
         this.width,
         this.height,
-        clearFb
+        clearFb,
+        false
       );
       const renderFb = fb.framebuffer.ensure(glState);
       const targetFb = this.__target.framebuffer.ensure(glState);
