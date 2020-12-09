@@ -307,7 +307,7 @@ export class DisplayObject extends EventDispatcher {
     return result;
   }
 
-  __initFrame(stage: Stage) {}
+  __initFrame(stage: Stage, isRoot: boolean) {}
 
   __onRender() {}
 

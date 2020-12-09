@@ -20,6 +20,10 @@ interface Constructible {
   __constructFrame(): void;
 }
 
+interface Initializable {
+  __initFrame(stage: Stage, isRoot: boolean): void;
+}
+
 export class Stage extends DisplayObjectContainer {
   static __current: Stage | null = null;
 
@@ -30,6 +34,7 @@ export class Stage extends DisplayObjectContainer {
 
   __displayListDirty = false;
   readonly __displayList: DisplayObject[] = [];
+  readonly __initQueue: Initializable[] = [];
   readonly __constructionQueue: Constructible[] = [];
 
   __mousePosition = vec2.create();
