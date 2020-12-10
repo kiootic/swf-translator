@@ -16,6 +16,7 @@ import {
   MatrixComposition,
   reduceAngle,
 } from "../../../internal/math/matrix";
+import { fpRect } from "../../../internal/fp16";
 
 const tmpRect = rect.create();
 const tmpVec2 = vec2.create();
@@ -303,6 +304,7 @@ export class DisplayObject extends EventDispatcher {
       this.__node.boundsWorld,
       obj.__node.transformWorldInvert
     );
+    fpRect(tmpRect);
     result.x = twipsToPixel(tmpRect[0]);
     result.y = twipsToPixel(tmpRect[1]);
     result.width = twipsToPixel(tmpRect[2]);

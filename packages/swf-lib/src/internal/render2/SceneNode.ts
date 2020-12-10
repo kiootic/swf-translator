@@ -6,6 +6,7 @@ import { RenderContext } from "./RenderContext";
 import { Texture } from "./gl/Texture";
 import { CachedRender } from "./CachedRender";
 import { pixelToTwips, TWIPS } from "../twips";
+import { fpMat, fpRect } from "../fp16";
 
 const enum Flags {
   DirtyBounds = 1,
@@ -132,6 +133,8 @@ export class SceneNode {
       if (node.cacheAsBitmap) {
         mat2d.identity(tmpMat2d2);
       }
+      fpMat(tmpMat2d1);
+      fpMat(tmpMat2d2);
       const updated = !mat2d.exactEquals(tmpMat2d1, node.transformWorld);
       const renderDirty = !mat2d.exactEquals(tmpMat2d2, node.transformRender);
       node.flags &= ~Flags.DirtyTransform;
@@ -140,7 +143,9 @@ export class SceneNode {
       if (updated) {
         mat2d.copy(node.transformWorld, tmpMat2d1);
         mat2d.invert(node.transformWorldInvert, node.transformWorld);
+        fpMat(node.transformWorldInvert);
         rect.apply(node.boundsWorld, node.boundsLocal, node.transformWorld);
+        fpRect(node.boundsWorld);
 
         let dirtyParent = node.parent;
         while (dirtyParent) {
@@ -191,6 +196,7 @@ export class SceneNode {
         rect.apply(tmpRect2, child.boundsLocal, child.transformLocal);
         rect.union(tmpRect1, tmpRect1, tmpRect2);
       }
+      fpRect(tmpRect1);
       const updated = !rect.equals(tmpRect1, node.boundsLocal);
       node.flags &= ~Flags.DirtyBounds;
 
@@ -198,6 +204,7 @@ export class SceneNode {
       if (updated) {
         mat2d.copy(node.boundsLocal, tmpRect1);
         rect.apply(node.boundsWorld, node.boundsLocal, node.transformWorld);
+        fpRect(node.boundsWorld);
 
         if (node.parent) {
           node.parent.flags |= Flags.DirtyBounds;
@@ -239,6 +246,7 @@ export class SceneNode {
     this.renderObjects = objects;
 
     rect.copy(this.boundsIntrinsic, intrinsicBounds);
+    fpRect(this.boundsIntrinsic);
     this.markLayoutDirty(false);
   }
 

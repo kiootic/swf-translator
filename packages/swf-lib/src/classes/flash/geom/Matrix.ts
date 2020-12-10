@@ -47,7 +47,7 @@ export class Matrix {
     mat[1] = roundToFP1616(this.b);
     mat[2] = roundToFP1616(this.c);
     mat[3] = roundToFP1616(this.d);
-    mat[4] = Math.trunc(this.tx * 20) / 20;
-    mat[5] = Math.trunc(this.ty * 20) / 20;
+    mat[4] = Math.trunc(this.tx * 20);
+    mat[5] = Math.trunc(this.ty * 20);
   }
 }

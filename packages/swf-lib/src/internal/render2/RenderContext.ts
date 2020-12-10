@@ -6,6 +6,7 @@ import { Texture } from "./gl/Texture";
 import { FilterInstance } from "./filter/Filter";
 import { CachedRender } from "./CachedRender";
 import { TWIPS, twipsToPixel } from "../twips";
+import { fpMat } from "../fp16";
 
 export interface Transform {
   view: mat2d;
@@ -122,6 +123,7 @@ export class RenderContext {
       useMask: transform.useMask.slice(),
     };
     mat2d.multiply(nodeTransform.view, transform.view, view);
+    fpMat(nodeTransform.view);
     multiplyColorTransform(
       nodeTransform.colorMul,
       nodeTransform.colorAdd,

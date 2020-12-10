@@ -1,4 +1,5 @@
 import { mat2d } from "gl-matrix";
+import { roundToFP1616 } from "../fp16";
 
 export function projection(
   out: mat2d,
@@ -56,10 +57,10 @@ export function compose(m: mat2d, mc: MatrixComposition): boolean {
     return isDirty;
   }
 
-  const a = Math.cos(skewY) * scaleX;
-  const b = Math.sin(skewY) * scaleX;
-  const c = -Math.sin(skewX) * scaleY;
-  const d = Math.cos(skewX) * scaleY;
+  const a = roundToFP1616(Math.cos(skewY) * scaleX);
+  const b = roundToFP1616(Math.sin(skewY) * scaleX);
+  const c = roundToFP1616(-Math.sin(skewX) * scaleY);
+  const d = roundToFP1616(Math.cos(skewX) * scaleY);
 
   const isDirty = m[0] !== a || m[1] !== b || m[2] !== c || m[3] !== d;
   m[0] = a;
