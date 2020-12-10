@@ -299,11 +299,14 @@ export class DisplayObject extends EventDispatcher {
     obj.__node.ensureLayout();
     const result = new Rectangle();
     rect.apply(
-      result.__rect,
+      tmpRect,
       this.__node.boundsWorld,
       obj.__node.transformWorldInvert
     );
-    rect.scale(result.__rect, result.__rect, 1 / TWIPS);
+    result.x = twipsToPixel(tmpRect[0]);
+    result.y = twipsToPixel(tmpRect[1]);
+    result.width = twipsToPixel(tmpRect[2]);
+    result.height = twipsToPixel(tmpRect[3]);
     return result;
   }
 

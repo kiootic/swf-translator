@@ -62,7 +62,7 @@ export class BitmapData extends AVMObject {
     const target = this.__target!;
     this.__target = null;
     try {
-      const [x, y, width, height] = bounds.__rect;
+      const { x, y, width, height } = bounds;
       const addPatch = (patch: rect, apply: boolean) => {
         if (patch[2] <= 0 || patch[3] <= 0) {
           return;
