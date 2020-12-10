@@ -1,8 +1,6 @@
 import { vec4 } from "gl-matrix";
-import { SceneNode } from "../../../internal/render2/SceneNode";
 
 export class ColorTransform {
-  __node: SceneNode | null = null;
   __mul: vec4;
   __add: vec4;
 
@@ -74,19 +72,6 @@ export class ColorTransform {
   }
   set alphaOffset(value) {
     this.__add[3] = value;
-  }
-
-  __setNode(value: SceneNode | null) {
-    if (value) {
-      vec4.copy(value.colorTransformLocalMul, this.__mul);
-      vec4.copy(value.colorTransformLocalAdd, this.__add);
-      this.__mul = value.colorTransformLocalMul;
-      this.__add = value.colorTransformLocalAdd;
-    } else {
-      this.__mul = vec4.clone(this.__mul);
-      this.__add = vec4.clone(this.__add);
-    }
-    this.__node = value;
   }
 
   set color(value: number) {

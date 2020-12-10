@@ -42,7 +42,7 @@ export class BitmapData extends AVMObject {
     const sourceNode = source.__node.clone();
     sourceNode.visible = true;
     if (matrix) {
-      mat2d.copy(sourceNode.transformLocal, matrix.__value);
+      matrix.__toMat2d(sourceNode.transformLocal);
     } else {
       mat2d.identity(sourceNode.transformLocal);
     }
