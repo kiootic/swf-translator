@@ -42,6 +42,15 @@ export class Matrix {
     this.ty = tx * v + ty * u;
   }
 
+  __fromMat2d(mat: mat2d) {
+    this.a = mat[0];
+    this.b = mat[1];
+    this.c = mat[2];
+    this.d = mat[3];
+    this.tx = mat[4] / 20;
+    this.ty = mat[5] / 20;
+  }
+
   __toMat2d(mat: mat2d) {
     mat[0] = roundToFP1616(this.a);
     mat[1] = roundToFP1616(this.b);

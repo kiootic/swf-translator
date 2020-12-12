@@ -1,4 +1,4 @@
-import { vec2 } from "gl-matrix";
+import { mat2d, vec2 } from "gl-matrix";
 import { CharacterInstance } from "../../../internal/character/CharacterInstance";
 import { rect } from "../../../internal/math/rect";
 import type { DisplayObjectContainer } from "./DisplayObjectContainer";
@@ -10,16 +10,18 @@ import { Point } from "../geom/Point";
 import { Rectangle } from "../geom/Rectangle";
 import { BitmapFilter } from "../filters/BitmapFilter";
 import { SceneNode } from "../../../internal/render2/SceneNode";
-import { pixelToTwips, TWIPS, twipsToPixel } from "../../../internal/twips";
+import { pixelToTwips, twipsToPixel } from "../../../internal/twips";
 import {
   compose,
   MatrixComposition,
   reduceAngle,
 } from "../../../internal/math/matrix";
-import { fpRect } from "../../../internal/fp16";
+import { fpMat, fpMatMul } from "../../../internal/fp16";
+import { bounds } from "../../../internal/math/bounds";
 
-const tmpRect = rect.create();
+const tmpBounds = bounds.create();
 const tmpVec2 = vec2.create();
+const tmpMat2d = mat2d.create();
 
 interface CharacterInit<T> {
   fn: (char: T) => void;
@@ -171,6 +173,7 @@ export class DisplayObject extends EventDispatcher {
   set scaleX(value: number) {
     this.__scaleSkews.scaleX = value;
     if (compose(this.__node.transformLocal, this.__scaleSkews)) {
+      this.transform.matrix.__fromMat2d(this.__node.transformLocal);
       this.__node.markLayoutDirty();
     }
   }
@@ -181,6 +184,7 @@ export class DisplayObject extends EventDispatcher {
   set scaleY(value: number) {
     this.__scaleSkews.scaleY = value;
     if (compose(this.__node.transformLocal, this.__scaleSkews)) {
+      this.transform.matrix.__fromMat2d(this.__node.transformLocal);
       this.__node.markLayoutDirty();
     }
   }
@@ -193,54 +197,85 @@ export class DisplayObject extends EventDispatcher {
     this.__scaleSkews.skewX += delta;
     this.__scaleSkews.skewY += delta;
     if (compose(this.__node.transformLocal, this.__scaleSkews)) {
+      this.transform.matrix.__fromMat2d(this.__node.transformLocal);
       this.__node.markLayoutDirty();
     }
   }
 
   get width(): number {
-    this.__node.ensureLayout();
-    return Math.abs(
-      twipsToPixel(this.__node.boundsLocal[2]) * this.__scaleSkews.scaleX
-    );
+    if (this.parent) {
+      return this.getBounds(this.parent).width;
+    } else {
+      this.__node.ensureLayout();
+      this.__node.ensureBounds();
+      return twipsToPixel(this.__node.boundsLocal[2]);
+    }
   }
   set width(value: number) {
-    if (value < 0) {
-      return;
-    }
     this.__node.ensureLayout();
-    let scaleX =
-      this.__node.boundsLocal[2] === 0
-        ? 1
-        : value / twipsToPixel(this.__node.boundsLocal[2]);
-    if (this.__scaleSkews.scaleX !== 0) {
-      scaleX *= Math.sign(this.__scaleSkews.scaleX);
-    }
-    this.__scaleSkews.scaleX = scaleX;
+    this.__node.ensureBounds();
+    value = pixelToTwips(value);
+
+    // https://github.com/ruffle-rs/ruffle/blob/ed4d51dfc1b28e2547925e927a94fffabcdb994f/core/src/display_object.rs#L556
+    const width = this.__node.bounds[2] - this.__node.bounds[0];
+    const height = this.__node.bounds[3] - this.__node.bounds[1];
+    const aspectRatio = height / width;
+    const targetScaleX = width === 0 ? 0 : value / width;
+    const targetScaleY = height === 0 ? 0 : value / height;
+
+    const cos = Math.abs(Math.cos(this.__scaleSkews.skewY));
+    const sin = Math.abs(Math.sin(this.__scaleSkews.skewY));
+    const newScaleX =
+      (aspectRatio * (cos * targetScaleX + sin * targetScaleY)) /
+      ((cos + aspectRatio * sin) * (aspectRatio * cos + sin));
+    const newScaleY =
+      (sin * this.__scaleSkews.scaleX +
+        aspectRatio * cos * this.__scaleSkews.scaleY) /
+      (aspectRatio * cos + sin);
+    this.__scaleSkews.scaleX = newScaleX;
+    this.__scaleSkews.scaleY = newScaleY;
+
     if (compose(this.__node.transformLocal, this.__scaleSkews)) {
+      this.transform.matrix.__fromMat2d(this.__node.transformLocal);
       this.__node.markLayoutDirty();
     }
   }
 
   get height(): number {
-    this.__node.ensureLayout();
-    return Math.abs(
-      twipsToPixel(this.__node.boundsLocal[3]) * this.__scaleSkews.scaleY
-    );
+    if (this.parent) {
+      return this.getBounds(this.parent).height;
+    } else {
+      this.__node.ensureLayout();
+      this.__node.ensureBounds();
+      return twipsToPixel(this.__node.boundsLocal[3]);
+    }
   }
   set height(value: number) {
-    if (value < 0) {
-      return;
-    }
     this.__node.ensureLayout();
-    let scaleY =
-      this.__node.boundsLocal[3] === 0
-        ? 1
-        : value / twipsToPixel(this.__node.boundsLocal[3]);
-    if (this.__scaleSkews.scaleY !== 0) {
-      scaleY *= Math.sign(this.__scaleSkews.scaleY);
-    }
-    this.__scaleSkews.scaleY = scaleY;
+    this.__node.ensureBounds();
+    value = pixelToTwips(value);
+
+    // https://github.com/ruffle-rs/ruffle/blob/ed4d51dfc1b28e2547925e927a94fffabcdb994f/core/src/display_object.rs#L556
+    const width = this.__node.bounds[2] - this.__node.bounds[0];
+    const height = this.__node.bounds[3] - this.__node.bounds[1];
+    const aspectRatio = width / height;
+    const targetScaleX = width === 0 ? 0 : value / width;
+    const targetScaleY = height === 0 ? 0 : value / height;
+
+    const cos = Math.abs(Math.cos(this.__scaleSkews.skewY));
+    const sin = Math.abs(Math.sin(this.__scaleSkews.skewY));
+    const newScaleX =
+      (aspectRatio * cos * this.__scaleSkews.scaleX +
+        sin * this.__scaleSkews.scaleY) /
+      (aspectRatio * cos + sin);
+    const newScaleY =
+      (aspectRatio * (sin * targetScaleX + cos * targetScaleY)) /
+      ((cos + aspectRatio * sin) * (aspectRatio * cos + sin));
+    this.__scaleSkews.scaleX = newScaleX;
+    this.__scaleSkews.scaleY = newScaleY;
+
     if (compose(this.__node.transformLocal, this.__scaleSkews)) {
+      this.transform.matrix.__fromMat2d(this.__node.transformLocal);
       this.__node.markLayoutDirty();
     }
   }
@@ -292,23 +327,27 @@ export class DisplayObject extends EventDispatcher {
   hitTestObject(obj: DisplayObject): boolean {
     this.__node.ensureLayout();
     obj.__node.ensureLayout();
-    return rect.intersects(obj.__node.boundsWorld, this.__node.boundsWorld);
+    this.__node.ensureBounds();
+    obj.__node.ensureBounds();
+    return bounds.intersects(obj.__node.boundsWorld, this.__node.boundsWorld);
   }
 
   getBounds(obj: DisplayObject): Rectangle {
     this.__node.ensureLayout();
     obj.__node.ensureLayout();
-    const result = new Rectangle();
-    rect.apply(
-      tmpRect,
-      this.__node.boundsWorld,
-      obj.__node.transformWorldInvert
+    this.__node.ensureBounds();
+    obj.__node.ensureBounds();
+    fpMatMul(
+      tmpMat2d,
+      obj.__node.transformWorldInvert,
+      this.__node.transformWorld
     );
-    fpRect(tmpRect);
-    result.x = twipsToPixel(tmpRect[0]);
-    result.y = twipsToPixel(tmpRect[1]);
-    result.width = twipsToPixel(tmpRect[2]);
-    result.height = twipsToPixel(tmpRect[3]);
+    bounds.apply(tmpBounds, this.__node.bounds, tmpMat2d);
+    const result = new Rectangle();
+    result.x = twipsToPixel(tmpBounds[0]);
+    result.y = twipsToPixel(tmpBounds[1]);
+    result.width = twipsToPixel(tmpBounds[2] - tmpBounds[0]);
+    result.height = twipsToPixel(tmpBounds[3] - tmpBounds[1]);
     return result;
   }
 

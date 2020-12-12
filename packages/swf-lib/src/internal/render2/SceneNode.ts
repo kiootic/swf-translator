@@ -6,7 +6,8 @@ import { RenderContext } from "./RenderContext";
 import { Texture } from "./gl/Texture";
 import { CachedRender } from "./CachedRender";
 import { pixelToTwips, TWIPS } from "../twips";
-import { fpMat, fpRect } from "../fp16";
+import { fpMat, fpMatMul } from "../fp16";
+import { bounds } from "../math/bounds";
 
 const enum Flags {
   DirtyBounds = 1,
@@ -19,8 +20,9 @@ const enum Flags {
   IsRoot = 128,
 }
 
-const tmpRect1 = rect.create();
-const tmpRect2 = rect.create();
+const tmpBounds1 = bounds.create();
+const tmpBounds2 = bounds.create();
+const tmpRect = rect.create();
 const tmpMat2d1 = mat2d.create();
 const tmpMat2d2 = mat2d.create();
 const tmpVec2 = vec2.create();
@@ -36,7 +38,7 @@ export class SceneNode {
   isMask = false;
   buttonState = -1;
   renderObjects: RenderObject[] = [];
-  readonly boundsIntrinsic = rect.create();
+  readonly boundsIntrinsic = bounds.create();
 
   cacheAsBitmap = false;
   cachedRender: CachedRender | null = null;
@@ -46,8 +48,9 @@ export class SceneNode {
   readonly colorTransformLocalMul = vec4.fromValues(1, 1, 1, 1);
   readonly colorTransformLocalAdd = vec4.fromValues(0, 0, 0, 0);
 
-  readonly boundsLocal = rect.create();
-  readonly boundsWorld = rect.create();
+  readonly bounds = bounds.create();
+  readonly boundsLocal = bounds.create();
+  readonly boundsWorld = bounds.create();
   readonly transformRender = mat2d.create();
   readonly transformWorld = mat2d.create();
   readonly transformWorldInvert = mat2d.create();
@@ -74,7 +77,7 @@ export class SceneNode {
     }
 
     if (!dirtyTransform) {
-      return;
+      //  return;
     }
 
     // Mark parent child transform dirty.
@@ -119,22 +122,12 @@ export class SceneNode {
         mat2d.copy(tmpMat2d1, node.transformLocal);
         mat2d.copy(tmpMat2d2, node.transformLocal);
       } else {
-        mat2d.multiply(
-          tmpMat2d1,
-          node.parent.transformWorld,
-          node.transformLocal
-        );
-        mat2d.multiply(
-          tmpMat2d2,
-          node.parent.transformRender,
-          node.transformLocal
-        );
+        fpMatMul(tmpMat2d1, node.parent.transformWorld, node.transformLocal);
+        fpMatMul(tmpMat2d2, node.parent.transformRender, node.transformLocal);
       }
       if (node.cacheAsBitmap) {
         mat2d.identity(tmpMat2d2);
       }
-      fpMat(tmpMat2d1);
-      fpMat(tmpMat2d2);
       const updated = !mat2d.exactEquals(tmpMat2d1, node.transformWorld);
       const renderDirty = !mat2d.exactEquals(tmpMat2d2, node.transformRender);
       node.flags &= ~Flags.DirtyTransform;
@@ -144,13 +137,11 @@ export class SceneNode {
         mat2d.copy(node.transformWorld, tmpMat2d1);
         mat2d.invert(node.transformWorldInvert, node.transformWorld);
         fpMat(node.transformWorldInvert);
-        rect.apply(node.boundsWorld, node.boundsLocal, node.transformWorld);
-        fpRect(node.boundsWorld);
 
-        let dirtyParent = node.parent;
-        while (dirtyParent) {
-          dirtyParent.flags |= Flags.DirtyBounds;
-          dirtyParent = dirtyParent.parent;
+        let dirtyNode: SceneNode | null = node;
+        while (dirtyNode) {
+          dirtyNode.flags |= Flags.DirtyBounds;
+          dirtyNode = dirtyNode.parent;
         }
         for (const child of node.children) {
           child.flags |= Flags.DirtyTransform;
@@ -166,52 +157,30 @@ export class SceneNode {
         }
       }
     }
+  }
 
-    queue.push(this);
-    while ((node = queue.pop())) {
-      if ((node.flags & Flags.DirtyBounds) === 0) {
-        continue;
-      }
-
-      // Ensure children bounds.
-      let needChildrenBounds = false;
-      for (const child of node.children) {
-        if ((child.flags & Flags.DirtyBounds) === 0) {
-          continue;
-        }
-
-        if (!needChildrenBounds) {
-          needChildrenBounds = true;
-          queue.push(node);
-        }
-        queue.push(child);
-      }
-      if (needChildrenBounds) {
-        continue;
-      }
-
-      // Compute local & world bounds.
-      rect.copy(tmpRect1, node.boundsIntrinsic);
-      for (const child of node.children) {
-        rect.apply(tmpRect2, child.boundsLocal, child.transformLocal);
-        rect.union(tmpRect1, tmpRect1, tmpRect2);
-      }
-      fpRect(tmpRect1);
-      const updated = !rect.equals(tmpRect1, node.boundsLocal);
-      node.flags &= ~Flags.DirtyBounds;
-
-      // Propagate to parent.
-      if (updated) {
-        mat2d.copy(node.boundsLocal, tmpRect1);
-        rect.apply(node.boundsWorld, node.boundsLocal, node.transformWorld);
-        fpRect(node.boundsWorld);
-
-        if (node.parent) {
-          node.parent.flags |= Flags.DirtyBounds;
-          queue.push(node.parent);
-        }
-      }
+  // ref: https://github.com/ruffle-rs/ruffle/blob/ed4d51dfc1b28e2547925e927a94fffabcdb994f/core/src/display_object.rs#L418-L447
+  private boundsWithTransform(b: bounds, m: mat2d) {
+    bounds.apply(b, this.boundsIntrinsic, m);
+    const cb = bounds.create();
+    const cm = mat2d.create();
+    for (const child of this.children) {
+      fpMatMul(cm, m, child.transformLocal);
+      child.boundsWithTransform(cb, cm);
+      bounds.union(b, b, cb);
     }
+  }
+
+  ensureBounds() {
+    if ((this.flags & Flags.DirtyBounds) === 0) {
+      return;
+    }
+
+    mat2d.identity(tmpMat2d1);
+    this.boundsWithTransform(this.bounds, tmpMat2d1);
+    this.boundsWithTransform(this.boundsLocal, this.transformLocal);
+    this.boundsWithTransform(this.boundsWorld, this.transformWorld);
+    this.flags &= ~Flags.DirtyBounds;
   }
 
   setParent(parent: SceneNode | null, index: number) {
@@ -245,8 +214,7 @@ export class SceneNode {
   setRenderObjects(objects: RenderObject[], intrinsicBounds: rect) {
     this.renderObjects = objects;
 
-    rect.copy(this.boundsIntrinsic, intrinsicBounds);
-    fpRect(this.boundsIntrinsic);
+    bounds.fromRect(this.boundsIntrinsic, intrinsicBounds);
     this.markLayoutDirty(false);
   }
 
@@ -274,10 +242,15 @@ export class SceneNode {
       return;
     }
 
-    rect.apply(tmpRect1, this.boundsLocal, ctx.transform.view);
-    if (ctx.viewport && !rect.intersects(tmpRect1, ctx.viewport)) {
-      return;
-    }
+    // FIXME: improve perf of bounds calc
+    /*
+      this.ensureBounds();
+      bounds.apply(tmpBounds1, this.bounds, ctx.transform.view);
+      bounds.toRect(tmpRect, tmpBounds1);
+      if (ctx.viewport && !rect.intersects(tmpRect, ctx.viewport)) {
+        return;
+      }
+    */
 
     if (
       this.cacheAsBitmap &&
@@ -347,8 +320,10 @@ export class SceneNode {
         }
       };
 
+      this.ensureBounds();
+      bounds.toRect(tmpRect, this.bounds);
       ctx.renderTexture(
-        this.boundsLocal,
+        tmpRect,
         paddings,
         (ctx) => this.doRenderContent(ctx),
         onRenderTexture
@@ -390,10 +365,11 @@ export class SceneNode {
 
     if (!exact) {
       this.ensureLayout();
+      this.ensureBounds();
       tmpVec2[0] = pixelToTwips(worldPt[0]);
       tmpVec2[1] = pixelToTwips(worldPt[1]);
       vec2.transformMat2d(tmpVec2, tmpVec2, this.transformWorldInvert);
-      return rect.contains(this.boundsLocal, tmpVec2[0], tmpVec2[1]);
+      return bounds.contains(this.bounds, tmpVec2[0], tmpVec2[1]);
     }
 
     const nodes: SceneNode[] = [this];
@@ -435,7 +411,7 @@ export class SceneNode {
       node.renderObjects = n.renderObjects.slice();
       node.cacheAsBitmap = n.cacheAsBitmap;
       node.filters = n.filters.slice();
-      rect.copy(node.boundsIntrinsic, n.boundsIntrinsic);
+      bounds.copy(node.boundsIntrinsic, n.boundsIntrinsic);
       mat2d.copy(node.transformLocal, n.transformLocal);
       vec4.copy(node.colorTransformLocalMul, n.colorTransformLocalMul);
       vec4.copy(node.colorTransformLocalAdd, n.colorTransformLocalAdd);
