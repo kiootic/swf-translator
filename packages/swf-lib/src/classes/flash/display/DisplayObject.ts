@@ -208,7 +208,9 @@ export class DisplayObject extends EventDispatcher {
     } else {
       this.__node.ensureLayout();
       this.__node.ensureBounds();
-      return twipsToPixel(this.__node.boundsLocal[2]);
+      return twipsToPixel(
+        this.__node.boundsLocal[2] - this.__node.boundsLocal[0]
+      );
     }
   }
   set width(value: number) {
@@ -247,7 +249,9 @@ export class DisplayObject extends EventDispatcher {
     } else {
       this.__node.ensureLayout();
       this.__node.ensureBounds();
-      return twipsToPixel(this.__node.boundsLocal[3]);
+      return twipsToPixel(
+        this.__node.boundsLocal[3] - this.__node.boundsLocal[1]
+      );
     }
   }
   set height(value: number) {
