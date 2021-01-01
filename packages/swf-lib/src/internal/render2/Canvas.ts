@@ -12,6 +12,7 @@ export class Canvas {
 
     this.element.tabIndex = 0;
     this.element.style.setProperty("outline", "none", "important");
+    this.element.style.setProperty("user-select", "none", "important");
     this.element.style.setProperty("position", "absolute");
     this.element.style.setProperty("width", `${width}px`);
     this.element.style.setProperty("height", `${height}px`);
