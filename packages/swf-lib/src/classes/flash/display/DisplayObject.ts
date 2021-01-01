@@ -340,7 +340,6 @@ export class DisplayObject extends EventDispatcher {
     this.__node.ensureLayout();
     obj.__node.ensureLayout();
     this.__node.ensureBounds();
-    obj.__node.ensureBounds();
     fpMatMul(
       tmpMat2d,
       obj.__node.transformWorldInvert,
