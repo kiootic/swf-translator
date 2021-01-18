@@ -35,7 +35,7 @@ export class Canvas {
 
   resolveCoords(out: vec2, clientX: number, clientY: number) {
     const rect = this.element.getBoundingClientRect();
-    out[0] = clientX - rect.left;
-    out[1] = clientY - rect.top;
+    out[0] = (clientX - rect.left) * this.width / rect.width;
+    out[1] = (clientY - rect.top) * this.width / rect.width;
   }
 }
